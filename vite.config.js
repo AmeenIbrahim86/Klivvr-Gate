@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
-  // لو هتنشر على GitHub Pages تحت اسم repo، خلّي base = '/company-portal/'
+  plugins: [],
   base: process.env.VITE_BASE || '/',
   build: {
     rollupOptions: {
