@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Company Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@400..700&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --indigo:#231F45; --indigo-2:#35305E; --indigo-soft:#EAE8F5;
+  --slate:#1B2A38;
+  --peri-1:#A9C8F7; --peri-2:#CBCCF6; --peri-ink:#4059A0; --peri-soft:#E9F0FD;
+  --orchid-1:#E0A5E8; --orchid-2:#C3A7EC; --orchid-ink:#8B4A9E; --orchid-soft:#F8EDFA;
+  --coral-1:#F2A1C1; --coral-2:#F58A5C; --coral-ink:#C4573A; --coral-soft:#FDEDE7;
+  --paper:#F5F5FA; --surface:#FFF; --line:#E4E2F0; --line-soft:#EFEDF7; --muted:#6E6A8E;
+  --r:12px;
+  --sh:0 1px 2px rgba(35,31,69,.05),0 10px 28px -14px rgba(35,31,69,.25);
+  --g-cta:linear-gradient(120deg,var(--coral-1),var(--coral-2));
+  --g-peri:linear-gradient(120deg,var(--peri-1),var(--peri-2));
+  --g-orchid:linear-gradient(120deg,var(--orchid-1),var(--orchid-2));
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;background:var(--paper);color:var(--indigo);line-height:1.6;padding-bottom:76px;-webkit-text-size-adjust:100%}
+h1,h2,h3,h4{font-family:"Reem Kufi",system-ui,sans-serif;font-weight:600;line-height:1.32}
+html[lang="en"] body{font-family:"IBM Plex Sans Arabic","Space Grotesk",system-ui,sans-serif}
+html[lang="en"] h1,html[lang="en"] h2,html[lang="en"] h3,html[lang="en"] h4{font-family:"Space Grotesk",system-ui,sans-serif}
+.mono{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--coral-2);outline-offset:2px}
+a{color:var(--peri-ink)}
+
+.topbar{background:var(--indigo);color:#CFCDE6;display:flex;align-items:center;gap:11px;padding:0 16px;height:52px;position:sticky;top:0;z-index:50}
+.brand{display:flex;align-items:center;gap:9px;flex-shrink:0}
+.logomark{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.1);display:grid;place-items:center;font-family:"Reem Kufi";font-size:15px}
+html[lang="en"] .logomark{font-family:"Space Grotesk";font-weight:700}
+.logomark span{background:var(--g-peri);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand b{color:#fff;font-size:15px;font-weight:600;white-space:nowrap}
+.sitepick{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:5px 9px;color:#fff;font-size:12.5px;max-width:190px}
+.sitepick option{color:var(--indigo)}
+.topnav{margin-inline-start:auto;display:flex;gap:2px;align-items:center}
+.topnav button{padding:7px 13px;border-radius:8px;font-size:13.5px;color:#BFBEDC;white-space:nowrap;transition:.15s}
+.topnav button:hover{background:rgba(255,255,255,.08);color:#fff}
+.topnav button.on{background:rgba(255,255,255,.14);color:#fff;font-weight:600}
+.langsw{display:flex;border:1px solid rgba(255,255,255,.3);border-radius:999px;overflow:hidden;font-family:"IBM Plex Mono";font-size:10.5px;margin-inline-start:6px;flex-shrink:0}
+.langsw button{padding:3px 8px;color:#CFCDE6}
+.langsw button.on{background:#fff;color:var(--indigo);font-weight:600}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 18px}
+.eyebrow{font-size:10.5px;letter-spacing:.16em;color:var(--muted);font-family:"IBM Plex Mono";text-transform:uppercase;display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.btn{background:var(--g-cta);color:#2B1409;padding:10px 20px;border-radius:9px;font-weight:700;font-size:14px;transition:.15s}
+.btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn.dark{background:var(--indigo);color:#fff}
+.btn.dark:hover{background:var(--indigo-2);filter:none}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--indigo);font-weight:600}
+.btn.ghost:hover{background:var(--indigo-soft);filter:none}
+.btn.sm{padding:6px 12px;font-size:12.5px;border-radius:7px;font-weight:600}
+.pill{background:var(--indigo-soft);color:var(--indigo);font-size:11px;padding:3px 9px;border-radius:999px;font-weight:600;white-space:nowrap}
+.pill.c{background:var(--coral-soft);color:var(--coral-ink)}
+.pill.o{background:var(--orchid-soft);color:var(--orchid-ink)}
+.pill.p{background:var(--peri-soft);color:var(--peri-ink)}
+.empty{text-align:center;padding:32px 20px;color:var(--muted);font-size:13px}
+.empty b{display:block;font-family:"Reem Kufi";font-size:15px;color:var(--indigo);margin-bottom:4px}
+html[lang="en"] .empty b{font-family:"Space Grotesk"}
+
+.hero{border-radius:var(--r);overflow:hidden;color:#fff;display:grid;grid-template-columns:1.5fr 1fr;min-height:266px;
+  background:radial-gradient(80% 100% at 88% 6%,rgba(245,138,92,.55),transparent 58%),radial-gradient(70% 90% at 8% 94%,rgba(169,200,247,.5),transparent 60%),radial-gradient(90% 80% at 45% 30%,rgba(224,165,232,.3),transparent 65%),var(--indigo)}
+.hero-main{padding:30px 32px;display:flex;flex-direction:column;justify-content:flex-end}
+.hero-main .pill{background:rgba(255,255,255,.18);color:#fff;align-self:flex-start}
+.hero-main h2{font-size:27px;margin:12px 0 8px}
+.hero-main p{font-size:14px;color:#D3D1EA;max-width:520px}
+.hero-main .by{font-size:11.5px;color:#A5A2CB;margin-top:14px}
+.hero-side{border-inline-start:1px solid rgba(255,255,255,.14);padding:18px;display:flex;flex-direction:column;gap:2px;justify-content:center}
+.hero-side button{text-align:start;padding:11px 12px;border-radius:9px;transition:.15s;color:#fff;width:100%}
+.hero-side button:hover{background:rgba(255,255,255,.09)}
+.hero-side h4{font-size:14px;margin-bottom:2px}
+.hero-side span{font-size:11.5px;color:#A5A2CB;display:block}
+.qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:10px}
+.qtile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:15px 12px;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;font-size:13px;transition:.16s}
+.qtile:hover{transform:translateY(-2px);border-color:var(--peri-1);box-shadow:var(--sh)}
+.qicon{width:36px;height:36px;border-radius:10px;background:var(--peri-soft);color:var(--peri-ink);display:grid;place-items:center;font-size:16px}
+.qtile.feat{border-color:var(--coral-1);background:var(--coral-soft)}
+.qtile.feat .qicon{background:var(--g-cta);color:#2B1409}
+.twocol{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;align-items:start}
+.ph{padding:13px 16px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ph h3{font-size:15px}
+.row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line-soft);font-size:13.5px}
+.row:last-child{border-bottom:none}
+.dicon{width:26px;height:32px;border-radius:4px;background:#F4F3FA;border:1px solid var(--line);position:relative;flex-shrink:0}
+.dicon::after{content:"";position:absolute;bottom:0;inset-inline:0;height:8px;background:var(--g-peri);border-radius:0 0 3px 3px}
+.row .meta{margin-inline-start:auto;text-align:end;font-size:11px;color:var(--muted);flex-shrink:0}
+.row .sub{font-size:11px;color:var(--muted)}
+.datechip{width:48px;flex-shrink:0;text-align:center;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.datechip .m{background:var(--indigo);color:#fff;font-size:9.5px;padding:2px}
+.datechip .d{font-family:"IBM Plex Mono";font-size:17px;font-weight:600;padding:3px 0}
+.band{margin-top:22px;border-radius:var(--r);color:#fff;padding:26px 30px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;
+  background:radial-gradient(70% 130% at 92% 10%,rgba(245,138,92,.5),transparent 60%),linear-gradient(115deg,var(--indigo),var(--slate))}
+.band div{flex:1;min-width:230px}
+.band h2{font-size:23px;margin-bottom:5px}
+.band p{font-size:13.5px;color:#C7C5E2;max-width:450px}
+
+.ordwrap{display:grid;grid-template-columns:1fr 336px;gap:16px;align-items:start}
+.cats{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}
+.cats button{padding:6px 14px;border-radius:999px;font-size:12.5px;border:1px solid var(--line);color:var(--muted)}
+.cats button.on{background:var(--indigo);color:#fff;border-color:var(--indigo)}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:10px}
+.mitem{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden;transition:.18s;align-self:start}
+.mitem.open{border-color:var(--coral-1);box-shadow:var(--sh)}
+.mrow{display:flex;align-items:center;gap:11px;padding:11px 13px;width:100%;text-align:start}
+.swatch{width:36px;height:36px;border-radius:50%;flex-shrink:0;position:relative;border:2px solid var(--line);overflow:hidden}
+.swatch i{display:block;width:100%;height:60%;position:absolute;bottom:0}
+.swatch.sq{border-radius:9px}
+.mrow .nm{flex:1;min-width:0}
+.mrow .nm b{font-size:14px;font-weight:600;display:block}
+.mrow .nm span{font-size:11px;color:var(--muted)}
+.price{font-family:"IBM Plex Mono";font-size:12.5px;color:var(--peri-ink);font-weight:600;flex-shrink:0}
+.plus{width:27px;height:27px;border-radius:8px;background:var(--peri-soft);color:var(--peri-ink);display:grid;place-items:center;font-size:16px;flex-shrink:0;transition:.15s;line-height:1}
+.mitem.open .plus{background:var(--g-cta);color:#2B1409;transform:rotate(45deg)}
+.opts{padding:0 13px 13px;border-top:1px dashed var(--line);display:none}
+.mitem.open .opts{display:block}
+.optlbl{font-size:11px;color:var(--muted);margin:10px 0 6px}
+.sugars{display:flex;gap:5px}
+.sugar{border:1px solid var(--line);border-radius:8px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;transition:.15s}
+.sugar.on{border-color:var(--coral-2);background:var(--coral-soft)}
+.sugar em{font-style:normal;font-size:10.5px;white-space:nowrap}
+.dots{display:flex;gap:3px}
+.dots i{width:5px;height:5px;border-radius:50%;background:var(--line);display:block}
+.dots i.on{background:var(--coral-2)}
+.qtyrow{display:flex;gap:9px;margin-top:10px}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-shrink:0}
+.stepper button{width:30px;height:30px;font-size:15px;color:var(--indigo)}
+.stepper button:hover{background:var(--indigo-soft)}
+.stepper .v{width:32px;text-align:center;font-family:"IBM Plex Mono";font-weight:600;font-size:13.5px;border-inline:1px solid var(--line);line-height:30px}
+.inp{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px;outline:none;width:100%;background:var(--surface)}
+.inp:focus{border-color:var(--coral-2)}
+.addbtn{width:100%;margin-top:9px;background:var(--indigo);color:#fff;padding:9px;border-radius:8px;font-size:13px;font-weight:600}
+.addbtn:hover{background:var(--indigo-2)}
+.cart{position:sticky;top:68px}
+.cline{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:8px 16px;border-bottom:1px dashed var(--line-soft)}
+.cline .q{font-family:"IBM Plex Mono";font-weight:600;color:var(--peri-ink)}
+.cline .x{color:var(--coral-ink);font-size:15px;padding:0 3px}
+.cfoot{padding:13px 16px}
+.ctot{display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 9px;font-size:13px}
+.ctot span{font-family:"IBM Plex Mono";font-size:16px;font-weight:600}
+.fld label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+
+.atbr{display:flex;align-items:center;gap:10px;background:var(--coral-soft);border:1px solid var(--coral-1);
+  border-radius:10px;padding:9px 14px;margin-bottom:14px;font-size:13px;flex-wrap:wrap}
+.atbr b{font-weight:700}
+.atbr button{margin-inline-start:auto;font-size:12.5px;font-weight:600;color:var(--coral-ink);text-decoration:underline}
+.pickwrap{max-width:620px;margin:30px auto;text-align:center}
+.pickwrap h2{font-size:25px;margin-bottom:6px}
+.pickwrap p{font-size:13.5px;color:var(--muted);margin-bottom:22px}
+.pickgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.pick{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px 16px;
+  display:flex;flex-direction:column;align-items:center;gap:7px;transition:.16s}
+.pick:hover{transform:translateY(-2px);border-color:var(--coral-1);box-shadow:var(--sh)}
+.pick b{font-size:15px;font-family:"Reem Kufi"}
+html[lang="en"] .pick b{font-family:"Space Grotesk"}
+.pick .psub{font-size:11.5px;color:var(--muted)}
+.pick .pdot{width:34px;height:34px;border-radius:50%;background:var(--g-cta)}
+.pick.off{opacity:.45;cursor:not-allowed}
+.pick.off:hover{transform:none;border-color:var(--line);box-shadow:none}
+.pick.off .pdot{background:var(--line)}
+.kbr{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;
+  padding:2px 7px;color:#fff;font-size:11px;font-family:inherit}
+.kbr option{color:var(--indigo)}
+.kwrap{background:var(--slate);min-height:100vh;padding-bottom:76px}
+.khead{padding:14px 22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid rgba(169,200,247,.18);color:#fff}
+.khead h2{font-size:19px;background:var(--g-peri);-webkit-background-clip:text;background-clip:text;color:transparent}
+.khead .sub{font-size:10.5px;color:#7F93A2;font-family:"IBM Plex Mono";letter-spacing:.06em;margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.nologin{background:rgba(169,200,247,.14);color:var(--peri-1);padding:2px 8px;border-radius:999px;border:1px solid rgba(169,200,247,.3);font-size:9.5px}
+.kstats{margin-inline-start:auto;display:flex;gap:18px;align-items:center}
+.kstat{text-align:center}
+.kstat b{display:block;font-family:"IBM Plex Mono";font-size:22px;font-weight:600;line-height:1.1}
+.kstat span{font-size:9.5px;color:#7F93A2;letter-spacing:.06em}
+.kstat.n b{color:var(--coral-2)} .kstat.p b{color:var(--peri-1)}
+.kclock{font-family:"IBM Plex Mono";font-size:19px;color:#fff}
+.kboard{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(266px,1fr));gap:14px;align-content:start}
+.ticket{background:#FCFBFE;border-radius:8px;overflow:hidden;position:relative;box-shadow:0 6px 18px -6px rgba(0,0,0,.5);display:flex;flex-direction:column;animation:pop .35s cubic-bezier(.2,.8,.3,1.2);align-self:start}
+@keyframes pop{from{opacity:0;transform:scale(.95) translateY(8px)}to{opacity:1;transform:none}}
+.ticket::before{content:"";position:absolute;top:0;inset-inline:0;height:4px;background:var(--g-cta)}
+.ticket.prog::before{background:var(--g-peri)}
+.ticket.late::before{background:var(--coral-ink)}
+.thd{padding:12px 14px 9px;border-bottom:1px dashed #DCD9EA}
+.thd .t1{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tno{font-family:"IBM Plex Mono";font-size:11px;color:var(--muted)}
+.timer{font-family:"IBM Plex Mono";font-size:12.5px;font-weight:600;color:var(--peri-ink);background:var(--peri-soft);padding:2px 7px;border-radius:5px}
+.ticket.late .timer{background:var(--coral-soft);color:var(--coral-ink)}
+.thd h4{font-size:16px;margin-top:5px}
+.thd .where{font-size:11.5px;color:var(--muted)}
+.tl{display:flex;gap:9px;padding:5px 14px;font-size:13.5px;align-items:flex-start}
+.tl .qn{font-family:"IBM Plex Mono";font-weight:600;color:var(--indigo);background:var(--indigo-soft);border-radius:5px;padding:0 6px;font-size:12.5px;line-height:20px;min-width:26px;text-align:center;flex-shrink:0}
+.tl b{font-weight:600;display:block;line-height:1.35}
+.tl .sug{display:flex;gap:5px;align-items:center;margin-top:2px}
+.tl .sug em{font-style:normal;font-size:11px;color:var(--muted)}
+.tl .note{font-size:11px;color:var(--coral-ink);margin-top:2px}
+.tft{display:flex;gap:6px;padding:10px 12px;border-top:1px dashed #DCD9EA;background:#F6F5FB;margin-top:6px}
+.tft button{flex:1;padding:8px;border-radius:7px;font-size:12.5px;font-weight:600}
+.b-s{background:var(--indigo);color:#fff}
+.b-d{background:var(--g-cta);color:#2B1409}
+.b-r{background:none;color:var(--muted);border:1px solid var(--line);flex:0 0 auto;padding:8px 11px}
+.kempty{grid-column:1/-1;text-align:center;padding:70px 20px;color:#5A6E7C}
+.kempty b{display:block;font-family:"Reem Kufi";font-size:18px;color:#8296A4;margin-bottom:5px}
+html[lang="en"] .kempty b{font-family:"Space Grotesk"}
+
+.adm{display:grid;grid-template-columns:214px 1fr;gap:16px;align-items:start}
+.admnav{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:6px;position:sticky;top:68px}
+.admnav button{display:flex;align-items:center;gap:9px;width:100%;text-align:start;padding:9px 11px;border-radius:8px;font-size:13.5px;transition:.15s}
+.admnav button:hover{background:var(--indigo-soft)}
+.admnav button.on{background:var(--indigo);color:#fff;font-weight:600}
+.admnav button.locked{opacity:.42;cursor:not-allowed}
+.admnav .ic{width:20px;text-align:center;flex-shrink:0}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin-bottom:14px;overflow:hidden}
+.sechd{padding:14px 16px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sechd h3{font-size:15.5px}
+.sechd p{font-size:12px;color:var(--muted);margin-top:2px}
+.item{padding:12px 16px;border-bottom:1px solid var(--line-soft);display:flex;gap:11px;align-items:center}
+.item:last-child{border-bottom:none}
+.item .body{flex:1;min-width:0}
+.item .body b{font-size:13.5px;display:block}
+.item .body p{font-size:12px;color:var(--muted);margin-top:2px}
+.item .acts{display:flex;gap:5px;flex-shrink:0}
+.iact{width:29px;height:29px;border-radius:7px;border:1px solid var(--line);display:grid;place-items:center;font-size:13px;transition:.15s}
+.iact:hover{background:var(--indigo-soft)}
+.iact.del:hover{background:var(--coral-soft);border-color:var(--coral-1);color:var(--coral-ink)}
+.form{padding:14px 16px;background:#FBFAFE;border-bottom:1px solid var(--line-soft)}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:10px}
+.fld.full{grid-column:1/-1}
+textarea.inp{min-height:62px;resize:vertical;line-height:1.55}
+.formacts{display:flex;gap:8px;margin-top:12px}
+.matrix{width:100%;border-collapse:collapse;font-size:13px}
+.matrix th,.matrix td{padding:9px 10px;border-bottom:1px solid var(--line-soft);text-align:center}
+.matrix thead th{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-family:"IBM Plex Mono";font-weight:400;background:#FBFAFE}
+.matrix td:first-child,.matrix th:first-child{font-weight:600;text-align:start;position:sticky;inset-inline-start:0;background:var(--surface)}
+.matrix thead th:first-child{background:#FBFAFE}
+.mscroll{overflow-x:auto}
+.chk{width:19px;height:19px;border-radius:5px;border:1.5px solid var(--line);display:grid;place-items:center;font-size:11px;color:transparent;transition:.15s;margin:0 auto}
+.chk.on{background:var(--indigo);border-color:var(--indigo);color:#fff}
+.chk.ro{opacity:.42;cursor:not-allowed}
+.av{width:30px;height:30px;border-radius:50%;background:var(--g-peri);color:var(--indigo);display:grid;place-items:center;font-weight:700;font-size:12px;flex-shrink:0}
+.av.c{background:var(--g-cta);color:#2B1409} .av.o{background:var(--g-orchid)}
+.note{background:var(--peri-soft);border-inline-start:3px solid var(--peri-ink);border-radius:8px;padding:11px 13px;font-size:12.5px;margin:14px 16px}
+.stat4{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;padding:16px}
+.sbox{border:1px solid var(--line);border-radius:10px;padding:13px}
+.sbox b{display:block;font-family:"IBM Plex Mono";font-size:24px;font-weight:600;line-height:1.1}
+.sbox span{font-size:11px;color:var(--muted)}
+
+.pbar{position:fixed;bottom:0;left:0;right:0;z-index:90;background:rgba(35,31,69,.96);backdrop-filter:blur(10px);border-top:1px solid rgba(203,204,246,.2);padding:9px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+.pbar label{font-size:9.5px;letter-spacing:.14em;color:var(--peri-1);font-family:"IBM Plex Mono";text-transform:uppercase}
+.pbar select{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:5px 9px;color:#fff;font-size:12.5px}
+.pbar select option{color:var(--indigo)}
+.toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--indigo);color:#fff;padding:11px 20px;border-radius:10px;font-size:13.5px;z-index:120;box-shadow:0 10px 30px -8px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1}
+
+@media (max-width:900px){
+  .hero{grid-template-columns:1fr}
+  .hero-side{border-inline-start:none;border-top:1px solid rgba(255,255,255,.14)}
+  .twocol,.ordwrap,.adm{grid-template-columns:1fr}
+  .cart,.admnav{position:static}
+  .admnav{display:flex;overflow-x:auto;gap:4px}
+  .admnav button{white-space:nowrap}
+  .brand b{display:none}
+  .topnav button{padding:7px 9px;font-size:12.5px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<div class="pbar" id="pbar"></div>
+
+<script>
+/* ═══════ storage (falls back to memory if unavailable) ═══════ */
+const S={mem:{},
+  async get(k){try{const r=await window.storage.get(k);return r?JSON.parse(r.value):null}catch(e){return this.mem[k]??null}},
+  async set(k,v){this.mem[k]=v;try{await window.storage.set(k,JSON.stringify(v))}catch(e){}}};
+const K={content:"cp2:content",menu:"cp2:menu",orders:"cp2:orders",access:"cp2:access"};
+
+/* ═══════ copy ═══════ */
+const L={ar:{
+ portal:"البوابة",order:"اطلب من البوفيه",kitchen:"شاشة البوفيه",admin:"الإدارة",
+ sitename:"بوابة الشركة",mark:"ب",
+ news:"أخبار الشركة",links:"لينكات سريعة",docs:"السياسات الداخلية",events:"الأحداث القادمة",
+ viewall:"عرض الكل",calendar:"التقويم",
+ bandT:"محتاج شاي أو قهوة؟",bandB:"اطلب من مكتبك، وطلبك يظهر على شاشة البوفيه في ثواني.",bandC:"اطلب دلوقتي ←",
+ all:"الكل",hot:"ساخن",cold:"بارد",snack:"سناكس",
+ sugar:"السكر",qty:"الكمية",notePH:"ملاحظة (اختياري)",addTo:"ضيف للطلب",
+ yourOrder:"طلبك",emptyCart:"لسه مضفتش حاجة",emptyCartB:"اختار من القائمة على الجنب",send:"إرسال الطلب",cur:"ج.م",
+ where:"مكانك",wherePH:"مثال: مكتب ٣١٢",sent:"تم إرسال الطلب",
+ kNew:"جديد",kProg:"بيتحضّر",kDone:"اتسلّم",kStart:"ابدأ التحضير",kDelivered:"اتسلّم ✓",kReject:"رفض",
+ kEmpty:"مفيش طلبات مفتوحة",kEmptyB:"الطلبات الجديدة هتظهر هنا لوحدها",noLogin:"بدون تسجيل دخول",
+ overview:"نظرة عامة",aNews:"الأخبار",aLinks:"اللينكات",aPolicies:"السياسات",aEvents:"الأحداث",aMenu:"قائمة البوفيه",aOrders:"الطلبات",aAccess:"الصلاحيات",sites:"المواقع",
+ add:"إضافة",save:"حفظ",cancel:"إلغاء",
+ tag:"التصنيف",titleAR:"العنوان بالعربي",titleEN:"العنوان بالإنجليزي",bodyAR:"النص بالعربي",bodyEN:"النص بالإنجليزي",
+ author:"الكاتب",date:"التاريخ",icon:"الأيقونة",url:"اللينك",dept:"القسم",version:"الإصدار",
+ place:"المكان",day:"اليوم",month:"الشهر",cat:"التصنيف",price:"السعر",hasSugar:"له اختيارات سكر",avail:"متاح",color:"اللون",
+ branch:"الفرع",allBranches:"كل الفروع",branches:"الفروع",role:"الدور",people:"الناس",
+ whichBranch:"انت في أنهي فرع؟",whichBranchB:"عشان الطلب يروح لبوفيه الفرع الصح.",
+ youAt:"انت في",change:"غيّر",itemsAvail:"صنف متاح",
+ branchNote:"البوفيه بس اللي بيتقسم فروع — باقي البوابة واحدة للشركة كلها.",
+ noPerm:"مالكش صلاحية على القسم ده",
+ permNote:"علّم الخانة تدّي الدور صلاحية تعديل القسم. صف الأدمن مقفول عشان محدش يشيل عن نفسه الوصول بالغلط.",
+ saved:"اتحفظ",deleted:"اتحذف",
+ openOrders:"طلبات مفتوحة",todayOrders:"طلبات النهاردة",newsCount:"خبر منشور",policyCount:"سياسة",
+ reset:"إرجاع الداتا للأصل",resetQ:"متأكد؟ ده هيمسح كل تعديلاتك ويرجّع البيانات الأصلية.",
+ soon:"قريباً",canEdit:"بيعدّل"
+},en:{
+ portal:"Portal",order:"Order from buffet",kitchen:"Buffet screen",admin:"Admin",
+ sitename:"Company Portal",mark:"P",
+ news:"Company news",links:"Quick links",docs:"Internal policies",events:"Upcoming events",
+ viewall:"View all",calendar:"Calendar",
+ bandT:"Need a tea or a coffee?",bandB:"Order from your desk. It lands on the buffet screen in seconds.",bandC:"Order now →",
+ all:"All",hot:"Hot",cold:"Cold",snack:"Snacks",
+ sugar:"Sugar",qty:"Quantity",notePH:"Note (optional)",addTo:"Add to order",
+ yourOrder:"Your order",emptyCart:"Nothing added yet",emptyCartB:"Pick something from the menu",send:"Send order",cur:"EGP",
+ where:"Where you are",wherePH:"e.g. Office 312",sent:"Order sent",
+ kNew:"NEW",kProg:"PREPARING",kDone:"DELIVERED",kStart:"Start preparing",kDelivered:"Delivered ✓",kReject:"Reject",
+ kEmpty:"No open orders",kEmptyB:"New orders appear here on their own",noLogin:"No sign-in needed",
+ overview:"Overview",aNews:"News",aLinks:"Quick links",aPolicies:"Policies",aEvents:"Events",aMenu:"Buffet menu",aOrders:"Orders",aAccess:"Access",sites:"Sites",
+ add:"Add",save:"Save",cancel:"Cancel",
+ tag:"Tag",titleAR:"Title (Arabic)",titleEN:"Title (English)",bodyAR:"Body (Arabic)",bodyEN:"Body (English)",
+ author:"Author",date:"Date",icon:"Icon",url:"Link",dept:"Department",version:"Version",
+ place:"Place",day:"Day",month:"Month",cat:"Category",price:"Price",hasSugar:"Has sugar options",avail:"Available",color:"Colour",
+ branch:"Branch",allBranches:"All branches",branches:"Branches",role:"Role",people:"People",
+ whichBranch:"Which branch are you at?",whichBranchB:"So the order reaches the right buffet.",
+ youAt:"You're at",change:"Change",itemsAvail:"items available",
+ branchNote:"Only the buffet is split by branch — the rest of the portal is company-wide.",
+ noPerm:"You don't have access to this section",
+ permNote:"Tick a box to let that role edit that section. The admin row is locked so nobody can remove their own way back in.",
+ saved:"Saved",deleted:"Deleted",
+ openOrders:"Open orders",todayOrders:"Orders today",newsCount:"Published news",policyCount:"Policies",
+ reset:"Reset to sample data",resetQ:"Sure? This wipes your edits and restores the sample data.",
+ soon:"Coming soon",canEdit:"Can edit"
+}};
+
+/* ═══════ seed ═══════ */
+const SITES=[
+ {id:"kat",ar:"ون قطامية",en:"One Katameya",live:true},
+ {id:"moh",ar:"أوبس هَب — المهندسين",en:"Ops Hub — Mohandeseen",live:true},
+ {id:"mos",ar:"أوبس هَب — مصدق",en:"Ops Hub — Mossadak",live:false}];
+const SECTIONS=["news","links","policies","events","menu","orders","access"];
+const seedAccess={roles:[
+  {id:"admin",ar:"أدمن",en:"Admin",perms:[...SECTIONS]},
+  {id:"hr",ar:"موارد بشرية",en:"HR",perms:["news","policies","events"]},
+  {id:"kitchen",ar:"فريق البوفيه",en:"Buffet team",perms:["orders","menu"]},
+  {id:"viewer",ar:"موظف",en:"Employee",perms:[]}],
+ users:[
+  {id:"u1",ar:"أمين إبراهيم",en:"Ameen Ibrahim",role:"admin",site:"kat"},
+  {id:"u2",ar:"نور حسن",en:"Nour Hassan",role:"hr",site:"kat"},
+  {id:"u3",ar:"كريم فؤاد",en:"Karim Fouad",role:"kitchen",site:"moh"},
+  {id:"u4",ar:"سارة منير",en:"Sara Mounir",role:"viewer",site:"moh"}]};
+const seedContent={
+ news:[
+  {id:"n1",tagAR:"إعلان",tagEN:"Announcement",titleAR:"البوابة الجديدة بقت شغالة",titleEN:"The new portal is live",
+   bodyAR:"كل الأخبار والسياسات والخدمات في مكان واحد. ابدأ من اللينكات السريعة، ولو محتاج حاجة مش موجودة كلّم الـ IT.",
+   bodyEN:"News, policies and services in one place. Start from the quick links, and tell IT if something you need is missing.",author:"Internal Comms",date:"10 Aug"},
+  {id:"n2",tagAR:"موارد بشرية",tagEN:"HR",titleAR:"سياسة العمل الهجين — محدّثة",titleEN:"Hybrid work policy — updated",
+   bodyAR:"يومين من المكتب أسبوعياً، تبدأ من أول سبتمبر.",bodyEN:"Two days in the office each week from 1 September.",author:"HR",date:"7 Aug"},
+  {id:"n3",tagAR:"تشغيل",tagEN:"Ops",titleAR:"فرع مصدق بيفتح الشهر الجاي",titleEN:"The Mossadak branch opens next month",
+   bodyAR:"الفرع التالت بيفتح أول أكتوبر، والبوفيه هيشتغل من أول يوم.",bodyEN:"The third branch opens 1 October, with the buffet running from day one.",author:"Ops",date:"2 Aug"}],
+ links:[
+  {id:"l1",ar:"الإيميل",en:"Email",icon:"✉",url:"#"},
+  {id:"l2",ar:"طلب إجازة",en:"Request leave",icon:"◷",url:"#"},
+  {id:"l3",ar:"طلب دعم فني",en:"IT support ticket",icon:"⚙",url:"#"},
+  {id:"l4",ar:"حجز قاعة اجتماعات",en:"Book a meeting room",icon:"▣",url:"#"},
+  {id:"l5",ar:"دليل الموظفين",en:"Staff directory",icon:"◫",url:"#"},
+  {id:"l6",ar:"الهيكل التنظيمي",en:"Org chart",icon:"⊞",url:"#"}],
+ policies:[
+  {id:"p1",ar:"سياسة الإجازات والأذونات",en:"Leave and time-off policy",dept:"HR",ver:"3.2",date:"10 Aug"},
+  {id:"p2",ar:"سياسة أمن المعلومات",en:"Information security policy",dept:"IT",ver:"2.0",date:"28 Jul"},
+  {id:"p3",ar:"لائحة السفر والمصاريف",en:"Travel and expense rules",dept:"Finance",ver:"1.4",date:"15 Jul"},
+  {id:"p4",ar:"قواعد استخدام أجهزة الشركة",en:"Company device usage rules",dept:"IT",ver:"1.0",date:"3 Jul"},
+  {id:"p5",ar:"مدونة السلوك المهني",en:"Code of professional conduct",dept:"HR",ver:"2.3",date:"20 Jun"}],
+ events:[
+  {id:"e1",ar:"اجتماع كل الموظفين",en:"All-hands meeting",placeAR:"قاعة النيل · ١١:٠٠ ص",placeEN:"Nile Room · 11:00 AM",day:"14",monAR:"أغسطس",monEN:"AUG"},
+  {id:"e2",ar:"ورشة الأمن السيبراني",en:"Cybersecurity workshop",placeAR:"أونلاين · ٢:٠٠ م",placeEN:"Online · 2:00 PM",day:"19",monAR:"أغسطس",monEN:"AUG"},
+  {id:"e3",ar:"يوم التطوع السنوي",en:"Annual volunteering day",placeAR:"خارج المقر · طول اليوم",placeEN:"Offsite · All day",day:"25",monAR:"أغسطس",monEN:"AUG"}]};
+const seedMenu=[
+ {id:"m1",ar:"شاي",en:"Tea",cat:"hot",price:12,sugar:true,avail:true,col:"#B5651D",site:"all"},
+ {id:"m2",ar:"شاي بالنعناع",en:"Mint tea",cat:"hot",price:15,sugar:true,avail:true,col:"#8C9C4A",site:"all"},
+ {id:"m3",ar:"قهوة تركي",en:"Turkish coffee",cat:"hot",price:18,sugar:true,avail:true,col:"#4A2E1C",site:"all"},
+ {id:"m4",ar:"نسكافيه",en:"Instant coffee",cat:"hot",price:20,sugar:true,avail:true,col:"#8A6242",site:"all"},
+ {id:"m5",ar:"كابتشينو",en:"Cappuccino",cat:"hot",price:28,sugar:true,avail:true,col:"#C4A484",site:"kat"},
+ {id:"m6",ar:"ينسون",en:"Anise",cat:"hot",price:12,sugar:true,avail:true,col:"#D9C36B",site:"all"},
+ {id:"m7",ar:"مياه معدنية",en:"Bottled water",cat:"cold",price:8,sugar:false,avail:true,col:"#A9C8F7",site:"all"},
+ {id:"m8",ar:"عصير برتقال",en:"Orange juice",cat:"cold",price:25,sugar:false,avail:true,col:"#F58A5C",site:"all"},
+ {id:"m9",ar:"مياه غازية",en:"Soft drink",cat:"cold",price:18,sugar:false,avail:false,col:"#5A3A2E",site:"all"},
+ {id:"m10",ar:"كرواسون",en:"Croissant",cat:"snack",price:30,sugar:false,avail:true,col:"#D9A961",sq:true,site:"all"},
+ {id:"m11",ar:"بسكويت",en:"Biscuits",cat:"snack",price:10,sugar:false,avail:true,col:"#BE9A6A",sq:true,site:"all"},
+ {id:"m12",ar:"طبق فاكهة",en:"Fruit plate",cat:"snack",price:35,sugar:false,avail:true,col:"#F2A1C1",sq:true,site:"kat"}];
+const seedOrders=[
+ {no:"ORD-247",site:"kat",uAR:"سارة منير",uEN:"Sara Mounir",where:"Office 207",st:"prog",at:Date.now()-7*6e4,lines:[{m:"m1",q:2,s:2},{m:"m7",q:1,s:null}]},
+ {no:"ORD-246",site:"kat",uAR:"محمود عادل",uEN:"Mahmoud Adel",where:"Nile Room",st:"new",at:Date.now()-13*6e4,lines:[{m:"m3",q:4,s:2},{m:"m3",q:1,s:0,note:"كوباية كبيرة"},{m:"m10",q:3,s:null}]},
+ {no:"ORD-245",site:"moh",uAR:"هبة فاروق",uEN:"Heba Farouk",where:"Reception",st:"new",at:Date.now()-2*6e4,lines:[{m:"m4",q:1,s:1},{m:"m8",q:2,s:null}]}];
+
+/* ═══════ state ═══════ */
+let lang="ar",view="portal",me="u1",tab="overview";
+let branch=null,kbranch="kat",admBranch="kat";
+let C={},M=[],O=[],A={},cart=[],openM=null,draft={},cat="all",where="",edit=null,eKind=null,seq=247;
+
+const t=k=>L[lang][k]??k;
+const nm=o=>o?(o[lang]??o.ar??o.en??""):"";
+const num=n=>Number(n).toLocaleString(lang==="ar"?"ar-EG":"en-US");
+const money=n=>num(n)+" "+t("cur");
+const uid=p=>p+Math.random().toString(36).slice(2,7);
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const usr=()=>A.users.find(u=>u.id===me)||A.users[0];
+const role=()=>A.roles.find(r=>r.id===usr().role)||{perms:[]};
+const can=s=>role().perms.includes(s);
+const so=id=>SITES.find(s=>s.id===id)||SITES[0];
+const LIVE=()=>SITES.filter(s=>s.live);
+const inBranch=(x,b)=>!x.site||x.site==="all"||x.site===b;
+const mi=id=>M.find(m=>m.id===id)||{ar:"—",en:"—",price:0};
+const SUG=[{ar:"سادة",en:"None"},{ar:"خفيف",en:"Light"},{ar:"مظبوط",en:"Medium"},{ar:"زيادة",en:"Extra"}];
+const dots=n=>`<span class="dots">${[0,1,2].map(i=>`<i class="${i<n?"on":""}"></i>`).join("")}</span>`;
+const secLbl=s=>t(s==="news"?"aNews":s==="links"?"aLinks":s==="policies"?"aPolicies":s==="events"?"aEvents":s==="menu"?"aMenu":s==="orders"?"aOrders":"aAccess");
+
+function toast(m){const e=$("#toast");e.textContent=m;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2200)}
+const saveC=()=>S.set(K.content,C),saveMn=()=>S.set(K.menu,M),saveO=()=>S.set(K.orders,O),saveA=()=>S.set(K.access,A);
+
+(async()=>{
+  C=await S.get(K.content)||structuredClone(seedContent);
+  M=await S.get(K.menu)||structuredClone(seedMenu);
+  O=await S.get(K.orders)||structuredClone(seedOrders);
+  A=await S.get(K.access)||structuredClone(seedAccess);
+  O.forEach(o=>{const n=+String(o.no).split("-")[1];if(n>seq)seq=n});
+  render();
+  setInterval(()=>{if(view==="kitchen")render()},30000);
+})();
+
+async function reset(){
+  if(!confirm(t("resetQ")))return;
+  C=structuredClone(seedContent);M=structuredClone(seedMenu);O=structuredClone(seedOrders);A=structuredClone(seedAccess);
+  await Promise.all([saveC(),saveMn(),saveO(),saveA()]);toast(t("saved"));render();
+}
+
+/* ═══════ render ═══════ */
+function render(){
+  document.documentElement.lang=lang;
+  document.documentElement.dir=lang==="ar"?"rtl":"ltr";
+  $("#app").innerHTML = view==="kitchen"?vKitchen():shell(view==="portal"?vPortal():view==="order"?vOrder():vAdmin());
+  $("#pbar").innerHTML=pbar();
+}
+function shell(inner){
+  const tabs=[["portal",t("portal")],["order",t("order")],["kitchen",t("kitchen")]];
+  if(role().perms.length)tabs.push(["admin",t("admin")]);
+  return `<div class="topbar">
+    <div class="brand"><div class="logomark"><span>${t("mark")}</span></div><b>${t("sitename")}</b></div>
+    <nav class="topnav">${tabs.map(([k,v])=>`<button class="${view===k?"on":""}" onclick="go('${k}')">${v}</button>`).join("")}
+      <span class="langsw"><button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
+      <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span></nav></div>
+    <div class="wrap">${inner}</div>`;
+}
+function pbar(){
+  return `<label>view as</label><select onchange="setMe(this.value)">${A.users.map(u=>
+      `<option value="${u.id}" ${u.id===me?"selected":""}>${esc(nm(u))} — ${esc(nm(A.roles.find(r=>r.id===u.role)))}</option>`).join("")}</select>
+    <label>screen</label><select onchange="go(this.value)">
+      ${["portal","order","kitchen","admin"].map(v=>`<option value="${v}" ${view===v?"selected":""}>${t(v)}</option>`).join("")}</select>`;
+}
+function go(v){view=v;edit=null;render();scrollTo({top:0,behavior:"instant"})}
+function setLang(l){lang=l;render()}
+function setBranch(b){if(!so(b).live)return;branch=b;cart=[];render()}
+function setMe(u){me=u;if(view==="admin"&&!role().perms.length)view="portal";
+  if(!can(TABS.find(x=>x[0]===tab)?.[3]||"")&&tab!=="overview")tab="overview";render()}
+
+/* ═══════ portal ═══════ */
+function vPortal(){
+  const news=C.news,lead=news[0],rest=news.slice(1,4);
+  const links=C.links,pol=C.policies,ev=C.events;
+  return `<div class="eyebrow">${t("news")}</div>
+  ${lead?`<div class="hero">
+    <div class="hero-main"><span class="pill">${esc(lang==="ar"?lead.tagAR:lead.tagEN)}</span>
+      <h2>${esc(lang==="ar"?lead.titleAR:lead.titleEN)}</h2>
+      <p>${esc(lang==="ar"?lead.bodyAR:lead.bodyEN)}</p>
+      <div class="by">${esc(lead.author)} · <span class="mono">${esc(lead.date)}</span></div></div>
+    <div class="hero-side">${rest.map(n=>`<button><h4>${esc(lang==="ar"?n.titleAR:n.titleEN)}</h4>
+      <span>${esc(lang==="ar"?n.tagAR:n.tagEN)} · ${esc(n.date)}</span></button>`).join("")||
+      `<div style="color:#A5A2CB;font-size:12.5px;text-align:center">—</div>`}</div></div>`
+   :`<div class="card empty"><b>${t("news")}</b>—</div>`}
+
+  <div class="eyebrow" style="margin-top:26px">${t("links")}</div>
+  <div class="qgrid"><button class="qtile feat" onclick="go('order')"><span class="qicon">☕</span>${t("order")}</button>
+    ${links.map(l=>`<button class="qtile"><span class="qicon">${esc(l.icon)}</span>${esc(nm(l))}</button>`).join("")}</div>
+
+  <div class="eyebrow" style="margin-top:26px">${t("docs")} · ${t("events")}</div>
+  <div class="twocol">
+    <div class="card"><div class="ph"><h3>${t("docs")}</h3><a href="#">${t("viewall")}</a></div>
+      ${pol.length?pol.map(p=>`<div class="row"><span class="dicon"></span>
+        <div><b>${esc(nm(p))}</b><div class="sub">${esc(p.dept)}</div></div>
+        <div class="meta"><span class="mono">v${esc(p.ver)}</span><br>${esc(p.date)}</div></div>`).join("")
+       :`<div class="empty"><b>—</b>${t("docs")}</div>`}</div>
+    <div class="card"><div class="ph"><h3>${t("events")}</h3><a href="#">${t("calendar")}</a></div>
+      ${ev.length?ev.map(e=>`<div class="row">
+        <div class="datechip"><div class="m">${esc(lang==="ar"?e.monAR:e.monEN)}</div><div class="d mono">${esc(e.day)}</div></div>
+        <div><b>${esc(nm(e))}</b><div class="sub">${esc(lang==="ar"?e.placeAR:e.placeEN)}</div></div></div>`).join("")
+       :`<div class="empty"><b>—</b>${t("events")}</div>`}</div></div>
+
+  <div class="band"><div><h2>${t("bandT")}</h2><p>${t("bandB")}</p></div>
+    <button class="btn" onclick="go('order')">${t("bandC")}</button></div>`;
+}
+
+/* ═══════ order ═══════ */
+function vOrder(){
+  if(!branch)return vPickBranch();
+  const list=M.filter(m=>inBranch(m,branch)&&m.avail&&(cat==="all"||m.cat===cat));
+  const tot=cart.reduce((a,c)=>a+mi(c.m).price*c.q,0);
+  return `<div class="eyebrow">${t("order")}</div>
+  <div class="atbr"><span>${t("youAt")} <b>${esc(nm(so(branch)))}</b></span>
+    <button onclick="branch=null;cart=[];render()">${t("change")}</button></div>
+  <div class="ordwrap"><div>
+    <div class="cats">${["all","hot","cold","snack"].map(k=>
+      `<button class="${cat===k?"on":""}" onclick="setCat('${k}')">${t(k)}</button>`).join("")}</div>
+    <div class="mgrid">${list.map(m=>{const o=openM===m.id,d=draft[m.id]||{q:1,s:2,note:""};
+      return `<div class="mitem ${o?"open":""}">
+        <button class="mrow" onclick="tog('${m.id}')">
+          <span class="swatch ${m.sq?"sq":""}"><i style="background:${esc(m.col)};${m.sq?"height:100%":""}"></i></span>
+          <span class="nm"><b>${esc(nm(m))}</b><span>${t(m.cat)}</span></span>
+          <span class="price">${money(m.price)}</span><span class="plus">+</span></button>
+        <div class="opts">
+          ${m.sugar?`<div class="optlbl">${t("sugar")}</div><div class="sugars">${SUG.map((s,i)=>
+            `<button class="sugar ${d.s===i?"on":""}" onclick="setSug('${m.id}',${i})">${dots(i)}<em>${esc(nm(s))}</em></button>`).join("")}</div>`:""}
+          <div class="optlbl">${t("qty")}</div>
+          <div class="qtyrow"><div class="stepper">
+            <button onclick="stp('${m.id}',-1)">−</button><span class="v">${num(d.q)}</span><button onclick="stp('${m.id}',1)">+</button></div>
+            <input class="inp" placeholder="${t("notePH")}" value="${esc(d.note)}" oninput="setNote('${m.id}',this.value)"></div>
+          <button class="addbtn" onclick="addCart('${m.id}')">${t("addTo")} · ${money(m.price*d.q)}</button>
+        </div></div>`}).join("")||`<div class="card empty" style="grid-column:1/-1"><b>—</b>${t("aMenu")}</div>`}</div>
+   </div>
+   <div class="card cart"><div class="ph"><h3>${t("yourOrder")}</h3></div>
+     ${cart.length?cart.map((c,i)=>{const m=mi(c.m);return `<div class="cline">
+        <span class="q">${num(c.q)}×</span>
+        <span style="flex:1">${esc(nm(m))}${c.s!=null?` <span style="color:var(--muted);font-size:11.5px">· ${esc(nm(SUG[c.s]))}</span>`:""}
+          ${c.note?`<div style="font-size:11px;color:var(--coral-ink)">${esc(c.note)}</div>`:""}</span>
+        <span class="mono" style="font-size:12px;color:var(--muted)">${num(m.price*c.q)}</span>
+        <button class="x" onclick="rmCart(${i})">×</button></div>`}).join("")
+      :`<div class="empty"><b>${t("emptyCart")}</b>${t("emptyCartB")}</div>`}
+     <div class="cfoot"><div class="fld"><label>${t("where")}</label>
+        <input class="inp" placeholder="${t("wherePH")}" value="${esc(where)}" oninput="where=this.value"></div>
+       <div class="ctot"><b>${t("yourOrder")}</b><span class="mono">${money(tot)}</span></div>
+       <button class="btn" style="width:100%" ${cart.length?"":"disabled"} onclick="submitOrder()">${t("send")}</button>
+     </div></div></div>`;
+}
+function vPickBranch(){
+  return `<div class="eyebrow">${t("order")}</div>
+  <div class="pickwrap"><h2>${t("whichBranch")}</h2><p>${t("whichBranchB")}</p>
+    <div class="pickgrid">${SITES.map(s=>`
+      <button class="pick ${s.live?"":"off"}" ${s.live?`onclick="setBranch('${s.id}')"`:"disabled"}>
+        <span class="pdot"></span>
+        <b>${esc(nm(s))}</b>
+        <span class="psub">${s.live?num(M.filter(m=>inBranch(m,s.id)&&m.avail).length)+" "+t("itemsAvail"):t("soon")}</span>
+      </button>`).join("")}</div></div>`;
+}
+function setCat(c){cat=c;openM=null;render()}
+function tog(id){openM=openM===id?null:id;if(openM&&!draft[id])draft[id]={q:1,s:2,note:""};render()}
+function setSug(id,s){draft[id].s=s;render()}
+function stp(id,d){draft[id].q=Math.max(1,Math.min(30,draft[id].q+d));render()}
+function setNote(id,v){draft[id].note=v}
+function addCart(id){const m=mi(id),d=draft[id];
+  cart.push({m:id,q:d.q,s:m.sugar?d.s:null,note:(d.note||"").trim()});
+  draft[id]={q:1,s:2,note:""};openM=null;render()}
+function rmCart(i){cart.splice(i,1);render()}
+async function submitOrder(){
+  const u=usr();
+  O.unshift({no:"ORD-"+(++seq),site:branch,uAR:u.ar,uEN:u.en,where:where||"—",st:"new",at:Date.now(),
+    lines:cart.map(c=>({m:c.m,q:c.q,s:c.s,note:c.note}))});
+  cart=[];await saveO();toast(t("sent"));kbranch=branch;go("kitchen");
+}
+
+/* ═══════ kitchen — no sign-in ═══════ */
+function vKitchen(){
+  const live=O.filter(o=>o.site===kbranch&&o.st!=="done");
+  const done=O.filter(o=>o.site===kbranch&&o.st==="done"&&Date.now()-o.at<864e5).length;
+  const d=new Date(),clk=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  return `<div class="kwrap"><div class="khead">
+     <div><h2>${t("kitchen")}</h2>
+       <div class="sub"><select class="kbr" onchange="kbranch=this.value;render()">${LIVE().map(s=>
+         `<option value="${s.id}" ${s.id===kbranch?"selected":""}>${esc(nm(s))}</option>`).join("")}</select>
+         AUTO-REFRESH · 30s <span class="nologin">${t("noLogin")}</span></div></div>
+     <div class="kstats">
+       <div class="kstat n"><b>${num(live.filter(o=>o.st==="new").length)}</b><span>${t("kNew")}</span></div>
+       <div class="kstat p"><b>${num(live.filter(o=>o.st==="prog").length)}</b><span>${t("kProg")}</span></div>
+       <div class="kstat"><b style="color:#7F93A2">${num(done)}</b><span>${t("kDone")}</span></div>
+       <div class="kclock">${clk}</div></div></div>
+   <div class="kboard">${live.length?live.map(o=>{
+     const m=Math.floor((Date.now()-o.at)/6e4),late=m>=10;
+     return `<div class="ticket ${o.st==="prog"?"prog":""} ${late?"late":""}">
+       <div class="thd"><div class="t1"><span class="tno">${esc(o.no)}</span>
+         <span class="timer">${String(m).padStart(2,"0")}:00${late?" ⚠":""}</span></div>
+         <h4>${esc(lang==="ar"?o.uAR:o.uEN)}</h4><div class="where">${esc(o.where)}</div></div>
+       ${o.lines.map(l=>`<div class="tl"><span class="qn">${num(l.q)}×</span>
+         <span><b>${esc(nm(mi(l.m)))}</b>
+         ${l.s!=null?`<span class="sug">${dots(l.s)}<em>${esc(nm(SUG[l.s]))}</em></span>`:""}
+         ${l.note?`<div class="note">✎ ${esc(l.note)}</div>`:""}</span></div>`).join("")}
+       <div class="tft">${o.st==="new"
+         ?`<button class="b-s" onclick="setSt('${o.no}','prog')">${t("kStart")}</button>
+           <button class="b-r" onclick="setSt('${o.no}','done')">${t("kReject")}</button>`
+         :`<button class="b-d" onclick="setSt('${o.no}','done')">${t("kDelivered")}</button>`}</div></div>`}).join("")
+    :`<div class="kempty"><b>${t("kEmpty")}</b>${t("kEmptyB")}</div>`}</div></div>`;
+}
+async function setSt(no,st){const o=O.find(x=>x.no===no);if(!o)return;o.st=st;await saveO();render()}
+
+/* ═══════ admin ═══════ */
+const TABS=[["overview","overview","▦",null],["news","aNews","✦","news"],["links","aLinks","◫","links"],
+ ["policies","aPolicies","▤","policies"],["events","aEvents","▣","events"],["menu","aMenu","☕","menu"],
+ ["access","aAccess","⚿","access"]];
+function vAdmin(){
+  const cur=TABS.find(x=>x[0]===tab)||TABS[0],ok=!cur[3]||can(cur[3]);
+  return `<div class="eyebrow">${t("admin")} · ${esc(nm(usr()))} — ${esc(nm(role()))}</div>
+  <div class="adm"><div class="admnav">${TABS.map(([k,l,ic,p])=>{
+      const allow=!p||can(p);
+      return `<button class="${tab===k?"on":""} ${allow?"":"locked"}" ${allow?`onclick="setTab('${k}')"`:"disabled"}>
+        <span class="ic">${ic}</span>${t(l)}${allow?"":" 🔒"}</button>`}).join("")}
+      <button onclick="reset()" style="color:var(--coral-ink);margin-top:6px"><span class="ic">↺</span>${t("reset")}</button></div>
+    <div>${!ok?`<div class="card empty"><b>🔒 ${t("noPerm")}</b>${esc(nm(role()))}</div>`
+      :tab==="overview"?aOver():tab==="access"?aAccess():aList(tab)}</div></div>`;
+}
+function setTab(k){tab=k;edit=null;render()}
+function aOver(){
+  const live=O.filter(o=>o.st!=="done").length;
+  const today=O.filter(o=>Date.now()-o.at<864e5).length;
+  return `<div class="sec"><div class="sechd"><div><h3>${t("overview")}</h3>
+    <p>${t("canEdit")}: ${role().perms.map(secLbl).join(" · ")||"—"}</p></div></div>
+    <div class="stat4">
+      <div class="sbox"><b style="color:var(--coral-2)">${num(live)}</b><span>${t("openOrders")}</span></div>
+      <div class="sbox"><b style="color:var(--peri-ink)">${num(today)}</b><span>${t("todayOrders")}</span></div>
+      <div class="sbox"><b>${num(C.news.length)}</b><span>${t("newsCount")}</span></div>
+      <div class="sbox"><b>${num(C.policies.length)}</b><span>${t("policyCount")}</span></div></div></div>
+  <div class="sec"><div class="sechd"><div><h3>${t("branches")}</h3><p>${t("branchNote")}</p></div></div>
+    ${SITES.map(s=>{const op=O.filter(o=>o.site===s.id&&o.st!=="done").length;
+      return `<div class="item"><div class="body"><b>${esc(nm(s))}</b>
+        <p>${s.live?num(M.filter(m=>inBranch(m,s.id)&&m.avail).length)+" "+t("itemsAvail")+" · "+num(op)+" "+t("openOrders"):t("soon")}</p></div>
+        <span class="pill ${s.live?"p":""}">${s.live?"live":t("soon")}</span></div>`}).join("")}</div>`;
+}
+const FIELDS={
+ news:[["tagAR","tag"],["tagEN","tag"],["titleAR","titleAR"],["titleEN","titleEN"],["bodyAR","bodyAR",1],["bodyEN","bodyEN",1],["author","author"],["date","date"]],
+ links:[["ar","titleAR"],["en","titleEN"],["icon","icon"],["url","url"]],
+ policies:[["ar","titleAR"],["en","titleEN"],["dept","dept"],["ver","version"],["date","date"]],
+ events:[["ar","titleAR"],["en","titleEN"],["placeAR","place"],["placeEN","place"],["day","day"],["monAR","month"],["monEN","month"]],
+ menu:[["ar","titleAR"],["en","titleEN"],["price","price"],["col","color"]]};
+function lbl(k,x){
+  if(k==="news")return[lang==="ar"?x.titleAR:x.titleEN,(lang==="ar"?x.tagAR:x.tagEN)+" · "+x.date];
+  if(k==="links")return[nm(x),x.icon+"  "+x.url];
+  if(k==="policies")return[nm(x),x.dept+" · v"+x.ver+" · "+x.date];
+  if(k==="events")return[nm(x),(lang==="ar"?x.placeAR:x.placeEN)+" · "+x.day];
+  if(k==="menu")return[nm(x),t(x.cat)+" · "+money(x.price)+(x.avail?"":" · ✕")];
+  return[nm(x),""];
+}
+function aList(k){
+  const arr=k==="menu"?M:C[k];
+  return `<div class="sec"><div class="sechd"><div><h3>${secLbl(k)}</h3><p>${num(arr.length)}</p></div>
+      <button class="btn sm" onclick="startEdit('${k}',null)">+ ${t("add")}</button></div>
+    ${edit&&eKind===k?form(k):""}
+    ${arr.length?arr.map(x=>{const[a,b]=lbl(k,x);return `<div class="item">
+        ${k==="menu"?`<span class="swatch ${x.sq?"sq":""}" style="width:30px;height:30px"><i style="background:${esc(x.col)};${x.sq?"height:100%":""}"></i></span>`:""}
+        <div class="body"><b>${esc(a)}</b><p>${esc(b)}</p></div>
+        ${k==="menu"?`<span class="pill ${x.site==="all"?"":"o"}">${x.site==="all"?t("allBranches"):esc(nm(so(x.site)))}</span>`:""}
+        <div class="acts">${k==="menu"?`<button class="iact" title="${t("avail")}" onclick="togAvail('${x.id}')">${x.avail?"◉":"○"}</button>`:""}
+          <button class="iact" onclick="startEdit('${k}','${x.id}')">✎</button>
+          <button class="iact del" onclick="delItem('${k}','${x.id}')">🗑</button></div></div>`}).join("")
+     :`<div class="empty"><b>—</b>${t("add")}</div>`}</div>`;
+}
+function form(k){
+  const d=edit;
+  return `<div class="form"><div class="fgrid">
+    ${FIELDS[k].map(([key,lab,multi])=>`<div class="fld ${multi?"full":""}">
+      <label>${t(lab)} <span class="mono" style="opacity:.45">${key}</span></label>
+      ${multi?`<textarea class="inp" oninput="edit['${key}']=this.value">${esc(d[key]||"")}</textarea>`
+      :`<input class="inp" value="${esc(d[key]??"")}" oninput="edit['${key}']=this.value">`}</div>`).join("")}
+    ${k==="menu"?`<div class="fld"><label>${t("branch")}</label><select class="inp" onchange="edit.site=this.value">
+        <option value="all" ${d.site==="all"?"selected":""}>${t("allBranches")}</option>
+        ${LIVE().map(s=>`<option value="${s.id}" ${d.site===s.id?"selected":""}>${esc(nm(s))}</option>`).join("")}</select></div>
+      <div class="fld"><label>${t("cat")}</label><select class="inp" onchange="edit.cat=this.value">
+        ${["hot","cold","snack"].map(c=>`<option value="${c}" ${d.cat===c?"selected":""}>${t(c)}</option>`).join("")}</select></div>
+      <div class="fld"><label>${t("hasSugar")}</label><select class="inp" onchange="edit.sugar=this.value==='1'">
+        <option value="1" ${d.sugar?"selected":""}>✓</option><option value="0" ${d.sugar?"":"selected"}>✕</option></select></div>`:""}
+    </div>
+    <div class="formacts"><button class="btn sm" onclick="saveItem('${k}')">${t("save")}</button>
+      <button class="btn ghost sm" onclick="cancelEdit()">${t("cancel")}</button></div></div>`;
+}
+function startEdit(k,id){
+  const arr=k==="menu"?M:C[k];
+  edit=id?structuredClone(arr.find(x=>x.id===id))
+    :(k==="menu"?{id:uid("m"),site:"all",cat:"hot",price:10,sugar:false,avail:true,col:"#B5651D"}:{id:uid(k[0])});
+  eKind=k;render();
+}
+function cancelEdit(){edit=null;render()}
+async function saveItem(k){
+  if(k==="menu")edit.price=Number(edit.price)||0;
+  const arr=k==="menu"?M:C[k],i=arr.findIndex(x=>x.id===edit.id);
+  i>-1?arr[i]=edit:arr.unshift(edit);
+  k==="menu"?await saveMn():await saveC();
+  edit=null;toast(t("saved"));render();
+}
+async function delItem(k,id){
+  const arr=k==="menu"?M:C[k];arr.splice(arr.findIndex(x=>x.id===id),1);
+  k==="menu"?await saveMn():await saveC();toast(t("deleted"));render();
+}
+async function togAvail(id){const m=M.find(x=>x.id===id);m.avail=!m.avail;await saveMn();render()}
+function aAccess(){
+  return `<div class="sec"><div class="sechd"><div><h3>${t("aAccess")}</h3><p>${t("role")} × ${t("canEdit")}</p></div></div>
+    <div class="note">${t("permNote")}</div>
+    <div class="mscroll"><table class="matrix"><thead><tr><th>${t("role")}</th>
+      ${SECTIONS.map(s=>`<th>${secLbl(s)}</th>`).join("")}</tr></thead><tbody>
+      ${A.roles.map(r=>`<tr><td>${esc(nm(r))}</td>${SECTIONS.map(s=>{
+        const on=r.perms.includes(s),ro=r.id==="admin";
+        return `<td><button class="chk ${on?"on":""} ${ro?"ro":""}" ${ro?"disabled":`onclick="togPerm('${r.id}','${s}')"`}>✓</button></td>`}).join("")}</tr>`).join("")}
+      </tbody></table></div></div>
+  <div class="sec"><div class="sechd"><div><h3>${t("people")}</h3><p>${num(A.users.length)}</p></div></div>
+    ${A.users.map(u=>{const cls=u.role==="admin"?"c":u.role==="hr"?"o":"";
+      return `<div class="item"><span class="av ${cls}">${esc(nm(u)[0])}</span>
+        <div class="body"><b>${esc(nm(u))}</b><p>${esc(nm(so(u.site)))}</p></div>
+        <select class="inp" style="width:auto" onchange="setRole('${u.id}',this.value)">
+          ${A.roles.map(x=>`<option value="${x.id}" ${x.id===u.role?"selected":""}>${esc(nm(x))}</option>`).join("")}</select></div>`}).join("")}</div>`;
+}
+async function togPerm(rid,s){
+  const r=A.roles.find(x=>x.id===rid),i=r.perms.indexOf(s);
+  i>-1?r.perms.splice(i,1):r.perms.push(s);await saveA();render();
+}
+async function setRole(id,rid){
+  A.users.find(u=>u.id===id).role=rid;await saveA();
+  if(id===me){if(!role().perms.length&&view==="admin")view="portal";
+    if(tab!=="overview"&&!can(TABS.find(x=>x[0]===tab)?.[3]||""))tab="overview";}
+  render();
+}
+</script>
+</body>
+</html>
