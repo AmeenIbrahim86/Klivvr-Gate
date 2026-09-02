@@ -23,6 +23,10 @@ const L = { ar: {
  where:"مكانك",wherePH:"مثال: مكتب ٣١٢",
  overview:"نظرة عامة",aNews:"الأخبار",aLinks:"اللينكات",aPolicies:"السياسات",aEvents:"الأحداث",aMenu:"قائمة البوفيه",aAccess:"الصلاحيات",sites:"المواقع",
  orgChart:"الهيكل التنظيمي",orgSync:"مزامنة من Entra ID",orgSyncing:"بيزامن…",orgSynced:"اتزامن",orgEmpty:"لسه مفيش داتا — دوس مزامنة من Entra ID",
+ gallery:"معرض الصور",galleryEmpty:"لسه مفيش صور",uploadPhoto:"رفع صورة",uploading:"بيترفع…",
+ captionPH:"وصف الصورة (اختياري)",galleryAdded:"اتضافت الصورة",galleryDeleted:"اتمسحت الصورة",
+ galleryConfirmDel:"متأكد إنك عايز تمسح الصورة دي؟",imageUploading:"بيترفع الصورة…",imageUploaded:"اتحطت",
+ imageRemove:"شيل الصورة",
  orgSearchPH:"دوّر بالاسم…",orgSearchBtn:"بحث",orgNotFound:"ملقيتش حد بالاسم ده",
  add:"إضافة",save:"حفظ",cancel:"إلغاء",
  tag:"التصنيف",titleAR:"العنوان بالعربي",titleEN:"العنوان بالإنجليزي",bodyAR:"النص بالعربي",bodyEN:"النص بالإنجليزي",
@@ -60,6 +64,10 @@ const L = { ar: {
  where:"Where you are",wherePH:"e.g. Office 312",
  overview:"Overview",aNews:"News",aLinks:"Quick links",aPolicies:"Policies",aEvents:"Events",aMenu:"Buffet menu",aAccess:"Access",sites:"Sites",
  orgChart:"Org chart",orgSync:"Sync from Entra ID",orgSyncing:"Syncing…",orgSynced:"Synced",orgEmpty:"No data yet — click sync from Entra ID",
+ gallery:"Gallery",galleryEmpty:"No photos yet",uploadPhoto:"Upload photo",uploading:"Uploading…",
+ captionPH:"Photo caption (optional)",galleryAdded:"Photo added",galleryDeleted:"Photo deleted",
+ galleryConfirmDel:"Delete this photo?",imageUploading:"Uploading photo…",imageUploaded:"Added",
+ imageRemove:"Remove photo",
  orgSearchPH:"Search by name…",orgSearchBtn:"Search",orgNotFound:"No one found with that name",
  add:"Add",save:"Save",cancel:"Cancel",
  tag:"Tag",titleAR:"Title (Arabic)",titleEN:"Title (English)",bodyAR:"Body (Arabic)",bodyEN:"Body (English)",
@@ -85,7 +93,7 @@ const L = { ar: {
  noBranch:"You're not assigned to a branch yet — ask an admin to set one.",
 }};
 
-const SECTIONS = ["news","links","policies","events","menu","orders","access"];
+const SECTIONS = ["news","links","policies","events","menu","orders","access","gallery"];
 const CATS = [
  {k:"all",ar:"الكل",en:"All"},
  {k:"snacks",ar:"كيك وحلويات",en:"Snack Cakes"},
@@ -107,7 +115,7 @@ const FIELDS = {
 
 /* ═══════════════ state ═══════════════ */
 let lang="en", authed=false, view="portal", tab="overview";
-let myProfile=null, SITES=[], C={news:[],links:[],policies:[],events:[]}, M=[], O=[], A={roles:[],users:[]}, ORG=[];
+let myProfile=null, SITES=[], C={news:[],links:[],policies:[],events:[]}, M=[], O=[], A={roles:[],users:[]}, ORG=[], GALLERY=[];
 let branch=null, paying=false, lastOrderNo="";
 let cart=[], openM=null, draft={}, cat="all", where="", edit=null, eKind=null;
 
@@ -125,7 +133,7 @@ const inBranch=(x,b)=>!x.site||x.site==="all"||x.site===b;
 const mi=id=>M.find(m=>m.id===id)||{ar:"—",en:"—",price:0};
 const catLabel=k=>{const c=CATS.find(x=>x.k===k);return c?nm(c):k};
 const dots=n=>`<span class="dots">${[0,1,2].map(i=>`<i class="${i<n?"on":""}"></i>`).join("")}</span>`;
-const secLbl=s=>t(s==="news"?"aNews":s==="links"?"aLinks":s==="policies"?"aPolicies":s==="events"?"aEvents":s==="menu"?"aMenu":s==="orders"?"aOrders":"aAccess");
+const secLbl=s=>t(s==="news"?"aNews":s==="links"?"aLinks":s==="policies"?"aPolicies":s==="events"?"aEvents":s==="menu"?"aMenu":s==="orders"?"aOrders":s==="gallery"?"gallery":"aAccess");
 
 function toast(m){const e=$("#toast");if(!e)return;e.textContent=m;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2200)}
 function fail(e){console.error(e);toast(t("errGeneric"))}
@@ -136,13 +144,13 @@ async function loadEverything(){
   const results = await Promise.allSettled([
     api.listBranches(), api.loadRoles(), api.list("news"), api.list("links"),
     api.list("policies"), api.list("events"), api.list("menu"),
-    api.listProfiles(), api.listOrders(), api.listOrgPeople()
+    api.listProfiles(), api.listOrders(), api.listOrgPeople(), api.listGallery()
   ]);
   results.forEach((r,i)=>{ if(r.status==="rejected") console.error("load section", i, "failed:", r.reason); });
   const val=(i,fallback)=>results[i].status==="fulfilled"?results[i].value:fallback;
   SITES=val(0,[]); A={roles:val(1,[]),users:val(7,[])};
   C={news:val(2,[]),links:val(3,[]),policies:val(4,[]),events:val(5,[])};
-  M=val(6,[]); O=val(8,[]); ORG=val(9,[]);
+  M=val(6,[]); O=val(8,[]); ORG=val(9,[]); GALLERY=val(10,[]);
 }
 async function start(session){
   if(!session){ authed=false; myProfile=null; renderSignIn(); return; }
@@ -166,7 +174,8 @@ function render(){
     view==="confirmed" ? vConfirmed() :
     view==="portal" ? vPortal() :
     view==="order" ? vOrder() :
-    view==="org" ? vOrg() : vAdmin()
+    view==="org" ? vOrg() :
+    view==="gallery" ? vGallery() : vAdmin()
   );
 }
 function renderSignIn(){
@@ -194,7 +203,7 @@ function renderError(e){
   </div></div>`;
 }
 function shell(inner){
-  const tabs=[["portal",t("portal")],["order",t("order")],["org",t("orgChart")]];
+  const tabs=[["portal",t("portal")],["order",t("order")],["org",t("orgChart")],["gallery",t("gallery")]];
   if(role().perms.length)tabs.push(["admin",t("admin")]);
   return `<div class="topbar">
     <div class="brand"><img src="/klivvr-icon.png" alt="Klivvr" class="logomark"><b>${t("sitename")}</b></div>
@@ -432,6 +441,43 @@ async function syncOrg(){
   }catch(e){ fail(e); render(); }
 }
 
+/* ═══════════════ معرض الصور ═══════════════ */
+function vGallery(){
+  return `<div class="eyebrow">${t("gallery")}</div>
+    ${can("gallery")?`<div class="gal-upload">
+      <label class="btn ghost sm gal-picklabel">${t("uploadPhoto")}
+        <input type="file" accept="image/*" id="galFile" style="display:none" onchange="uploadGalleryPhoto(this)"></label>
+      <input class="inp" id="galCaption" placeholder="${t("captionPH")}" style="max-width:260px">
+    </div>`:""}
+    ${GALLERY.length?`<div class="gal-grid">${GALLERY.map(g=>`<div class="gal-item">
+        <img src="${esc(g.url)}" loading="lazy">
+        ${g.caption?`<div class="gal-cap">${esc(g.caption)}</div>`:""}
+        ${can("gallery")?`<button class="gal-del" onclick="delGalleryPhoto('${esc(g.id)}')" title="${t("imageRemove")}">🗑</button>`:""}
+      </div>`).join("")}</div>`
+      :`<div class="card empty"><b>—</b>${t("galleryEmpty")}</div>`}`;
+}
+async function uploadGalleryPhoto(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const caption = $("#galCaption")?.value.trim() || "";
+  toast(t("imageUploading"));
+  try{
+    const url = await api.uploadImage(file);
+    const row = await api.addGalleryPhoto(url, caption);
+    GALLERY.unshift(row);
+    toast(t("galleryAdded")); render();
+  }catch(e){ fail(e); }
+  finally{ input.value=""; }
+}
+async function delGalleryPhoto(id){
+  if(!confirm(t("galleryConfirmDel"))) return;
+  try{
+    await api.removeGalleryPhoto(id);
+    GALLERY = GALLERY.filter(g=>g.id!==id);
+    toast(t("galleryDeleted")); render();
+  }catch(e){ fail(e); }
+}
+
 /* ═══════════════ admin ═══════════════ */
 function vAdmin(){
   const cur=TABS.find(x=>x[0]===tab)||TABS[0],ok=!cur[3]||can(cur[3]);
@@ -484,6 +530,7 @@ function aList(k){
     ${edit&&eKind===k?form(k):""}
     ${arr.length?arr.map(x=>{const[a,b]=lbl(k,x);return `<div class="item">
         ${k==="menu"?`<span class="swatch ${x.sq?"sq":""}" style="width:30px;height:30px"><i style="background:${esc(x.col)};${x.sq?"height:100%":""}"></i></span>`:""}
+        ${(k==="news"||k==="events")&&x.image?`<img src="${esc(x.image)}" style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0">`:""}
         <div class="body"><b>${esc(a)}</b><p>${esc(b)}</p></div>
         ${k==="menu"?`<span class="pill ${x.site==="all"?"":"o"}">${x.site==="all"?t("allBranches"):esc(nm(so(x.site)))}</span>`:""}
         <div class="acts">${k==="menu"?`<button class="iact" title="${t("avail")}" onclick="togAvail('${x.id}')">${x.avail?"◉":"○"}</button>`:""}
@@ -497,7 +544,13 @@ function form(k){
     ${FIELDS[k].map(([key,lab,multi])=>`<div class="fld ${multi||key==="image"?"full":""}">
       <label>${t(lab)} <span class="mono" style="opacity:.45">${key}</span></label>
       ${multi?`<textarea class="inp" oninput="setEditField('${key}',this.value)">${esc(d[key]||"")}</textarea>`
-      :`<input class="inp" placeholder="${key==="image"?t("imageHint"):""}" value="${esc(d[key]??"")}" oninput="setEditField('${key}',this.value)">`}</div>`).join("")}
+      :key==="image"?`<div class="img-edit">
+          ${d.image?`<img src="${esc(d.image)}" class="img-edit-preview">
+            <button class="iact del" type="button" onclick="removeEditImage()">🗑</button>`
+          :`<label class="btn ghost sm gal-picklabel">${t("uploadPhoto")}
+              <input type="file" accept="image/*" style="display:none" onchange="uploadEditImage(this)"></label>`}
+        </div>`
+      :`<input class="inp" value="${esc(d[key]??"")}" oninput="setEditField('${key}',this.value)">`}</div>`).join("")}
     ${k==="menu"?`<div class="fld"><label>${t("branch")}</label><select class="inp" onchange="setEditSite(this.value)">
         <option value="all" ${d.site==="all"?"selected":""}>${t("allBranches")}</option>
         ${LIVE().map(s=>`<option value="${s.id}" ${d.site===s.id?"selected":""}>${esc(nm(s))}</option>`).join("")}</select></div>
@@ -523,6 +576,17 @@ function setEditSite(v){edit.site=v}
 function setEditCat(v){edit.cat=v}
 function setEditSugar(v){edit.sugar=(v==="1")}
 function setEditMilk(v){edit.milk=(v==="1")}
+async function uploadEditImage(input){
+  const file = input.files && input.files[0];
+  if(!file || !edit) return;
+  toast(t("imageUploading"));
+  try{
+    const url = await api.uploadImage(file);
+    edit.image = url;
+    toast(t("imageUploaded")); render();
+  }catch(e){ fail(e); }
+}
+function removeEditImage(){ if(edit){ edit.image=null; render(); } }
 async function saveItem(k){
   if(k==="menu")edit.price=Number(edit.price)||0;
   try{
@@ -608,5 +672,5 @@ Object.assign(window, {
   tog, setSug, setMilk, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder,
   setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk,
   saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg, saveKioskPw,
-  toggleOrgNode, orgSearch,
+  toggleOrgNode, orgSearch, uploadGalleryPhoto, delGalleryPhoto, uploadEditImage, removeEditImage,
 });

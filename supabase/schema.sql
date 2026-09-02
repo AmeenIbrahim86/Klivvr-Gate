@@ -31,12 +31,12 @@ insert into roles values
 create table role_permissions (
   role_id text references roles(id) on delete cascade,
   section text not null check (section in
-    ('news','links','policies','events','menu','orders','access')),
+    ('news','links','policies','events','menu','orders','access','gallery')),
   primary key (role_id, section)
 );
 insert into role_permissions values
   ('admin','news'),('admin','links'),('admin','policies'),('admin','events'),
-  ('admin','menu'),('admin','orders'),('admin','access'),
+  ('admin','menu'),('admin','orders'),('admin','access'),('admin','gallery'),
   ('hr','news'),('hr','policies'),('hr','events'),
   ('kitchen','orders'),('kitchen','menu');
 
@@ -205,6 +205,15 @@ create table org_people (
 
 create sequence order_seq start 1000;
 
+-- ─── 8. معرض الصور ───
+create table gallery (
+  id uuid primary key default gen_random_uuid(),
+  image_url text not null,
+  caption text,
+  uploaded_by uuid references profiles(id) on delete set null,
+  created_at timestamptz default now()
+);
+
 create table orders (
   id uuid primary key default gen_random_uuid(),
   order_no text unique not null default 'ORD-' || nextval('order_seq'),
@@ -248,6 +257,7 @@ alter table menu_items      enable row level security;
 alter table orders          enable row level security;
 alter table order_items     enable row level security;
 alter table org_people      enable row level security;
+alter table gallery         enable row level security;
 
 -- جداول المراجع: أي موظف مسجّل يقرأ
 create policy read_branches on branches for select to authenticated using (true);
@@ -298,6 +308,30 @@ create policy create_own_items on order_items for insert to authenticated
 -- الهيكل التنظيمي: أي موظف يقرأ. الكتابة بس عن طريق الـ Edge Function
 -- (بيستخدم service_role اللي بيتخطى RLS بطبيعته، فمفيش policy للكتابة هنا خالص)
 create policy read_org on org_people for select to authenticated using (true);
+
+-- معرض الصور: أي موظف يقرأ، الكتابة بصلاحية gallery أو access
+create policy read_gallery on gallery for select to authenticated using (true);
+create policy write_gallery on gallery for all to authenticated
+  using (has_perm('gallery') or has_perm('access'))
+  with check (has_perm('gallery') or has_perm('access'));
+grant select, insert, update, delete on gallery to authenticated;
+
+-- مكان تخزين الملفات (الصور) — bucket عام للقراءة، مقيّد للرفع
+insert into storage.buckets (id, name, public)
+values ('media', 'media', true)
+on conflict (id) do nothing;
+
+create policy "media public read" on storage.objects for select
+  using (bucket_id = 'media');
+create policy "media managed upload" on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'media' and (has_perm('gallery') or has_perm('access')));
+create policy "media managed update" on storage.objects for update
+  to authenticated
+  using (bucket_id = 'media' and (has_perm('gallery') or has_perm('access')));
+create policy "media managed delete" on storage.objects for delete
+  to authenticated
+  using (bucket_id = 'media' and (has_perm('gallery') or has_perm('access')));
 
 -- ══════════════════════════════════════════════════════════════
 --  شاشة البوفيه بدون تسجيل دخول — باسورد لكل فرع، اللينك نفسه عادي

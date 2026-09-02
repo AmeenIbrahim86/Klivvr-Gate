@@ -238,3 +238,29 @@ export async function syncOrgFromEntra() {
   if (error) throw error;
   return data;
 }
+
+/* ═══════════════ الصور (رفع حقيقي + معرض الصور) ═══════════════ */
+// بيرفع الملف فعليًا على Supabase Storage ويرجّع لينك عام للصورة
+export async function uploadImage(file) {
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const path = `${crypto.randomUUID()}.${ext}`;
+  const { error } = await sb.storage.from('media').upload(path, file, { cacheControl: '3600', upsert: false });
+  if (error) throw error;
+  const { data } = sb.storage.from('media').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+export async function listGallery() {
+  const { data, error } = await sb.from('gallery').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data.map(g => ({ id: g.id, url: g.image_url, caption: g.caption, at: g.created_at }));
+}
+export async function addGalleryPhoto(url, caption) {
+  const { data, error } = await sb.from('gallery').insert({ image_url: url, caption: caption || null }).select().single();
+  if (error) throw error;
+  return { id: data.id, url: data.image_url, caption: data.caption, at: data.created_at };
+}
+export async function removeGalleryPhoto(id) {
+  const { error } = await sb.from('gallery').delete().eq('id', id);
+  if (error) throw error;
+}
