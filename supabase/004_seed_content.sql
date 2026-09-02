@@ -59,14 +59,3 @@ insert into menu_items (name_ar,name_en,category,price,colour,is_square,sort) va
  ('مكس','Mix','sandwiches',20,'#C97B3D',true,3),
  ('حلاوة و قشطة','Halawa & Qishta','sandwiches',25,'#D9A45C',true,2),
  ('تونة','Tuna','sandwiches',25,'#7C93A8',true,1);
-
--- ─── 7. الهيكل التنظيمي (متزامن من Entra ID) ───
--- الجدول ده بيتملى من Edge Function اسمها sync-org، مش من التطبيق مباشرة.
--- id هنا هو الـ object id بتاع الشخص في Entra ID، مش uuid عشوائي.
-create table org_people (
-  id text primary key,
-  display_name text not null default '',
-  job_title text default '',
-  manager_id text references org_people(id) on delete set null,
-  synced_at timestamptz default now()
-);

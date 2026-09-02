@@ -300,9 +300,10 @@ function rmCart(i){cart.splice(i,1);render()}
 function startPay(){if(!cart.length)return;paying=true;render()}
 function payBack(){paying=false;render()}
 function payPanel(tot){
+  const qr = branch==="kat" ? "/instapay-qr-kat.png" : branch==="moh" ? "/instapay-qr-moh.png" : "/instapay-qr.png";
   return `<div class="paypanel">
     <div class="payhead"><b>${t("payTitle")}</b><span class="mono">${money(tot)}</span></div>
-    <img class="payqr" src="/instapay-qr.png" alt="InstaPay QR">
+    <img class="payqr" src="${qr}" alt="InstaPay QR — ${esc(nm(so(branch)))}">
     <p class="payhint">${t("payHint")}</p>
     <button class="btn" style="width:100%" onclick="submitOrder()">${t("payConfirm")}</button>
     <button class="btn ghost" style="width:100%;margin-top:8px" onclick="payBack()">${t("payBack")}</button>
