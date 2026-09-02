@@ -23,6 +23,7 @@ const L = { ar: {
  where:"مكانك",wherePH:"مثال: مكتب ٣١٢",
  overview:"نظرة عامة",aNews:"الأخبار",aLinks:"اللينكات",aPolicies:"السياسات",aEvents:"الأحداث",aMenu:"قائمة البوفيه",aAccess:"الصلاحيات",sites:"المواقع",
  orgChart:"الهيكل التنظيمي",orgSync:"مزامنة من Entra ID",orgSyncing:"بيزامن…",orgSynced:"اتزامن",orgEmpty:"لسه مفيش داتا — دوس مزامنة من Entra ID",
+ orgSearchPH:"دوّر بالاسم…",orgSearchBtn:"بحث",orgNotFound:"ملقيتش حد بالاسم ده",
  add:"إضافة",save:"حفظ",cancel:"إلغاء",
  tag:"التصنيف",titleAR:"العنوان بالعربي",titleEN:"العنوان بالإنجليزي",bodyAR:"النص بالعربي",bodyEN:"النص بالإنجليزي",
  author:"الكاتب",date:"التاريخ",icon:"الأيقونة",url:"اللينك",dept:"القسم",version:"الإصدار",
@@ -56,6 +57,7 @@ const L = { ar: {
  where:"Where you are",wherePH:"e.g. Office 312",
  overview:"Overview",aNews:"News",aLinks:"Quick links",aPolicies:"Policies",aEvents:"Events",aMenu:"Buffet menu",aAccess:"Access",sites:"Sites",
  orgChart:"Org chart",orgSync:"Sync from Entra ID",orgSyncing:"Syncing…",orgSynced:"Synced",orgEmpty:"No data yet — click sync from Entra ID",
+ orgSearchPH:"Search by name…",orgSearchBtn:"Search",orgNotFound:"No one found with that name",
  add:"Add",save:"Save",cancel:"Cancel",
  tag:"Tag",titleAR:"Title (Arabic)",titleEN:"Title (English)",bodyAR:"Body (Arabic)",bodyEN:"Body (English)",
  author:"Author",date:"Date",icon:"Icon",url:"Link",dept:"Department",version:"Version",
@@ -340,16 +342,35 @@ function vConfirmed(){
 }
 
 /* ═══════════════ الهيكل التنظيمي ═══════════════ */
-function orgCard(p){
-  return `<div class="org-card"><span class="av">${esc((p.name||"?")[0]||"?")}</span>
-    <div><b>${esc(p.name||"—")}</b>${p.title?`<span>${esc(p.title)}</span>`:""}</div></div>`;
+let orgToggled=new Set();   // نودز اتلمست يدويًا (تعكس السلوك الافتراضي بتاعها)
+let orgForceOpen=new Set(); // مسار البحث — لازم تفضل مفتوحة بغض النظر عن أي حاجة
+let orgHighlight=null;
+
+function orgIsOpen(id, depth){
+  if(orgForceOpen.has(id)) return true;
+  const defOpen = depth < 2; // الجذور ومستوى واحد تحتها مفتوحين افتراضيًا، الباقي مقفول
+  return orgToggled.has(id) ? !defOpen : defOpen;
 }
-function orgNode(p, byManager){
+function toggleOrgNode(id){
+  orgForceOpen.delete(id);
+  orgToggled.has(id) ? orgToggled.delete(id) : orgToggled.add(id);
+  render();
+}
+function orgCard(p, hasKids, open){
+  return `<div class="org-card ${hasKids?"has-kids":""} ${orgHighlight===p.id?"org-hl":""}" id="org-${esc(p.id)}"
+      ${hasKids?`onclick="toggleOrgNode('${esc(p.id)}')"`:""}>
+    <span class="av">${esc((p.name||"?")[0]||"?")}</span>
+    <div><b>${esc(p.name||"—")}</b>${p.title?`<span>${esc(p.title)}</span>`:""}</div>
+    ${hasKids?`<span class="org-toggle">${open?"−":"+"}</span>`:""}
+  </div>`;
+}
+function orgNode(p, byManager, depth){
   const kids = byManager[p.id]||[];
-  return `<li>${orgCard(p)}${kids.length?`<ul>${kids.map(k=>orgNode(k,byManager)).join("")}</ul>`:""}</li>`;
+  const hasKids = kids.length>0;
+  const open = hasKids && orgIsOpen(p.id, depth);
+  return `<li>${orgCard(p,hasKids,open)}${open?`<ul>${kids.map(k=>orgNode(k,byManager,depth+1)).join("")}</ul>`:""}</li>`;
 }
-function vOrg(){
-  // لازم منصب دايمًا. المدير مطلوب إلا لو الشخص قمة هرم حقيقي (ليه ناس تحته بمنصب)
+function orgBuild(){
   const titled = ORG.filter(p=>p.title&&p.title.trim());
   const byManagerAll={};
   titled.forEach(p=>{ if(p.managerId)(byManagerAll[p.managerId]=byManagerAll[p.managerId]||[]).push(p); });
@@ -359,11 +380,37 @@ function vOrg(){
   const byManager={};
   kept.forEach(p=>{ if(p.managerId)(byManager[p.managerId]=byManager[p.managerId]||[]).push(p); });
   const roots = kept.filter(p=>!keptIds.has(p.managerId));
+  return {kept,byManager,roots};
+}
+function vOrg(){
+  const {kept,byManager,roots} = orgBuild();
   return `<div class="eyebrow">${t("orgChart")}</div>
-    ${can("access")?`<button class="btn ghost sm" style="margin-bottom:14px" onclick="syncOrg()" id="orgSyncBtn">${t("orgSync")}</button>`:""}
+    <div class="org-tools">
+      ${can("access")?`<button class="btn ghost sm" onclick="syncOrg()" id="orgSyncBtn">${t("orgSync")}</button>`:""}
+      <input class="inp org-search" id="orgSearchInput" placeholder="${t("orgSearchPH")}"
+        onkeydown="if(event.key==='Enter')orgSearch(this.value)">
+      <button class="btn ghost sm" onclick="orgSearch($('#orgSearchInput').value)">${t("orgSearchBtn")}</button>
+    </div>
     ${kept.length
-      ?`<div class="card org-wrap"><div class="org-scroll" dir="ltr"><ul class="orgchart">${roots.map(r=>orgNode(r,byManager)).join("")}</ul></div></div>`
+      ?`<div class="card org-wrap"><div class="org-scroll" dir="ltr" id="orgScroll"><ul class="orgchart">${roots.map(r=>orgNode(r,byManager,0)).join("")}</ul></div></div>`
       :`<div class="card empty"><b>—</b>${t("orgEmpty")}</div>`}`;
+}
+function orgSearch(q){
+  q=(q||"").trim().toLowerCase();
+  if(!q) return;
+  const match = ORG.find(p=>(p.name||"").toLowerCase().includes(q));
+  if(!match){ toast(t("orgNotFound")); return; }
+  const byId={}; ORG.forEach(p=>byId[p.id]=p);
+  orgForceOpen=new Set();
+  let cur=match;
+  while(cur.managerId && byId[cur.managerId]){ orgForceOpen.add(cur.managerId); cur=byId[cur.managerId]; }
+  orgHighlight=match.id;
+  render();
+  setTimeout(()=>{
+    const el=document.getElementById("org-"+match.id);
+    if(el) el.scrollIntoView({behavior:"smooth",block:"center",inline:"center"});
+  },50);
+  setTimeout(()=>{ orgHighlight=null; render(); },2600);
 }
 async function syncOrg(){
   const btn=$("#orgSyncBtn"); if(btn){btn.disabled=true;btn.textContent=t("orgSyncing");}
@@ -535,4 +582,5 @@ Object.assign(window, {
   tog, setSug, setMilk, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder,
   setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk,
   saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg,
+  toggleOrgNode, orgSearch,
 });
