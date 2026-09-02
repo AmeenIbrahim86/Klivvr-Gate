@@ -341,13 +341,12 @@ function orgNode(p, byManager){
   return `<li>${orgCard(p)}${kids.length?`<ul>${kids.map(k=>orgNode(k,byManager)).join("")}</ul>`:""}</li>`;
 }
 function vOrg(){
-  const byManager={};
-  ORG.forEach(p=>{ if(p.managerId){ (byManager[p.managerId]=byManager[p.managerId]||[]).push(p); } });
-  const hasReports=id=>!!(byManager[id]&&byManager[id].length);
-  // اللي معاهوش مدير ومعاهوش تقارير (يعني حساب خدمة/معزول) بيتشال خالص
-  const kept = ORG.filter(p=>p.managerId||hasReports(p.id));
+  // يظهر بس اللي له منصب ومدير الاتنين مع بعض
+  const kept = ORG.filter(p=>p.title&&p.title.trim()&&p.managerId);
   const keptIds = new Set(kept.map(p=>p.id));
-  const roots = kept.filter(p=>!p.managerId||!keptIds.has(p.managerId));
+  const byManager={};
+  kept.forEach(p=>{ (byManager[p.managerId]=byManager[p.managerId]||[]).push(p); });
+  const roots = kept.filter(p=>!keptIds.has(p.managerId));
   return `<div class="eyebrow">${t("orgChart")}</div>
     ${can("access")?`<button class="btn ghost sm" style="margin-bottom:14px" onclick="syncOrg()" id="orgSyncBtn">${t("orgSync")}</button>`:""}
     ${kept.length
