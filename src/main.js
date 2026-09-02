@@ -356,19 +356,22 @@ function toggleOrgNode(id){
   orgToggled.has(id) ? orgToggled.delete(id) : orgToggled.add(id);
   render();
 }
-function orgCard(p, hasKids, open){
-  return `<div class="org-card ${hasKids?"has-kids":""} ${orgHighlight===p.id?"org-hl":""}" id="org-${esc(p.id)}"
-      ${hasKids?`onclick="toggleOrgNode('${esc(p.id)}')"`:""}>
-    <span class="av">${esc((p.name||"?")[0]||"?")}</span>
-    <div><b>${esc(p.name||"—")}</b>${p.title?`<span>${esc(p.title)}</span>`:""}</div>
-    ${hasKids?`<span class="org-toggle">${open?"−":"+"}</span>`:""}
-  </div>`;
-}
-function orgNode(p, byManager, depth){
-  const kids = byManager[p.id]||[];
-  const hasKids = kids.length>0;
-  const open = hasKids && orgIsOpen(p.id, depth);
-  return `<li>${orgCard(p,hasKids,open)}${open?`<ul>${kids.map(k=>orgNode(k,byManager,depth+1)).join("")}</ul>`:""}</li>`;
+function orgRows(list, byManager, depth){
+  return list.map(p=>{
+    const kids = byManager[p.id]||[];
+    const hasKids = kids.length>0;
+    const open = hasKids && orgIsOpen(p.id, depth);
+    return `<div class="org-row">
+      <div class="org-line ${hasKids?"clickable":""} ${orgHighlight===p.id?"org-hl":""}" id="org-${esc(p.id)}"
+          ${hasKids?`onclick="toggleOrgNode('${esc(p.id)}')"`:""}>
+        <span class="org-chevron">${hasKids?(open?"▾":"▸"):""}</span>
+        <span class="av">${esc((p.name||"?")[0]||"?")}</span>
+        <span class="org-name"><b>${esc(p.name||"—")}</b>${p.title?`<span>${esc(p.title)}</span>`:""}</span>
+        ${hasKids?`<span class="org-count">${kids.length}</span>`:""}
+      </div>
+      ${open?`<div class="org-children">${orgRows(kids,byManager,depth+1)}</div>`:""}
+    </div>`;
+  }).join("");
 }
 function orgBuild(){
   const titled = ORG.filter(p=>p.title&&p.title.trim());
@@ -392,7 +395,7 @@ function vOrg(){
       <button class="btn ghost sm" onclick="orgSearch($('#orgSearchInput').value)">${t("orgSearchBtn")}</button>
     </div>
     ${kept.length
-      ?`<div class="card org-wrap"><div class="org-scroll" dir="ltr" id="orgScroll"><ul class="orgchart">${roots.map(r=>orgNode(r,byManager,0)).join("")}</ul></div></div>`
+      ?`<div class="card org-wrap">${orgRows(roots,byManager,0)}</div>`
       :`<div class="card empty"><b>—</b>${t("orgEmpty")}</div>`}`;
 }
 function orgSearch(q){
