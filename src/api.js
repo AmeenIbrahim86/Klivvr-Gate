@@ -50,7 +50,8 @@ export async function loadMe() {
 
 /* ═══════════════ الفروع والأدوار (بيانات مرجعية) ═══════════════ */
 export async function listBranches() {
-  const { data, error } = await sb.from('branches').select('*').order('sort');
+  const { data, error } = await sb.from('branches')
+    .select('id, name_ar, name_en, is_live, sort').order('sort');
   if (error) throw error;
   return data.map(b => ({ id: b.id, ar: b.name_ar, en: b.name_en, live: b.is_live }));
 }
@@ -187,25 +188,36 @@ export async function listOrders(limit = 300) {
   }));
 }
 
-/* ═══════════════ شاشة البوفيه — بدون تسجيل دخول ═══════════════ */
-// التوكن بييجي من الـ URL:  /kitchen.html?token=xxxxx
-export const displayToken = () => new URLSearchParams(location.search).get('token');
+/* ═══════════════ شاشة البوفيه — بدون تسجيل دخول، بباسورد بدل توكن ═══════════════ */
+// الفرع بييجي من الـ URL: /kitchen.html?branch=kat — الباسورد بيتكتب في الشاشة نفسها
+export const branchFromUrl = () => new URLSearchParams(location.search).get('branch');
 
-export async function kitchenBoard() {
-  const { data, error } = await sb.rpc('kitchen_board', { _token: displayToken() });
+export async function kitchenLogin(branch, password) {
+  const { data, error } = await sb.rpc('kitchen_login', { _branch: branch, _password: password });
+  if (error) throw error;
+  return !!data;
+}
+export async function kitchenBoard(branch, password) {
+  const { data, error } = await sb.rpc('kitchen_board', { _branch: branch, _password: password });
   if (error) throw error;
   return data;
 }
-export async function kitchenSetStatus(orderNo, status) {
+export async function kitchenSetStatus(branch, password, orderNo, status) {
   const { error } = await sb.rpc('kitchen_set_status', {
-    _token: displayToken(), _order_no: orderNo, _status: status
+    _branch: branch, _password: password, _order_no: orderNo, _status: status
   });
   if (error) throw error;
 }
 
+// تغيير باسورد شاشة فرع — للأدمن بس (الدالة نفسها بترفض أي حد مالوش صلاحية access)
+export async function setScreenPassword(branch, newPassword) {
+  const { error } = await sb.rpc('set_screen_password', { _branch: branch, _new_password: newPassword });
+  if (error) throw error;
+}
+
 // Realtime — الشاشة تتحدّث لحظياً بدل ما تستنى الـ 30 ثانية بتاعت الـ polling
-export function watchOrders(onChange) {
-  return sb.channel('kitchen-' + (displayToken() || 'x'))
+export function watchOrders(branch, onChange) {
+  return sb.channel('kitchen-' + (branch || 'x'))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, onChange)
     .subscribe();

@@ -300,33 +300,34 @@ create policy create_own_items on order_items for insert to authenticated
 create policy read_org on org_people for select to authenticated using (true);
 
 -- ══════════════════════════════════════════════════════════════
---  شاشة البوفيه بدون تسجيل دخول
---  الشاشة بتقرأ view مفلترة، والتوكن بيحدد الفرع
+--  شاشة البوفيه بدون تسجيل دخول — باسورد لكل فرع، اللينك نفسه عادي
+--  (?branch=kat)، والأدمن يقدر يغيّر الباسورد من لوحة الإدارة في أي وقت
 -- ══════════════════════════════════════════════════════════════
-create table display_tokens (
-  token     text primary key,
-  branch_id text not null references branches(id),
-  label     text,
-  is_active boolean default true,
-  created_at timestamptz default now()
-);
--- تم توليدهم عشوائياً — دول جاهزين للاستخدام، مفيش داعي تغيّرهم إلا لو حسيت إنهم اتسربوا
-insert into display_tokens (token, branch_id, label) values
-  ('15658a6a46b001751e7bfdad416197f939b615d3c239408c', 'kat', 'شاشة قطامية'),
-  ('dccd897d7dfa3ac4be1f7ccee467a67fe045094088cb5bd8', 'moh', 'شاشة المهندسين');
+create extension if not exists pgcrypto;
 
--- دالة القراءة: التوكن بس هو اللي يفتح، وبترجّع الحاجة اللي الشاشة محتاجاها بس
-create or replace function public.kitchen_board(_token text)
+alter table branches add column if not exists screen_password_hash text;
+-- باسوردات ابتدائية — غيّرهم فورًا من الإدارة → نظرة عامة
+update branches set screen_password_hash = crypt('710210', gen_salt('bf')) where id = 'kat';
+update branches set screen_password_hash = crypt('304576', gen_salt('bf')) where id = 'moh';
+
+create or replace function public.kitchen_login(_branch text, _password text)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare _hash text;
+begin
+  select screen_password_hash into _hash from branches where id = _branch;
+  if _hash is null then return false; end if;
+  return crypt(_password, _hash) = _hash;
+end $$;
+
+-- دالة القراءة: الباسورد بس هو اللي يفتح، وبترجّع الحاجة اللي الشاشة محتاجاها بس
+create or replace function public.kitchen_board(_branch text, _password text)
 returns table (
   order_no text, requester_first text, location text, status text,
   created_at timestamptz, items jsonb
 ) language plpgsql security definer set search_path = public as $$
-declare _branch text;
 begin
-  select branch_id into _branch from display_tokens
-   where token = _token and is_active;
-  if _branch is null then
-    raise exception 'invalid display token';
+  if not kitchen_login(_branch, _password) then
+    raise exception 'wrong password';
   end if;
 
   return query
@@ -346,15 +347,15 @@ begin
 end $$;
 
 -- دالة تغيير الحالة من الشاشة
-create or replace function public.kitchen_set_status(_token text, _order_no text, _status text)
+create or replace function public.kitchen_set_status(_branch text, _password text, _order_no text, _status text)
 returns void language plpgsql security definer set search_path = public as $$
-declare _branch text;
 begin
   if _status not in ('preparing','delivered','rejected') then
     raise exception 'bad status';
   end if;
-  select branch_id into _branch from display_tokens where token = _token and is_active;
-  if _branch is null then raise exception 'invalid display token'; end if;
+  if not kitchen_login(_branch, _password) then
+    raise exception 'wrong password';
+  end if;
 
   update orders set
     status = _status,
@@ -363,11 +364,33 @@ begin
   where order_no = _order_no and branch_id = _branch and status in ('new','preparing');
 end $$;
 
+-- تغيير الباسورد — للأدمن بس (بيتأكد من صلاحية "access")
+create or replace function public.set_screen_password(_branch text, _new_password text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (
+    select 1 from profiles p join role_permissions rp on rp.role_id = p.role_id
+    where p.id = auth.uid() and rp.section = 'access'
+  ) then
+    raise exception 'forbidden';
+  end if;
+  if length(_new_password) < 4 then
+    raise exception 'password too short';
+  end if;
+  update branches set screen_password_hash = crypt(_new_password, gen_salt('bf')) where id = _branch;
+end $$;
+
 -- الوصول للدالتين دول بس — مفيش وصول مباشر لأي جدول
-revoke all on function public.kitchen_board(text) from public, anon;
-revoke all on function public.kitchen_set_status(text,text,text) from public, anon;
-grant execute on function public.kitchen_board(text) to anon;
-grant execute on function public.kitchen_set_status(text,text,text) to anon;
+revoke all on function public.kitchen_board(text,text) from public, anon, authenticated;
+revoke all on function public.kitchen_set_status(text,text,text,text) from public, anon, authenticated;
+revoke all on function public.kitchen_login(text,text) from public, anon, authenticated;
+grant execute on function public.kitchen_board(text,text) to anon;
+grant execute on function public.kitchen_set_status(text,text,text,text) to anon;
+grant execute on function public.kitchen_login(text,text) to anon;
+
+revoke all on function public.set_screen_password(text,text) from public, anon;
+grant execute on function public.set_screen_password(text,text) to authenticated;
+
 
 -- ─── Realtime للشاشة (أحسن من polling كل ٣٠ ثانية) ───
 alter publication supabase_realtime add table orders;

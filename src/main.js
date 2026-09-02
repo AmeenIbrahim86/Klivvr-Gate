@@ -33,6 +33,8 @@ const L = { ar: {
  whichBranch:"انت في أنهي فرع؟",whichBranchB:"عشان الطلب يروح لبوفيه الفرع الصح.",
  youAt:"انت في",change:"غيّر",itemsAvail:"صنف متاح",
  branchNote:"البوفيه بس اللي بيتقسم فروع — باقي البوابة واحدة للشركة كلها.",
+ kioskTitle:"شاشات البوفيه",kioskNote:"اللينك عادي ومش سري — الحماية بالباسورد بس.",
+ kioskNewPw:"باسورد جديد",pwSaved:"اتغيّر الباسورد",pwTooShort:"لازم ٤ حروف على الأقل",
  noPerm:"مالكش صلاحية على القسم ده",
  permNote:"علّم الخانة تدّي الدور صلاحية تعديل القسم. صف الأدمن مقفول عشان محدش يشيل عن نفسه الوصول بالغلط.",
  saved:"اتحفظ",deleted:"اتحذف",errGeneric:"حصل خطأ، جرب تاني",
@@ -68,6 +70,8 @@ const L = { ar: {
  whichBranch:"Which branch are you at?",whichBranchB:"So the order reaches the right buffet.",
  youAt:"You're at",change:"Change",itemsAvail:"items available",
  branchNote:"Only the buffet is split by branch — the rest of the portal is company-wide.",
+ kioskTitle:"Buffet screens",kioskNote:"The link itself isn't secret — the password is what protects it.",
+ kioskNewPw:"New password",pwSaved:"Password updated",pwTooShort:"Must be at least 4 characters",
  noPerm:"You don't have access to this section",
  permNote:"Tick a box to let that role edit that section. The admin row is locked so nobody can remove their own way back in.",
  saved:"Saved",deleted:"Deleted",errGeneric:"Something went wrong, try again",
@@ -396,7 +400,7 @@ function vOrg(){
       ${can("access")?`<button class="btn ghost sm" onclick="syncOrg()" id="orgSyncBtn">${t("orgSync")}</button>`:""}
       <input class="inp org-search" id="orgSearchInput" placeholder="${t("orgSearchPH")}"
         onkeydown="if(event.key==='Enter')orgSearch(this.value)">
-      <button class="btn ghost sm" onclick="orgSearch($('#orgSearchInput').value)">${t("orgSearchBtn")}</button>
+      <button class="btn ghost sm" onclick="orgSearch(document.getElementById('orgSearchInput').value)">${t("orgSearchBtn")}</button>
     </div>
     ${kept.length
       ?`<div class="card org-wrap">${orgRows(roots,byManager,0)}</div>`
@@ -454,7 +458,16 @@ function aOver(){
     ${SITES.map(s=>{const op=O.filter(o=>o.site===s.id&&o.st!=="done").length;
       return `<div class="item"><div class="body"><b>${esc(nm(s))}</b>
         <p>${s.live?num(M.filter(m=>inBranch(m,s.id)&&m.avail).length)+" "+t("itemsAvail")+" · "+num(op)+" "+t("openOrders"):t("soon")}</p></div>
-        <span class="pill ${s.live?"p":""}">${s.live?"live":t("soon")}</span></div>`}).join("")}</div>`;
+        <span class="pill ${s.live?"p":""}">${s.live?"live":t("soon")}</span></div>`}).join("")}</div>
+  ${can("access")?`<div class="sec"><div class="sechd"><div><h3>${t("kioskTitle")}</h3><p>${t("kioskNote")}</p></div></div>
+    ${LIVE().map(s=>`<div class="item" style="flex-wrap:wrap;align-items:flex-start">
+        <div class="body" style="flex-basis:100%">
+          <b>${esc(nm(s))}</b>
+          <p class="mono" style="word-break:break-all">${esc(location.origin)}/kitchen.html?branch=${esc(s.id)}</p>
+        </div>
+        <input class="inp" id="kiosk-pw-${esc(s.id)}" placeholder="${t("kioskNewPw")}" style="max-width:200px">
+        <button class="btn sm" onclick="saveKioskPw('${esc(s.id)}')">${t("save")}</button>
+      </div>`).join("")}</div>`:""}`;
 }
 function lbl(k,x){
   if(k==="news")return[lang==="ar"?x.titleAR:x.titleEN,(lang==="ar"?x.tagAR:x.tagEN)+" · "+x.date];
@@ -582,12 +595,18 @@ async function setBranchAdm(id,bid){
     toast(t("saved"));render();
   }catch(e){ fail(e); }
 }
+async function saveKioskPw(branchId){
+  const el=$("#kiosk-pw-"+branchId), v=el?el.value.trim():"";
+  if(v.length<4){ toast(t("pwTooShort")); return; }
+  try{ await api.setScreenPassword(branchId, v); toast(t("pwSaved")); if(el)el.value=""; }
+  catch(e){ fail(e); }
+}
 
 /* ═══════════════ expose handlers used by inline HTML onclick/onchange ═══════════════ */
 Object.assign(window, {
   doSignIn, doSignOut, go, setLang, setBranch, changeBranch, setCat, setWhere,
   tog, setSug, setMilk, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder,
   setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk,
-  saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg,
+  saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg, saveKioskPw,
   toggleOrgNode, orgSearch,
 });

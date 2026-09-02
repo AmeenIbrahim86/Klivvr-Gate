@@ -1,28 +1,35 @@
 /**
- * kitchen.js — شاشة البوفيه، بدون تسجيل دخول
+ * kitchen.js — شاشة البوفيه، بدون تسجيل دخول بحساب Microsoft
  *
- * الفرع بيتحدد من التوكن في الـ URL (?token=...) مش من اختيار المستخدم —
- * كل جهاز/شاشة مربوط بفرع واحد ثابت. القراءة والكتابة بتمر على دالتين بس
- * (kitchen_board / kitchen_set_status) عن طريق src/api.js، ومفيش وصول مباشر
- * لأي جدول من الصفحة دي.
+ * الفرع بيتحدد من الـ URL (?branch=kat) — اللينك نفسه عادي ومش سري.
+ * الحماية الحقيقية باسورد بيتكتب على الشاشة نفسها، والأدمن يقدر يغيّره
+ * في أي وقت من لوحة الإدارة (Overview) من غير ما يلمس الكود أو الـ SQL.
+ * الباسورد بيتفضّل في الجهاز نفسه (sessionStorage) عشان الشاشة متطلبش
+ * الباسورد تاني كل ما الصفحة تتحدّث لوحدها.
  */
-import { displayToken, kitchenBoard, kitchenSetStatus, watchOrders } from './api.js';
+import { branchFromUrl, kitchenLogin, kitchenBoard, kitchenSetStatus, watchOrders } from './api.js';
 
 const L = { ar: {
  title:"شاشة البوفيه", noLogin:"بدون تسجيل دخول",
  kNew:"جديد", kProg:"بيتحضّر",
  kStart:"ابدأ التحضير", kDelivered:"اتسلّم ✓", kReject:"رفض",
  kEmpty:"مفيش طلبات مفتوحة", kEmptyB:"الطلبات الجديدة هتظهر هنا لوحدها", withMilk:"بلبن",
- badToken:"اللينك ده مش صحيح", badTokenB:"كلّم الأدمن يديك لينك الشاشة الصح لفرعك.",
+ noBranch:"اللينك ده ناقصه الفرع", noBranchB:"كلّم الأدمن يديك لينك الشاشة الصح لفرعك.",
+ enterPw:"باسورد الشاشة", enterPwB:"اكتب باسورد شاشة الفرع ده.",
+ pwPH:"الباسورد", unlock:"دخول", wrongPw:"الباسورد غلط، جرّب تاني.",
 },en:{
  title:"Buffet screen", noLogin:"No sign-in needed",
  kNew:"NEW", kProg:"PREPARING",
  kStart:"Start preparing", kDelivered:"Delivered ✓", kReject:"Reject",
  kEmpty:"No open orders", kEmptyB:"New orders appear here on their own", withMilk:"With milk",
- badToken:"This link isn't valid", badTokenB:"Ask an admin for your branch's screen link.",
+ noBranch:"This link is missing a branch", noBranchB:"Ask an admin for your branch's screen link.",
+ enterPw:"Screen password", enterPwB:"Enter this branch's screen password.",
+ pwPH:"Password", unlock:"Unlock", wrongPw:"Wrong password, try again.",
 }};
 
-let lang="en", rows=[], failed=false;
+const branch = branchFromUrl();
+const pwKey = "kitchen_pw_" + (branch || "x");
+let lang="en", rows=[], unlocked=false, password="", loginErr="", checking=false;
 const t=k=>L[lang][k]??k;
 const num=n=>Number(n).toLocaleString(lang==="ar"?"ar-EG":"en-US");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -31,31 +38,74 @@ const dots=n=>`<span class="dots">${[0,1,2].map(i=>`<i class="${i<n?"on":""}"></
 const SUG=[{ar:"سادة",en:"None"},{ar:"خفيف",en:"Light"},{ar:"مظبوط",en:"Medium"},{ar:"زيادة",en:"Extra"}];
 const nm=o=>o?(o[lang]??o.ar??o.en??""):"";
 
+function setLang(l){lang=l;render()}
+window.setLang = setLang;
+
+async function tryPassword(pw){
+  checking=true; loginErr=""; render();
+  try{
+    const ok = await kitchenLogin(branch, pw);
+    if(ok){
+      password = pw; unlocked = true;
+      try{ sessionStorage.setItem(pwKey, pw); }catch(e){}
+      await refresh();
+      setInterval(refresh, 30000);
+      watchOrders(branch, ()=>refresh());
+    }else{
+      loginErr = t("wrongPw");
+      try{ sessionStorage.removeItem(pwKey); }catch(e){}
+    }
+  }catch(e){ console.error(e); loginErr = t("wrongPw"); }
+  checking=false; render();
+}
+function submitPassword(){
+  const v = $("#kpw")?.value || "";
+  if(v) tryPassword(v);
+}
+window.submitPassword = submitPassword;
+
 async function refresh(){
-  try{ rows = await kitchenBoard(); failed=false; }
-  catch(e){ console.error(e); failed=true; }
+  if(!unlocked) return;
+  try{ rows = await kitchenBoard(branch, password); }
+  catch(e){
+    console.error(e);
+    // الباسورد اتغيّر أو بقى غلط — ارجع لشاشة الدخول تاني
+    unlocked = false; loginErr = t("wrongPw");
+    try{ sessionStorage.removeItem(pwKey); }catch(err){}
+  }
   render();
 }
-function setLang(l){lang=l;render()}
 async function setSt(orderNo, status){
-  try{ await kitchenSetStatus(orderNo, status); await refresh(); }
+  try{ await kitchenSetStatus(branch, password, orderNo, status); await refresh(); }
   catch(e){ console.error(e); }
 }
-window.setLang = setLang;
 window.setSt = setSt;
 
 function render(){
   document.documentElement.lang=lang;
   document.documentElement.dir=lang==="ar"?"rtl":"ltr";
 
-  if(!displayToken()){
+  if(!branch){
     $("#app").innerHTML = `<div class="signin"><div class="signin-card">
-      <h1>${t("badToken")}</h1><p>${t("badTokenB")}</p></div></div>`;
+      <h1>${t("noBranch")}</h1><p>${t("noBranchB")}</p></div></div>`;
     return;
   }
-  if(failed){
+  if(!unlocked){
     $("#app").innerHTML = `<div class="signin"><div class="signin-card">
-      <h1>${t("badToken")}</h1><p>${t("badTokenB")}</p></div></div>`;
+      <h1>${t("enterPw")}</h1><p>${t("enterPwB")}</p>
+      <div class="mono" style="font-size:11px;color:var(--muted);margin-top:6px">${esc(branch)}</div>
+      <input id="kpw" class="inp" type="password" placeholder="${t("pwPH")}" style="margin-top:16px;text-align:center"
+        onkeydown="if(event.key==='Enter')submitPassword()">
+      ${loginErr?`<p style="color:var(--coral-ink);font-size:12.5px;margin-top:8px">${esc(loginErr)}</p>`:""}
+      <button class="btn" style="width:100%;margin-top:14px" ${checking?"disabled":""} onclick="submitPassword()">
+        ${checking?"…":t("unlock")}</button>
+      <span class="signin-lang">
+        <button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
+        <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span>
+    </div></div>`;
+    // جرّب الباسورد المحفوظ من قبل تلقائيًا (بدون ما نعرضه)
+    const saved = (()=>{ try{ return sessionStorage.getItem(pwKey); }catch(e){ return null; } })();
+    if(saved && !checking && !loginErr) tryPassword(saved);
     return;
   }
 
@@ -91,6 +141,4 @@ function render(){
     :`<div class="kempty"><b>${t("kEmpty")}</b>${t("kEmptyB")}</div>`}</div></div>`;
 }
 
-refresh();
-setInterval(refresh, 30000);
-watchOrders(()=>refresh());
+render();
