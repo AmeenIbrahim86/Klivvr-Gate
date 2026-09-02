@@ -22,7 +22,7 @@ const L = { ar: {
  badToken:"This link isn't valid", badTokenB:"Ask an admin for your branch's screen link.",
 }};
 
-let lang="ar", rows=[], failed=false;
+let lang="en", rows=[], failed=false;
 const t=k=>L[lang][k]??k;
 const num=n=>Number(n).toLocaleString(lang==="ar"?"ar-EG":"en-US");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));

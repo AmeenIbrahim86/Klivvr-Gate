@@ -96,7 +96,7 @@ const FIELDS = {
  menu:[["ar","titleAR"],["en","titleEN"],["price","price"],["col","color"]]};
 
 /* ═══════════════ state ═══════════════ */
-let lang="ar", authed=false, view="portal", tab="overview";
+let lang="en", authed=false, view="portal", tab="overview";
 let myProfile=null, SITES=[], C={news:[],links:[],policies:[],events:[]}, M=[], O=[], A={roles:[],users:[]}, ORG=[];
 let branch=null, paying=false, lastOrderNo="";
 let cart=[], openM=null, draft={}, cat="all", where="", edit=null, eKind=null;
@@ -123,12 +123,16 @@ function fail(e){console.error(e);toast(t("errGeneric"))}
 /* ═══════════════ boot / auth ═══════════════ */
 async function loadEverything(){
   myProfile = await api.loadMe();
-  const [branches, roles, news, links, policies, events, menu, users, orders, org] = await Promise.all([
+  const results = await Promise.allSettled([
     api.listBranches(), api.loadRoles(), api.list("news"), api.list("links"),
     api.list("policies"), api.list("events"), api.list("menu"),
     api.listProfiles(), api.listOrders(), api.listOrgPeople()
   ]);
-  SITES=branches; A={roles,users}; C={news,links,policies,events}; M=menu; O=orders; ORG=org;
+  results.forEach((r,i)=>{ if(r.status==="rejected") console.error("load section", i, "failed:", r.reason); });
+  const val=(i,fallback)=>results[i].status==="fulfilled"?results[i].value:fallback;
+  SITES=val(0,[]); A={roles:val(1,[]),users:val(7,[])};
+  C={news:val(2,[]),links:val(3,[]),policies:val(4,[]),events:val(5,[])};
+  M=val(6,[]); O=val(8,[]); ORG=val(9,[]);
 }
 async function start(session){
   if(!session){ authed=false; myProfile=null; renderSignIn(); return; }
