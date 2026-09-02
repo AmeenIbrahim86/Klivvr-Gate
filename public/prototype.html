@@ -144,6 +144,11 @@ html[lang="en"] .empty b{font-family:"Space Grotesk"}
 .cline .q{font-family:"IBM Plex Mono";font-weight:600;color:var(--peri-ink)}
 .cline .x{color:var(--coral-ink);font-size:15px;padding:0 3px}
 .cfoot{padding:13px 16px}
+.paypanel{text-align:center}
+.paypanel .payhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;font-size:13px}
+.paypanel .payhead span{font-family:"IBM Plex Mono";font-size:16px;font-weight:600}
+.payqr{width:100%;max-width:220px;border:1px solid var(--line);border-radius:10px;margin:0 auto 10px;display:block;background:#fff;padding:6px}
+.payhint{font-size:11.5px;color:var(--muted);margin-bottom:12px;line-height:1.5}
 .ctot{display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 9px;font-size:13px}
 .ctot span{font-family:"IBM Plex Mono";font-size:16px;font-weight:600}
 .fld label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
@@ -291,7 +296,8 @@ const L={ar:{
  bandT:"محتاج شاي أو قهوة؟",bandB:"اطلب من مكتبك، وطلبك يظهر على شاشة البوفيه في ثواني.",bandC:"اطلب دلوقتي ←",
  all:"الكل",hot:"ساخن",cold:"بارد",snack:"سناكس",
  sugar:"السكر",qty:"الكمية",notePH:"ملاحظة (اختياري)",addTo:"ضيف للطلب",
- yourOrder:"طلبك",emptyCart:"لسه مضفتش حاجة",emptyCartB:"اختار من القائمة على الجنب",send:"إرسال الطلب",cur:"ج.م",
+ yourOrder:"طلبك",emptyCart:"لسه مضفتش حاجة",emptyCartB:"اختار من القائمة على الجنب",send:"ادفع الآن",cur:"ج.م",
+ payTitle:"ادفع عن طريق InstaPay",payHint:"امسح الكود بتطبيق InstaPay وحوّل قيمة الطلب، وبعدين دوس تأكيد.",payConfirm:"تم الدفع، تأكيد الطلب",payBack:"رجوع للسلة",
  where:"مكانك",wherePH:"مثال: مكتب ٣١٢",sent:"تم إرسال الطلب",
  kNew:"جديد",kProg:"بيتحضّر",kDone:"اتسلّم",kStart:"ابدأ التحضير",kDelivered:"اتسلّم ✓",kReject:"رفض",
  kEmpty:"مفيش طلبات مفتوحة",kEmptyB:"الطلبات الجديدة هتظهر هنا لوحدها",noLogin:"بدون تسجيل دخول",
@@ -318,7 +324,8 @@ const L={ar:{
  bandT:"Need a tea or a coffee?",bandB:"Order from your desk. It lands on the buffet screen in seconds.",bandC:"Order now →",
  all:"All",hot:"Hot",cold:"Cold",snack:"Snacks",
  sugar:"Sugar",qty:"Quantity",notePH:"Note (optional)",addTo:"Add to order",
- yourOrder:"Your order",emptyCart:"Nothing added yet",emptyCartB:"Pick something from the menu",send:"Send order",cur:"EGP",
+ yourOrder:"Your order",emptyCart:"Nothing added yet",emptyCartB:"Pick something from the menu",send:"Pay now",cur:"EGP",
+ payTitle:"Pay via InstaPay",payHint:"Scan the code in the InstaPay app and transfer the order total, then confirm.",payConfirm:"Paid — confirm order",payBack:"Back to cart",
  where:"Where you are",wherePH:"e.g. Office 312",sent:"Order sent",
  kNew:"NEW",kProg:"PREPARING",kDone:"DELIVERED",kStart:"Start preparing",kDelivered:"Delivered ✓",kReject:"Reject",
  kEmpty:"No open orders",kEmptyB:"New orders appear here on their own",noLogin:"No sign-in needed",
@@ -382,26 +389,35 @@ const seedContent={
   {id:"e2",ar:"ورشة الأمن السيبراني",en:"Cybersecurity workshop",placeAR:"أونلاين · ٢:٠٠ م",placeEN:"Online · 2:00 PM",day:"19",monAR:"أغسطس",monEN:"AUG"},
   {id:"e3",ar:"يوم التطوع السنوي",en:"Annual volunteering day",placeAR:"خارج المقر · طول اليوم",placeEN:"Offsite · All day",day:"25",monAR:"أغسطس",monEN:"AUG"}]};
 const seedMenu=[
- {id:"m1",ar:"شاي",en:"Tea",cat:"hot",price:12,sugar:true,avail:true,col:"#B5651D",site:"all"},
- {id:"m2",ar:"شاي بالنعناع",en:"Mint tea",cat:"hot",price:15,sugar:true,avail:true,col:"#8C9C4A",site:"all"},
- {id:"m3",ar:"قهوة تركي",en:"Turkish coffee",cat:"hot",price:18,sugar:true,avail:true,col:"#4A2E1C",site:"all"},
- {id:"m4",ar:"نسكافيه",en:"Instant coffee",cat:"hot",price:20,sugar:true,avail:true,col:"#8A6242",site:"all"},
- {id:"m5",ar:"كابتشينو",en:"Cappuccino",cat:"hot",price:28,sugar:true,avail:true,col:"#C4A484",site:"kat"},
- {id:"m6",ar:"ينسون",en:"Anise",cat:"hot",price:12,sugar:true,avail:true,col:"#D9C36B",site:"all"},
- {id:"m7",ar:"مياه معدنية",en:"Bottled water",cat:"cold",price:8,sugar:false,avail:true,col:"#A9C8F7",site:"all"},
- {id:"m8",ar:"عصير برتقال",en:"Orange juice",cat:"cold",price:25,sugar:false,avail:true,col:"#F58A5C",site:"all"},
- {id:"m9",ar:"مياه غازية",en:"Soft drink",cat:"cold",price:18,sugar:false,avail:false,col:"#5A3A2E",site:"all"},
- {id:"m10",ar:"كرواسون",en:"Croissant",cat:"snack",price:30,sugar:false,avail:true,col:"#D9A961",sq:true,site:"all"},
- {id:"m11",ar:"بسكويت",en:"Biscuits",cat:"snack",price:10,sugar:false,avail:true,col:"#BE9A6A",sq:true,site:"all"},
- {id:"m12",ar:"طبق فاكهة",en:"Fruit plate",cat:"snack",price:35,sugar:false,avail:true,col:"#F2A1C1",sq:true,site:"kat"}];
+ {id:"m1",ar:"هوهوز",en:"HOHOs",cat:"snacks",price:15,sugar:false,avail:true,col:"#C4783A",sq:true,site:"all"},
+ {id:"m2",ar:"توينكيز",en:"Twinkies",cat:"snacks",price:15,sugar:false,avail:true,col:"#E9C46A",sq:true,site:"all"},
+ {id:"m3",ar:"مولتو",en:"Molto",cat:"snacks",price:15,sugar:false,avail:true,col:"#D98A3D",sq:true,site:"all"},
+ {id:"m4",ar:"تودو براونيز",en:"ToDo Brownies",cat:"snacks",price:20,sugar:false,avail:true,col:"#6B4226",sq:true,site:"all"},
+ {id:"m5",ar:"أوريو",en:"OREO",cat:"biscuits",price:15,sugar:false,avail:true,col:"#2B2118",sq:true,site:"all"},
+ {id:"m6",ar:"أولكر",en:"ÜLKER",cat:"biscuits",price:15,sugar:false,avail:true,col:"#B5651D",sq:true,site:"all"},
+ {id:"m7",ar:"ماكفيتيز",en:"McVitie's",cat:"biscuits",price:15,sugar:false,avail:true,col:"#C9A66B",sq:true,site:"all"},
+ {id:"m8",ar:"فيتنس أوت",en:"Fitness Oat",cat:"biscuits",price:15,sugar:false,avail:true,col:"#8FA05C",sq:true,site:"all"},
+ {id:"m9",ar:"توك",en:"TUC",cat:"biscuits",price:15,sugar:false,avail:true,col:"#D9B24C",sq:true,site:"all"},
+ {id:"m10",ar:"بروتين بار أبو عوف",en:"Abu Auf Protein Bar",cat:"protein",price:70,sugar:false,avail:true,col:"#7A4B2A",sq:true,site:"all"},
+ {id:"m11",ar:"شيبسي بطاطس",en:"Potato Chips",cat:"chips",price:15,sugar:false,avail:true,col:"#E0A93E",sq:true,site:"all"},
+ {id:"m12",ar:"بالانس بروتين كراكرز",en:"Balance Protein Crackers",cat:"chips",price:20,sugar:false,avail:true,col:"#C7B08A",sq:true,site:"all"},
+ {id:"m13",ar:"بروتين بف أبو عوف",en:"Abu Auf Protein Puffs",cat:"chips",price:25,sugar:false,avail:true,col:"#D98C4A",sq:true,site:"all"},
+ {id:"m14",ar:"مياه معدنية (صغيرة)",en:"Mineral Water (Small)",cat:"drinks",price:10,sugar:false,avail:true,col:"#A9C8F7",site:"all"},
+ {id:"m15",ar:"مياه غازية",en:"Soft Drink",cat:"drinks",price:20,sugar:false,avail:true,col:"#6FA8DC",site:"all"},
+ {id:"m16",ar:"ريد بُل",en:"Red Bull",cat:"drinks",price:60,sugar:false,avail:true,col:"#3A5FA0",site:"all"},
+ {id:"m17",ar:"مونستر",en:"MONSTER",cat:"drinks",price:60,sugar:false,avail:true,col:"#2E7D32",site:"all"},
+ {id:"m18",ar:"جبنة / مرتديلا / حلاوة",en:"Cheese / Mortadella / Halawa",cat:"sandwiches",price:15,sugar:false,avail:true,col:"#E8B04B",sq:true,site:"all"},
+ {id:"m19",ar:"مكس",en:"Mix",cat:"sandwiches",price:20,sugar:false,avail:true,col:"#C97B3D",sq:true,site:"all"},
+ {id:"m20",ar:"حلاوة و قشطة",en:"Halawa & Qishta",cat:"sandwiches",price:25,sugar:false,avail:true,col:"#D9A45C",sq:true,site:"all"},
+ {id:"m21",ar:"تونة",en:"Tuna",cat:"sandwiches",price:25,sugar:false,avail:true,col:"#7C93A8",sq:true,site:"all"}];
 const seedOrders=[
- {no:"ORD-247",site:"kat",uAR:"سارة منير",uEN:"Sara Mounir",where:"Office 207",st:"prog",at:Date.now()-7*6e4,lines:[{m:"m1",q:2,s:2},{m:"m7",q:1,s:null}]},
- {no:"ORD-246",site:"kat",uAR:"محمود عادل",uEN:"Mahmoud Adel",where:"Nile Room",st:"new",at:Date.now()-13*6e4,lines:[{m:"m3",q:4,s:2},{m:"m3",q:1,s:0,note:"كوباية كبيرة"},{m:"m10",q:3,s:null}]},
- {no:"ORD-245",site:"moh",uAR:"هبة فاروق",uEN:"Heba Farouk",where:"Reception",st:"new",at:Date.now()-2*6e4,lines:[{m:"m4",q:1,s:1},{m:"m8",q:2,s:null}]}];
+ {no:"ORD-247",site:"kat",uAR:"سارة منير",uEN:"Sara Mounir",where:"Office 207",st:"prog",at:Date.now()-7*6e4,lines:[{m:"m1",q:2,s:null},{m:"m14",q:1,s:null}]},
+ {no:"ORD-246",site:"kat",uAR:"محمود عادل",uEN:"Mahmoud Adel",where:"Nile Room",st:"new",at:Date.now()-13*6e4,lines:[{m:"m11",q:3,s:null},{m:"m21",q:1,s:null,note:"من غير مايونيز"}]},
+ {no:"ORD-245",site:"moh",uAR:"هبة فاروق",uEN:"Heba Farouk",where:"Reception",st:"new",at:Date.now()-2*6e4,lines:[{m:"m10",q:1,s:null},{m:"m16",q:2,s:null}]}];
 
 /* ═══════ state ═══════ */
 let lang="ar",view="portal",me="u1",tab="overview";
-let branch=null,kbranch="kat",admBranch="kat";
+let branch=null,kbranch="kat",admBranch="kat",paying=false;
 let C={},M=[],O=[],A={},cart=[],openM=null,draft={},cat="all",where="",edit=null,eKind=null,seq=247;
 
 const t=k=>L[lang][k]??k;
@@ -419,6 +435,15 @@ const LIVE=()=>SITES.filter(s=>s.live);
 const inBranch=(x,b)=>!x.site||x.site==="all"||x.site===b;
 const mi=id=>M.find(m=>m.id===id)||{ar:"—",en:"—",price:0};
 const SUG=[{ar:"سادة",en:"None"},{ar:"خفيف",en:"Light"},{ar:"مظبوط",en:"Medium"},{ar:"زيادة",en:"Extra"}];
+const CATS=[
+ {k:"all",ar:"الكل",en:"All"},
+ {k:"snacks",ar:"كيك وحلويات",en:"Snack Cakes"},
+ {k:"biscuits",ar:"بسكويت وكوكيز",en:"Biscuits & Cookies"},
+ {k:"protein",ar:"بروتين بار",en:"Protein Bars"},
+ {k:"chips",ar:"شيبسي وكراكرز",en:"Chips & Crackers"},
+ {k:"drinks",ar:"مشروبات",en:"Beverages"},
+ {k:"sandwiches",ar:"سندوتشات",en:"Sandwiches"}];
+const catLabel=k=>{const c=CATS.find(x=>x.k===k);return c?nm(c):k};
 const dots=n=>`<span class="dots">${[0,1,2].map(i=>`<i class="${i<n?"on":""}"></i>`).join("")}</span>`;
 const secLbl=s=>t(s==="news"?"aNews":s==="links"?"aLinks":s==="policies"?"aPolicies":s==="events"?"aEvents":s==="menu"?"aMenu":s==="orders"?"aOrders":"aAccess");
 
@@ -464,9 +489,9 @@ function pbar(){
     <label>screen</label><select onchange="go(this.value)">
       ${["portal","order","kitchen","admin"].map(v=>`<option value="${v}" ${view===v?"selected":""}>${t(v)}</option>`).join("")}</select>`;
 }
-function go(v){view=v;edit=null;render();scrollTo({top:0,behavior:"instant"})}
+function go(v){view=v;edit=null;paying=false;render();scrollTo({top:0,behavior:"instant"})}
 function setLang(l){lang=l;render()}
-function setBranch(b){if(!so(b).live)return;branch=b;cart=[];render()}
+function setBranch(b){if(!so(b).live)return;branch=b;cart=[];paying=false;render()}
 function setMe(u){me=u;if(view==="admin"&&!role().perms.length)view="portal";
   if(!can(TABS.find(x=>x[0]===tab)?.[3]||"")&&tab!=="overview")tab="overview";render()}
 
@@ -513,15 +538,15 @@ function vOrder(){
   const tot=cart.reduce((a,c)=>a+mi(c.m).price*c.q,0);
   return `<div class="eyebrow">${t("order")}</div>
   <div class="atbr"><span>${t("youAt")} <b>${esc(nm(so(branch)))}</b></span>
-    <button onclick="branch=null;cart=[];render()">${t("change")}</button></div>
+    <button onclick="branch=null;cart=[];paying=false;render()">${t("change")}</button></div>
   <div class="ordwrap"><div>
-    <div class="cats">${["all","hot","cold","snack"].map(k=>
-      `<button class="${cat===k?"on":""}" onclick="setCat('${k}')">${t(k)}</button>`).join("")}</div>
+    <div class="cats">${CATS.map(c=>
+      `<button class="${cat===c.k?"on":""}" onclick="setCat('${c.k}')">${esc(nm(c))}</button>`).join("")}</div>
     <div class="mgrid">${list.map(m=>{const o=openM===m.id,d=draft[m.id]||{q:1,s:2,note:""};
       return `<div class="mitem ${o?"open":""}">
         <button class="mrow" onclick="tog('${m.id}')">
           <span class="swatch ${m.sq?"sq":""}"><i style="background:${esc(m.col)};${m.sq?"height:100%":""}"></i></span>
-          <span class="nm"><b>${esc(nm(m))}</b><span>${t(m.cat)}</span></span>
+          <span class="nm"><b>${esc(nm(m))}</b><span>${esc(catLabel(m.cat))}</span></span>
           <span class="price">${money(m.price)}</span><span class="plus">+</span></button>
         <div class="opts">
           ${m.sugar?`<div class="optlbl">${t("sugar")}</div><div class="sugars">${SUG.map((s,i)=>
@@ -541,10 +566,11 @@ function vOrder(){
         <span class="mono" style="font-size:12px;color:var(--muted)">${num(m.price*c.q)}</span>
         <button class="x" onclick="rmCart(${i})">×</button></div>`}).join("")
       :`<div class="empty"><b>${t("emptyCart")}</b>${t("emptyCartB")}</div>`}
-     <div class="cfoot"><div class="fld"><label>${t("where")}</label>
+     <div class="cfoot">${paying?payPanel(tot):`
+       <div class="fld"><label>${t("where")}</label>
         <input class="inp" placeholder="${t("wherePH")}" value="${esc(where)}" oninput="where=this.value"></div>
        <div class="ctot"><b>${t("yourOrder")}</b><span class="mono">${money(tot)}</span></div>
-       <button class="btn" style="width:100%" ${cart.length?"":"disabled"} onclick="submitOrder()">${t("send")}</button>
+       <button class="btn" style="width:100%" ${cart.length?"":"disabled"} onclick="startPay()">${t("send")}</button>`}
      </div></div></div>`;
 }
 function vPickBranch(){
@@ -558,6 +584,16 @@ function vPickBranch(){
       </button>`).join("")}</div></div>`;
 }
 function setCat(c){cat=c;openM=null;render()}
+function startPay(){if(!cart.length)return;paying=true;render()}
+function payPanel(tot){
+  return `<div class="paypanel">
+    <div class="payhead"><b>${t("payTitle")}</b><span class="mono">${money(tot)}</span></div>
+    <img class="payqr" src="/instapay-qr.png" alt="InstaPay QR">
+    <p class="payhint">${t("payHint")}</p>
+    <button class="btn" style="width:100%" onclick="submitOrder()">${t("payConfirm")}</button>
+    <button class="btn ghost" style="width:100%;margin-top:8px" onclick="paying=false;render()">${t("payBack")}</button>
+  </div>`;
+}
 function tog(id){openM=openM===id?null:id;if(openM&&!draft[id])draft[id]={q:1,s:2,note:""};render()}
 function setSug(id,s){draft[id].s=s;render()}
 function stp(id,d){draft[id].q=Math.max(1,Math.min(30,draft[id].q+d));render()}
@@ -649,7 +685,7 @@ function lbl(k,x){
   if(k==="links")return[nm(x),x.icon+"  "+x.url];
   if(k==="policies")return[nm(x),x.dept+" · v"+x.ver+" · "+x.date];
   if(k==="events")return[nm(x),(lang==="ar"?x.placeAR:x.placeEN)+" · "+x.day];
-  if(k==="menu")return[nm(x),t(x.cat)+" · "+money(x.price)+(x.avail?"":" · ✕")];
+  if(k==="menu")return[nm(x),catLabel(x.cat)+" · "+money(x.price)+(x.avail?"":" · ✕")];
   return[nm(x),""];
 }
 function aList(k){
@@ -677,7 +713,7 @@ function form(k){
         <option value="all" ${d.site==="all"?"selected":""}>${t("allBranches")}</option>
         ${LIVE().map(s=>`<option value="${s.id}" ${d.site===s.id?"selected":""}>${esc(nm(s))}</option>`).join("")}</select></div>
       <div class="fld"><label>${t("cat")}</label><select class="inp" onchange="edit.cat=this.value">
-        ${["hot","cold","snack"].map(c=>`<option value="${c}" ${d.cat===c?"selected":""}>${t(c)}</option>`).join("")}</select></div>
+        ${CATS.filter(c=>c.k!=="all").map(c=>`<option value="${c.k}" ${d.cat===c.k?"selected":""}>${esc(nm(c))}</option>`).join("")}</select></div>
       <div class="fld"><label>${t("hasSugar")}</label><select class="inp" onchange="edit.sugar=this.value==='1'">
         <option value="1" ${d.sugar?"selected":""}>✓</option><option value="0" ${d.sugar?"":"selected"}>✕</option></select></div>`:""}
     </div>
@@ -687,7 +723,7 @@ function form(k){
 function startEdit(k,id){
   const arr=k==="menu"?M:C[k];
   edit=id?structuredClone(arr.find(x=>x.id===id))
-    :(k==="menu"?{id:uid("m"),site:"all",cat:"hot",price:10,sugar:false,avail:true,col:"#B5651D"}:{id:uid(k[0])});
+    :(k==="menu"?{id:uid("m"),site:"all",cat:"snacks",price:10,sugar:false,avail:true,col:"#B5651D"}:{id:uid(k[0])});
   eKind=k;render();
 }
 function cancelEdit(){edit=null;render()}

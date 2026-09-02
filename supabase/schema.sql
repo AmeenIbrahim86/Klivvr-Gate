@@ -79,16 +79,19 @@ returns text language sql stable security definer set search_path = public as $$
 $$;
 
 -- ─── 5. محتوى البوابة (واحد للشركة كلها — مش مقسّم فروع) ───
+-- ملاحظة: published_on / effective_on نص حر مش تاريخ حقيقي (مثلاً "10 Aug") —
+-- عشان ده نص للعرض بيتكتب من الأدمن مباشرة، والترتيب الفعلي بيحصل بعمود sort
+-- أو created_at، مش ببارسينج تاريخ. أبسط وأضمن من التعامل مع أنواع Date.
 create table news (
   id uuid primary key default gen_random_uuid(),
   tag_ar text, tag_en text,
   title_ar text not null, title_en text not null,
   body_ar text, body_en text,
   author text,
-  published_on date default current_date,
+  published_on text default '',
   is_published boolean default true,
   sort int default 0,
-  updated_at timestamptz default now()
+  created_at timestamptz default now()
 );
 
 create table quick_links (
@@ -103,7 +106,7 @@ create table policies (
   title_ar text not null, title_en text not null,
   department text, version text,
   file_url text,
-  effective_on date, review_on date,
+  effective_on text default '', review_on date,
   sort int default 0
 );
 
@@ -111,15 +114,16 @@ create table events (
   id uuid primary key default gen_random_uuid(),
   title_ar text not null, title_en text not null,
   place_ar text, place_en text,
-  starts_at timestamptz not null,
+  day text not null, month_ar text not null, month_en text not null,
   sort int default 0
 );
 
 -- ─── 6. البوفيه (ده الوحيد المقسّم فروع) ───
+-- category نص حر (مش enum مقفول) عشان القوائم بتختلف من فرع لفرع وبتتغيّر بمرور الوقت
 create table menu_items (
   id uuid primary key default gen_random_uuid(),
   name_ar text not null, name_en text not null,
-  category text not null check (category in ('hot','cold','snack')),
+  category text not null,
   price numeric(10,2) not null default 0,
   has_sugar boolean default false,
   is_available boolean default true,
@@ -127,6 +131,73 @@ create table menu_items (
   is_square boolean default false,
   branch_id text references branches(id),   -- null = متاح في كل الفروع
   sort int default 0
+);
+
+-- ─── محتوى ابتدائي — عدّله من لوحة الإدارة براحتك بعد كده ───
+insert into news (tag_ar,tag_en,title_ar,title_en,body_ar,body_en,author,published_on,sort) values
+ ('إعلان','Announcement','البوابة الجديدة بقت شغالة','The new portal is live',
+  'كل الأخبار والسياسات والخدمات في مكان واحد. ابدأ من اللينكات السريعة، ولو محتاج حاجة مش موجودة كلّم الـ IT.',
+  'News, policies and services in one place. Start from the quick links, and tell IT if something you need is missing.',
+  'Internal Comms','10 Aug',3),
+ ('موارد بشرية','HR','سياسة العمل الهجين — محدّثة','Hybrid work policy — updated',
+  'يومين من المكتب أسبوعياً، تبدأ من أول سبتمبر.','Two days in the office each week from 1 September.','HR','7 Aug',2),
+ ('تشغيل','Ops','فرع مصدق بيفتح الشهر الجاي','The Mossadak branch opens next month',
+  'الفرع التالت بيفتح أول أكتوبر، والبوفيه هيشتغل من أول يوم.',
+  'The third branch opens 1 October, with the buffet running from day one.','Ops','2 Aug',1);
+
+insert into quick_links (label_ar,label_en,icon,url,sort) values
+ ('الإيميل','Email','✉','#',6),
+ ('طلب إجازة','Request leave','◷','#',5),
+ ('طلب دعم فني','IT support ticket','⚙','#',4),
+ ('حجز قاعة اجتماعات','Book a meeting room','▣','#',3),
+ ('دليل الموظفين','Staff directory','◫','#',2),
+ ('الهيكل التنظيمي','Org chart','⊞','#',1);
+
+insert into policies (title_ar,title_en,department,version,effective_on,sort) values
+ ('سياسة الإجازات والأذونات','Leave and time-off policy','HR','3.2','10 Aug',5),
+ ('سياسة أمن المعلومات','Information security policy','IT','2.0','28 Jul',4),
+ ('لائحة السفر والمصاريف','Travel and expense rules','Finance','1.4','15 Jul',3),
+ ('قواعد استخدام أجهزة الشركة','Company device usage rules','IT','1.0','3 Jul',2),
+ ('مدونة السلوك المهني','Code of professional conduct','HR','2.3','20 Jun',1);
+
+insert into events (title_ar,title_en,place_ar,place_en,day,month_ar,month_en,sort) values
+ ('اجتماع كل الموظفين','All-hands meeting','قاعة النيل · ١١:٠٠ ص','Nile Room · 11:00 AM','14','أغسطس','AUG',3),
+ ('ورشة الأمن السيبراني','Cybersecurity workshop','أونلاين · ٢:٠٠ م','Online · 2:00 PM','19','أغسطس','AUG',2),
+ ('يوم التطوع السنوي','Annual volunteering day','خارج المقر · طول اليوم','Offsite · All day','25','أغسطس','AUG',1);
+
+-- menu_items: 21 صنف — قائمة البوفيه الحقيقية، متاحة في كل الفروع (branch_id = null)
+insert into menu_items (name_ar,name_en,category,price,colour,is_square,sort) values
+ ('هوهوز','HOHOs','snacks',15,'#C4783A',true,21),
+ ('توينكيز','Twinkies','snacks',15,'#E9C46A',true,20),
+ ('مولتو','Molto','snacks',15,'#D98A3D',true,19),
+ ('تودو براونيز','ToDo Brownies','snacks',20,'#6B4226',true,18),
+ ('أوريو','OREO','biscuits',15,'#2B2118',true,17),
+ ('أولكر','ÜLKER','biscuits',15,'#B5651D',true,16),
+ ('ماكفيتيز','McVitie''s','biscuits',15,'#C9A66B',true,15),
+ ('فيتنس أوت','Fitness Oat','biscuits',15,'#8FA05C',true,14),
+ ('توك','TUC','biscuits',15,'#D9B24C',true,13),
+ ('بروتين بار أبو عوف','Abu Auf Protein Bar','protein',70,'#7A4B2A',true,12),
+ ('شيبسي بطاطس','Potato Chips','chips',15,'#E0A93E',true,11),
+ ('بالانس بروتين كراكرز','Balance Protein Crackers','chips',20,'#C7B08A',true,10),
+ ('بروتين بف أبو عوف','Abu Auf Protein Puffs','chips',25,'#D98C4A',true,9),
+ ('مياه معدنية (صغيرة)','Mineral Water (Small)','drinks',10,'#A9C8F7',false,8),
+ ('مياه غازية','Soft Drink','drinks',20,'#6FA8DC',false,7),
+ ('ريد بُل','Red Bull','drinks',60,'#3A5FA0',false,6),
+ ('مونستر','MONSTER','drinks',60,'#2E7D32',false,5),
+ ('جبنة / مرتديلا / حلاوة','Cheese / Mortadella / Halawa','sandwiches',15,'#E8B04B',true,4),
+ ('مكس','Mix','sandwiches',20,'#C97B3D',true,3),
+ ('حلاوة و قشطة','Halawa & Qishta','sandwiches',25,'#D9A45C',true,2),
+ ('تونة','Tuna','sandwiches',25,'#7C93A8',true,1);
+
+-- ─── 7. الهيكل التنظيمي (متزامن من Entra ID) ───
+-- الجدول ده بيتملى من Edge Function اسمها sync-org، مش من التطبيق مباشرة.
+-- id هنا هو الـ object id بتاع الشخص في Entra ID، مش uuid عشوائي.
+create table org_people (
+  id text primary key,
+  display_name text not null default '',
+  job_title text default '',
+  manager_id text references org_people(id) on delete set null,
+  synced_at timestamptz default now()
 );
 
 create sequence order_seq start 1000;
@@ -172,6 +243,7 @@ alter table events          enable row level security;
 alter table menu_items      enable row level security;
 alter table orders          enable row level security;
 alter table order_items     enable row level security;
+alter table org_people      enable row level security;
 
 -- جداول المراجع: أي موظف مسجّل يقرأ
 create policy read_branches on branches for select to authenticated using (true);
@@ -219,6 +291,10 @@ create policy read_own_items on order_items for select to authenticated
 create policy create_own_items on order_items for insert to authenticated
   with check (exists (select 1 from orders o where o.id = order_id and o.requester_id = auth.uid()));
 
+-- الهيكل التنظيمي: أي موظف يقرأ. الكتابة بس عن طريق الـ Edge Function
+-- (بيستخدم service_role اللي بيتخطى RLS بطبيعته، فمفيش policy للكتابة هنا خالص)
+create policy read_org on org_people for select to authenticated using (true);
+
 -- ══════════════════════════════════════════════════════════════
 --  شاشة البوفيه بدون تسجيل دخول
 --  الشاشة بتقرأ view مفلترة، والتوكن بيحدد الفرع
@@ -230,10 +306,10 @@ create table display_tokens (
   is_active boolean default true,
   created_at timestamptz default now()
 );
--- ⚠️ غيّر التوكنات دي لقيم عشوائية طويلة قبل النشر
+-- تم توليدهم عشوائياً — دول جاهزين للاستخدام، مفيش داعي تغيّرهم إلا لو حسيت إنهم اتسربوا
 insert into display_tokens (token, branch_id, label) values
-  ('CHANGE-ME-kat-a7f3c9', 'kat', 'شاشة قطامية'),
-  ('CHANGE-ME-moh-b2e8d1', 'moh', 'شاشة المهندسين');
+  ('15658a6a46b001751e7bfdad416197f939b615d3c239408c', 'kat', 'شاشة قطامية'),
+  ('dccd897d7dfa3ac4be1f7ccee467a67fe045094088cb5bd8', 'moh', 'شاشة المهندسين');
 
 -- دالة القراءة: التوكن بس هو اللي يفتح، وبترجّع الحاجة اللي الشاشة محتاجاها بس
 create or replace function public.kitchen_board(_token text)

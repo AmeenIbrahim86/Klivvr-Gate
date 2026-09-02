@@ -1,67 +1,156 @@
 /**
  * api.js — طبقة الداتا
  *
- * ده الملف الوحيد اللي بيكلّم الـ backend. باقي التطبيق بينادي الدوال دي
- * ومش عارف حاجة عن Supabase — يعني لو غيّرت الـ backend بعدين، بتعدّل
- * الملف ده لوحده.
+ * ده الملف الوحيد اللي بيكلّم الـ backend. باقي التطبيق (main.js و kitchen.js)
+ * بينادي الدوال دي بس، ومش عارف حاجة عن Supabase أو شكل الأعمدة في الـ database —
+ * لو غيّرت الـ backend بعدين، بتعدّل الملف ده لوحده.
  *
- * VITE_USE_MOCK=true  →  يشتغل من غير backend (زي الـ prototype)
+ * كل دالة هنا بتاخد/بترجّع شكل الداتا اللي الواجهة (main.js) متعوّدة عليه
+ * (مثلاً {ar, en, cat, price, sugar, avail, col, sq, site} لصنف بوفيه)
+ * والتحويل من/لأسماء أعمدة الـ database (name_ar, name_en, category, ...) بيحصل هنا جوه.
  */
 import { createClient } from '@supabase/supabase-js';
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
-
-export const sb = USE_MOCK ? null : createClient(
+export const sb = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-/* ─────────── auth ─────────── */
+/* ═══════════════ auth ═══════════════ */
 export const auth = {
   // تسجيل الدخول بحساب مايكروسوفت (لازم تفعّل Azure provider في Supabase)
   signInMicrosoft: () => sb.auth.signInWithOAuth({
     provider: 'azure',
     options: { scopes: 'email profile openid', redirectTo: window.location.origin }
   }),
-  signInEmail: (email) => sb.auth.signInWithOtp({ email }),
   signOut: () => sb.auth.signOut(),
   session: () => sb.auth.getSession().then(r => r.data.session),
   onChange: (cb) => sb.auth.onAuthStateChange((_e, s) => cb(s)),
 };
 
-/* ─────────── مين أنا وإيه صلاحياتي ─────────── */
+/* ═══════════════ مين أنا وإيه صلاحياتي ═══════════════ */
 export async function loadMe() {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return null;
 
-  const { data: profile } = await sb.from('profiles')
+  const { data: profile, error } = await sb.from('profiles')
     .select('id, full_name, role_id, branch_id').eq('id', user.id).single();
+  if (error) throw error;
 
   const { data: perms } = await sb.from('role_permissions')
     .select('section').eq('role_id', profile.role_id);
 
-  return { ...profile, email: user.email, perms: (perms || []).map(p => p.section) };
+  return {
+    id: profile.id, email: user.email,
+    ar: profile.full_name, en: profile.full_name,   // الاسم الحقيقي مش بيتترجم
+    role: profile.role_id, site: profile.branch_id,
+    perms: (perms || []).map(p => p.section)
+  };
 }
 
-/* ─────────── محتوى البوابة ─────────── */
+/* ═══════════════ الفروع والأدوار (بيانات مرجعية) ═══════════════ */
+export async function listBranches() {
+  const { data, error } = await sb.from('branches').select('*').order('sort');
+  if (error) throw error;
+  return data.map(b => ({ id: b.id, ar: b.name_ar, en: b.name_en, live: b.is_live }));
+}
+
+export async function loadRoles() {
+  const [{ data: roles, error: e1 }, { data: perms, error: e2 }] = await Promise.all([
+    sb.from('roles').select('*'),
+    sb.from('role_permissions').select('*'),
+  ]);
+  if (e1) throw e1; if (e2) throw e2;
+  return roles.map(r => ({
+    id: r.id, ar: r.name_ar, en: r.name_en,
+    perms: perms.filter(p => p.role_id === r.id).map(p => p.section)
+  }));
+}
+
+export async function listProfiles() {
+  const { data, error } = await sb.from('profiles')
+    .select('id, full_name, role_id, branch_id').order('created_at');
+  if (error) throw error;
+  return data.map(p => ({ id: p.id, ar: p.full_name, en: p.full_name, role: p.role_id, site: p.branch_id }));
+}
+
+export async function setUserRole(userId, roleId) {
+  const { error } = await sb.from('profiles').update({ role_id: roleId }).eq('id', userId);
+  if (error) throw error;
+}
+export async function setUserBranch(userId, branchId) {
+  const { error } = await sb.from('profiles').update({ branch_id: branchId }).eq('id', userId);
+  if (error) throw error;
+}
+export async function setRolePermission(roleId, section, on) {
+  const q = on
+    ? sb.from('role_permissions').insert({ role_id: roleId, section })
+    : sb.from('role_permissions').delete().eq('role_id', roleId).eq('section', section);
+  const { error } = await q;
+  if (error) throw error;
+}
+
+/* ═══════════════ محتوى البوابة + قائمة البوفيه ═══════════════ */
 const TABLES = { news: 'news', links: 'quick_links', policies: 'policies', events: 'events', menu: 'menu_items' };
 
+// تحويل بين شكل الواجهة (اللي main.js بيستخدمه) وأسماء أعمدة الـ database
+const MAP = {
+  news: {
+    toDb: r => ({ tag_ar: r.tagAR || '', tag_en: r.tagEN || '', title_ar: r.titleAR, title_en: r.titleEN,
+      body_ar: r.bodyAR || '', body_en: r.bodyEN || '', author: r.author || '', published_on: r.date || '' }),
+    fromDb: r => ({ id: r.id, tagAR: r.tag_ar, tagEN: r.tag_en, titleAR: r.title_ar, titleEN: r.title_en,
+      bodyAR: r.body_ar, bodyEN: r.body_en, author: r.author, date: r.published_on }),
+  },
+  links: {
+    toDb: r => ({ label_ar: r.ar, label_en: r.en, icon: r.icon || '', url: r.url || '#' }),
+    fromDb: r => ({ id: r.id, ar: r.label_ar, en: r.label_en, icon: r.icon, url: r.url }),
+  },
+  policies: {
+    toDb: r => ({ title_ar: r.ar, title_en: r.en, department: r.dept || '', version: r.ver || '', effective_on: r.date || '' }),
+    fromDb: r => ({ id: r.id, ar: r.title_ar, en: r.title_en, dept: r.department, ver: r.version, date: r.effective_on }),
+  },
+  events: {
+    toDb: r => ({ title_ar: r.ar, title_en: r.en, place_ar: r.placeAR || '', place_en: r.placeEN || '',
+      day: r.day || '', month_ar: r.monAR || '', month_en: r.monEN || '' }),
+    fromDb: r => ({ id: r.id, ar: r.title_ar, en: r.title_en, placeAR: r.place_ar, placeEN: r.place_en,
+      day: r.day, monAR: r.month_ar, monEN: r.month_en }),
+  },
+  menu: {
+    toDb: r => ({ name_ar: r.ar, name_en: r.en, category: r.cat, price: Number(r.price) || 0,
+      has_sugar: !!r.sugar, is_available: r.avail !== false, colour: r.col || '#B5651D', is_square: !!r.sq,
+      branch_id: (!r.site || r.site === 'all') ? null : r.site }),
+    fromDb: r => ({ id: r.id, ar: r.name_ar, en: r.name_en, cat: r.category, price: Number(r.price),
+      sugar: r.has_sugar, avail: r.is_available, col: r.colour, sq: r.is_square, site: r.branch_id || 'all' }),
+  },
+};
+
 export async function list(kind) {
-  const { data, error } = await sb.from(TABLES[kind]).select('*').order('sort');
+  const orderCol = kind === 'news' ? 'created_at' : 'sort';
+  const { data, error } = await sb.from(TABLES[kind]).select('*')
+    .order(orderCol, { ascending: kind !== 'news' });
   if (error) throw error;
-  return data;
+  return data.map(MAP[kind].fromDb);
 }
+
+// row.id موجود = تعديل صنف قائم، من غير id = إنشاء صنف جديد (الـ id بيتولّد من الـ database)
 export async function upsert(kind, row) {
-  const { data, error } = await sb.from(TABLES[kind]).upsert(row).select().single();
+  const table = TABLES[kind], dbRow = MAP[kind].toDb(row);
+  if (row.id) {
+    const { data, error } = await sb.from(table).update(dbRow).eq('id', row.id).select().single();
+    if (error) throw error;
+    return MAP[kind].fromDb(data);
+  }
+  const { data, error } = await sb.from(table).insert(dbRow).select().single();
   if (error) throw error;
-  return data;
+  return MAP[kind].fromDb(data);
 }
+
 export async function remove(kind, id) {
   const { error } = await sb.from(TABLES[kind]).delete().eq('id', id);
   if (error) throw error;
 }
 
-/* ─────────── الطلبات (الموظف) ─────────── */
+/* ═══════════════ الطلبات (الموظف) ═══════════════ */
 export async function submitOrder({ branchId, requesterName, location, lines }) {
   const total = lines.reduce((s, l) => s + l.price * l.qty, 0);
   const { data: { user } } = await sb.auth.getUser();
@@ -81,17 +170,23 @@ export async function submitOrder({ branchId, requesterName, location, lines }) 
     }))
   );
   if (e2) throw e2;
-  return order;
+  return order.order_no;
 }
 
-export async function myOrders() {
+// لإحصائيات لوحة الإدارة بس — st بترجع new/prog/done عشان تتوافق مع اللي الواجهة متعوّدة عليه
+export async function listOrders(limit = 300) {
   const { data, error } = await sb.from('orders')
-    .select('*, order_items(*)').order('created_at', { ascending: false }).limit(20);
+    .select('order_no, branch_id, status, created_at')
+    .order('created_at', { ascending: false }).limit(limit);
   if (error) throw error;
-  return data;
+  return data.map(o => ({
+    no: o.order_no, site: o.branch_id,
+    st: o.status === 'preparing' ? 'prog' : (o.status === 'new' ? 'new' : 'done'),
+    at: new Date(o.created_at).getTime()
+  }));
 }
 
-/* ─────────── شاشة البوفيه — بدون تسجيل دخول ─────────── */
+/* ═══════════════ شاشة البوفيه — بدون تسجيل دخول ═══════════════ */
 // التوكن بييجي من الـ URL:  /kitchen.html?token=xxxxx
 export const displayToken = () => new URLSearchParams(location.search).get('token');
 
@@ -107,21 +202,26 @@ export async function kitchenSetStatus(orderNo, status) {
   if (error) throw error;
 }
 
-// Realtime — الشاشة تتحدّث لحظياً بدل polling
+// Realtime — الشاشة تتحدّث لحظياً بدل ما تستنى الـ 30 ثانية بتاعت الـ polling
 export function watchOrders(onChange) {
-  return sb.channel('kitchen')
+  return sb.channel('kitchen-' + (displayToken() || 'x'))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, onChange)
     .subscribe();
 }
 
-/* ─────────── الصلاحيات (الأدمن) ─────────── */
-export async function setRolePermission(roleId, section, on) {
-  return on
-    ? sb.from('role_permissions').insert({ role_id: roleId, section })
-    : sb.from('role_permissions').delete().eq('role_id', roleId).eq('section', section);
-}
-export async function setUserRole(userId, roleId) {
-  const { error } = await sb.from('profiles').update({ role_id: roleId }).eq('id', userId);
+/* ═══════════════ الهيكل التنظيمي (متزامن من Entra ID) ═══════════════ */
+export async function listOrgPeople() {
+  const { data, error } = await sb.from('org_people').select('*').order('display_name');
   if (error) throw error;
+  return data.map(p => ({ id: p.id, name: p.display_name, title: p.job_title, managerId: p.manager_id }));
+}
+
+// بينادي Edge Function اسمها sync-org، اللي بتسحب الداتا من Microsoft Graph
+// بصلاحيات التطبيق (مش صلاحيتك انت) وبتحدّث الجدول. الدالة نفسها بترفض
+// أي حد مالوش صلاحية "access" حتى لو حاول يناديها مباشرة.
+export async function syncOrgFromEntra() {
+  const { data, error } = await sb.functions.invoke('sync-org');
+  if (error) throw error;
+  return data;
 }

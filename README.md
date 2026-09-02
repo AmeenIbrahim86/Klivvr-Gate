@@ -1,132 +1,132 @@
-# Klivvr Gate — Company Portal
+# Company Portal
 
-An internal portal plus a buffet ordering system for 3 branches: **One Katameya**, **Ops Hub Mohandeseen**, and **Ops Hub Mossadak** (coming soon).
+بوابة داخلية + نظام طلبات بوفيه لتلات فروع: **ون قطامية**، **أوبس هَب المهندسين**، **أوبس هَب مصدق** (قريباً).
 
 | | |
 |---|---|
-| Frontend | Vite (vanilla JS) — no framework, on purpose |
+| Frontend | Vite (vanilla JS) — بدون framework عن قصد |
 | Backend | Supabase (Postgres + Auth + Realtime + RLS) |
-| Hosting | GitHub Pages via GitHub Actions |
-| Languages | Arabic / English with full RTL support |
+| Hosting | GitHub Pages عن طريق GitHub Actions |
+| اللغات | عربي / إنجليزي مع RTL كامل |
 
 ---
 
-## Architecture in two lines
+## المعمار في سطرين
 
-**The portal is company-wide** — news, policies, quick links, and events are shared across all branches, not split per branch.
-**Only the buffet is branch-scoped** — an employee picks their branch when ordering, and each branch has its own independent kitchen display.
+**البوابة واحدة للشركة كلها** — أخبار وسياسات ولينكات وأحداث، مش مقسّمة فروع.
+**البوفيه بس هو المقسّم فروع** — الموظف يحدد فرعه وقت الطلب، وكل فرع له شاشة مطبخ مستقلة.
 
-Permissions are built on **role × section**: each role (Admin, HR, Buffet team, Employee) can edit specific sections. This mapping is enforced in the database itself via RLS, not in the frontend — so there's no way to bypass it from the browser.
+الصلاحيات مبنية على **دور × قسم**: كل دور (أدمن، HR، فريق البوفيه، موظف) له صلاحية تعديل أقسام محددة. الجدول ده متطبّق في الـ database نفسها بـ RLS، مش في الـ frontend — يعني مفيش طريقة يتم تخطّيه من المتصفح.
 
-**The kitchen display requires no sign-in.** It runs on a token in the URL, and that token only unlocks two functions (`kitchen_board` and `kitchen_set_status`) — there's no direct table access. The view returns **first name only** — no emails, no personal data.
+**شاشة البوفيه مفيهاش تسجيل دخول.** بتشتغل بـ token في الـ URL، والـ token بيفتح دالتين بس (`kitchen_board` و `kitchen_set_status`) ومفيش وصول مباشر لأي جدول. الـ view بترجّع **الاسم الأول بس** — مفيش إيميلات ولا أرقام.
 
 ---
 
-## Running locally
+## التشغيل محلياً
 
 ```bash
-git clone https://github.com/AmeenIbrahim86/Klivvr-Gate.git
-cd Klivvr-Gate
+git clone https://github.com/<user>/company-portal.git
+cd company-portal
 npm install
-cp .env.example .env       # fill in the values
+cp .env.example .env       # املأ القيم
 npm run dev
 ```
 
-**Want to try it without a backend?** Set `VITE_USE_MOCK=true` in `.env` — the app will run on sample data.
+**عايز تجرب بدون backend؟** حط `VITE_USE_MOCK=true` في `.env` — التطبيق هيشتغل بداتا وهمية.
 
 ---
 
-## Setup from scratch
+## الإعداد من الصفر
 
-### 1. Supabase
-1. Create a new project at [supabase.com](https://supabase.com) — the **free tier** is enough to start
-2. **SQL Editor → New query** → paste the entire `supabase/schema.sql` file → **Run**
-3. **Project Settings → API** → copy the `Project URL` and `anon public key` into `.env`
-4. **Authentication → Providers** → enable **Azure** and add your `Client ID` and `Secret` from Entra ID
-   - In Entra: App registration → Redirect URI = `https://<project>.supabase.co/auth/v1/callback`
-   - This lets employees sign in with their company account — no new passwords
-5. **Important:** rotate the tokens in the `display_tokens` table to long random values:
+### ١. Supabase
+1. اعمل project جديد على [supabase.com](https://supabase.com) — الـ **free tier** كفاية للبداية
+2. **SQL Editor → New query** → الصق كل `supabase/schema.sql` → **Run**
+3. **Project Settings → API** → انسخ `Project URL` و `anon public key` في `.env`
+4. **Authentication → Providers** → فعّل **Azure** وحط `Client ID` و `Secret` من Entra ID
+   - في Entra: App registration → Redirect URI = `https://<project>.supabase.co/auth/v1/callback`
+   - كده الموظفين يدخلوا بحساب الشركة، مفيش باسوردات جديدة
+5. **مهم:** غيّر التوكنات في جدول `display_tokens` لقيم عشوائية طويلة:
    ```sql
    update display_tokens set token = encode(gen_random_bytes(24),'hex') where branch_id='kat';
    select branch_id, token from display_tokens;
    ```
-6. Make yourself an admin (after your first sign-in):
+6. اعمل نفسك أدمن (بعد أول تسجيل دخول):
    ```sql
-   update profiles set role_id='admin', branch_id='kat' where full_name ilike '%Ameen%';
+   update profiles set role_id='admin', branch_id='kat' where full_name ilike '%أمين%';
    ```
 
-### 2. GitHub
+### ٢. GitHub
 ```bash
 git init
 git add .
 git commit -m "Initial commit: portal + buffet ordering"
 git branch -M main
-git remote add origin https://github.com/AmeenIbrahim86/Klivvr-Gate.git
+git remote add origin https://github.com/<user>/company-portal.git
 git push -u origin main
 ```
 
 **Settings → Secrets and variables → Actions:**
 
-| Type | Name | Value |
+| النوع | الاسم | القيمة |
 |---|---|---|
-| Secret | `VITE_SUPABASE_URL` | your project URL |
-| Secret | `VITE_SUPABASE_ANON_KEY` | your anon key |
-| Variable | `VITE_BASE` | `/Klivvr-Gate/` |
+| Secret | `VITE_SUPABASE_URL` | رابط المشروع |
+| Secret | `VITE_SUPABASE_ANON_KEY` | الـ anon key |
+| Variable | `VITE_BASE` | `/company-portal/` |
 
 **Settings → Pages → Source → GitHub Actions**
 
-> It's fine for the `anon key` to be visible in the browser — it's designed for that, and the real protection is RLS. **But the `service_role` key must never go in the frontend or the repo** — it bypasses RLS entirely.
+> الـ `anon key` آمن إنه يبان في المتصفح — هو مصمم لكده، والحماية الحقيقية في RLS. **لكن الـ `service_role` key عمرك ما تحطه في الـ frontend ولا في الـ repo.**
 
-### 3. Kitchen display
-On each branch's device, open Edge in kiosk mode:
+### ٣. شاشة البوفيه
+على جهاز كل فرع، افتح Edge في وضع kiosk:
 
 ```bash
-msedge.exe --kiosk "https://AmeenIbrahim86.github.io/Klivvr-Gate/kitchen.html?token=<the-token>" --edge-kiosk-type=fullscreen
+msedge.exe --kiosk "https://<user>.github.io/company-portal/kitchen.html?token=<التوكن>" --edge-kiosk-type=fullscreen
 ```
 
-Set the device to **never sleep** (Power settings → Never sleep).
+اظبط الجهاز على **متينامش** (Power settings → Never sleep).
 
 ---
 
-## File structure
+## بنية الملفات
 
 ```
-├─ index.html              Portal + ordering + admin
-├─ kitchen.html             Kitchen display (no login)
+├─ index.html              البوابة + الطلب + الإدارة
+├─ kitchen.html            شاشة البوفيه (بدون login)
 ├─ src/
-│  ├─ api.js                ← the only file that talks to the backend
-│  ├─ i18n.js                Arabic/English strings
-│  ├─ ui/                    UI components
-│  └─ styles.css             Design tokens and colours
-├─ supabase/schema.sql      Tables + RLS + display functions
-├─ public/prototype.html    The original prototype (reference, runs standalone)
-└─ .github/workflows/       Automated deployment
+│  ├─ api.js               ← الملف الوحيد اللي بيكلّم الـ backend
+│  ├─ i18n.js              نصوص عربي/إنجليزي
+│  ├─ ui/                  مكوّنات الواجهة
+│  └─ styles.css           التوكنات والألوان
+├─ supabase/schema.sql     الجداول + RLS + دوال الشاشة
+├─ public/prototype.html   النموذج الأصلي (مرجع، شغّال لوحده)
+└─ .github/workflows/      النشر التلقائي
 ```
 
-**Rule:** anything that touches data goes through `src/api.js`. Swap the backend later, and you only edit one file.
+**قاعدة:** أي حاجة بتلمس الداتا تمر من `src/api.js`. لو غيّرت الـ backend، تعدّل ملف واحد.
 
 ---
 
-## Roadmap
+## خطة الشغل
 
-- [x] Working prototype with all screens
-- [x] Schema + RLS + login-free display
-- [ ] **Phase 1** — push the repo, run the schema, deploy the prototype as-is
-- [ ] **Phase 2** — swap the local storage layer for `src/api.js`
-- [ ] **Phase 3** — Microsoft sign-in + real permissions
-- [ ] **Phase 4** — Realtime on the kitchen display instead of polling
-- [ ] **Phase 5** — upload policy files to Supabase Storage
-- [ ] **Phase 6** — notifications (Teams webhook or web push)
-- [ ] Later — payments, and the Mossadak branch
+- [x] نموذج شغّال بكل الشاشات
+- [x] schema + RLS + شاشة بدون login
+- [ ] **المرحلة ١** — ارفع الـ repo، شغّل الـ schema، انشر النموذج زي ما هو
+- [ ] **المرحلة ٢** — بدّل طبقة التخزين المحلية بـ `src/api.js`
+- [ ] **المرحلة ٣** — تسجيل دخول Microsoft + الصلاحيات الحقيقية
+- [ ] **المرحلة ٤** — Realtime على شاشة البوفيه بدل polling
+- [ ] **المرحلة ٥** — رفع ملفات السياسات على Supabase Storage
+- [ ] **المرحلة ٦** — إشعارات (Teams webhook أو web push)
+- [ ] لاحقاً — الدفع، وفرع مصدق
 
 ---
 
-## Decisions and why
+## قرارات وأسبابها
 
-**Why no framework?** The prototype runs on vanilla JS and its footprint is small. React would add build complexity without a clear benefit at this size. If the app grows to 20+ screens, we'll revisit.
+**ليه مفيش framework؟** النموذج بيشتغل بـ vanilla JS وحجمه صغير. React هيضيف build complexity من غير فايدة واضحة على الحجم ده. لو التطبيق كبر لـ ٢٠ شاشة، ساعتها نفكر.
 
-**Why Supabase over Firebase?** We need SQL and real row-level security — permissions here are compound (role × section × branch), and that's far cleaner in Postgres.
+**ليه Supabase مش Firebase؟** محتاجين SQL و row-level security حقيقي — الصلاحيات هنا معقدة (دور × قسم × فرع) وده أنضف بكتير في Postgres.
 
-**Why GitHub Pages?** Free and tied directly to the repo. If a custom domain or edge functions are needed later, moving to Cloudflare Pages keeps roughly the same workflow.
+**ليه GitHub Pages؟** مجاني ومربوط بالـ repo. لو احتجت domain خاص أو edge functions، انقل لـ Cloudflare Pages — نفس الـ workflow تقريباً.
 
-**Why first name only on the kitchen display?** The screen hangs in a public space. There's no reason to show full names or emails on a wall.
+**ليه الاسم الأول بس في شاشة البوفيه؟** الشاشة معلّقة في مكان عام. مفيش سبب تعرض أسماء كاملة أو إيميلات على حيطة.
