@@ -117,10 +117,10 @@ const MAP = {
   },
   menu: {
     toDb: r => ({ name_ar: r.ar, name_en: r.en, category: r.cat, price: Number(r.price) || 0,
-      has_sugar: !!r.sugar, is_available: r.avail !== false, colour: r.col || '#B5651D', is_square: !!r.sq,
+      has_sugar: !!r.sugar, has_milk: !!r.milk, is_available: r.avail !== false, colour: r.col || '#B5651D', is_square: !!r.sq,
       branch_id: (!r.site || r.site === 'all') ? null : r.site }),
     fromDb: r => ({ id: r.id, ar: r.name_ar, en: r.name_en, cat: r.category, price: Number(r.price),
-      sugar: r.has_sugar, avail: r.is_available, col: r.colour, sq: r.is_square, site: r.branch_id || 'all' }),
+      sugar: r.has_sugar, milk: r.has_milk, avail: r.is_available, col: r.colour, sq: r.is_square, site: r.branch_id || 'all' }),
   },
 };
 
@@ -165,7 +165,7 @@ export async function submitOrder({ branchId, requesterName, location, lines }) 
     lines.map(l => ({
       order_id: order.id, menu_item_id: l.menuItemId,
       name_ar: l.nameAr, name_en: l.nameEn,
-      qty: l.qty, sugar_level: l.sugar, note: l.note,
+      qty: l.qty, sugar_level: l.sugar, milk: l.milk ?? null, note: l.note,
       line_total: l.price * l.qty
     }))
   );

@@ -11,12 +11,13 @@ import * as api from './api.js';
 /* ═══════════════ copy ═══════════════ */
 const L = { ar: {
  portal:"البوابة",order:"اطلب من البوفيه",admin:"الإدارة",
- sitename:"بوابة الشركة",mark:"ب",
+ sitename:"بوابة كليفر",mark:"ب",
  news:"أخبار الشركة",links:"لينكات سريعة",docs:"السياسات الداخلية",events:"الأحداث القادمة",
  viewall:"عرض الكل",calendar:"التقويم",
  bandT:"محتاج شاي أو قهوة؟",bandB:"اطلب من مكتبك، وطلبك يظهر على شاشة البوفيه في ثواني.",bandC:"اطلب دلوقتي ←",
  all:"الكل",
  sugar:"السكر",qty:"الكمية",notePH:"ملاحظة (اختياري)",addTo:"ضيف للطلب",
+ milk:"اللبن",withMilk:"بلبن",noMilk:"من غير لبن",hasMilk:"له اختيار لبن",
  yourOrder:"طلبك",emptyCart:"لسه مضفتش حاجة",emptyCartB:"اختار من القائمة على الجنب",send:"ادفع الآن",cur:"ج.م",
  payTitle:"ادفع عن طريق InstaPay",payHint:"امسح الكود بتطبيق InstaPay وحوّل قيمة الطلب، وبعدين دوس تأكيد.",payConfirm:"تم الدفع، تأكيد الطلب",payBack:"رجوع للسلة",
  where:"مكانك",wherePH:"مثال: مكتب ٣١٢",
@@ -43,12 +44,13 @@ const L = { ar: {
  noBranch:"مش متعيّن على فرع دلوقتي — كلّم الأدمن يحطك في فرع.",
 },en:{
  portal:"Portal",order:"Order from buffet",admin:"Admin",
- sitename:"Company Portal",mark:"P",
+ sitename:"Klivvr Gate",mark:"P",
  news:"Company news",links:"Quick links",docs:"Internal policies",events:"Upcoming events",
  viewall:"View all",calendar:"Calendar",
  bandT:"Need a tea or a coffee?",bandB:"Order from your desk. It lands on the buffet screen in seconds.",bandC:"Order now →",
  all:"All",
  sugar:"Sugar",qty:"Quantity",notePH:"Note (optional)",addTo:"Add to order",
+ milk:"Milk",withMilk:"With milk",noMilk:"No milk",hasMilk:"Has milk option",
  yourOrder:"Your order",emptyCart:"Nothing added yet",emptyCartB:"Pick something from the menu",send:"Pay now",cur:"EGP",
  payTitle:"Pay via InstaPay",payHint:"Scan the code in the InstaPay app and transfer the order total, then confirm.",payConfirm:"Paid — confirm order",payBack:"Back to cart",
  where:"Where you are",wherePH:"e.g. Office 312",
@@ -163,13 +165,14 @@ function renderSignIn(){
   document.documentElement.lang=lang;
   document.documentElement.dir=lang==="ar"?"rtl":"ltr";
   $("#app").innerHTML = `<div class="signin"><div class="signin-card">
-    <div class="logomark" style="width:52px;height:52px;border-radius:15px;margin:0 auto 16px;background:var(--indigo)"><span style="font-size:23px">${t("mark")}</span></div>
+    <img src="/klivvr-icon.png" alt="Klivvr" style="width:52px;height:52px;border-radius:15px;margin:0 auto 16px;display:block">
     <h1>${t("sitename")}</h1>
     <p>${t("signInSub")}</p>
     <button class="btn" style="width:100%;margin-top:20px" onclick="doSignIn()">${t("signInBtn")}</button>
     <span class="signin-lang">
       <button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
       <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span>
+    <img src="/klivvr-wordmark.svg" alt="klivvr" class="signin-wordmark">
   </div></div>`;
 }
 function renderLoading(){
@@ -186,7 +189,7 @@ function shell(inner){
   const tabs=[["portal",t("portal")],["order",t("order")],["org",t("orgChart")]];
   if(role().perms.length)tabs.push(["admin",t("admin")]);
   return `<div class="topbar">
-    <div class="brand"><div class="logomark"><span>${t("mark")}</span></div><b>${t("sitename")}</b></div>
+    <div class="brand"><img src="/klivvr-icon.png" alt="Klivvr" class="logomark"><b>${t("sitename")}</b></div>
     <nav class="topnav">${tabs.map(([k,v])=>`<button class="${view===k?"on":""}" onclick="go('${k}')">${v}</button>`).join("")}
       <span class="langsw"><button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
       <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span>
@@ -248,7 +251,7 @@ function vOrder(){
   <div class="ordwrap"><div>
     <div class="cats">${CATS.map(c=>
       `<button class="${cat===c.k?"on":""}" onclick="setCat('${c.k}')">${esc(nm(c))}</button>`).join("")}</div>
-    <div class="mgrid">${list.map(m=>{const o=openM===m.id,d=draft[m.id]||{q:1,s:2,note:""};
+    <div class="mgrid">${list.map(m=>{const o=openM===m.id,d=draft[m.id]||{q:1,s:2,milk:false,note:""};
       return `<div class="mitem ${o?"open":""}">
         <button class="mrow" onclick="tog('${m.id}')">
           <span class="swatch ${m.sq?"sq":""}"><i style="background:${esc(m.col)};${m.sq?"height:100%":""}"></i></span>
@@ -257,6 +260,10 @@ function vOrder(){
         <div class="opts">
           ${m.sugar?`<div class="optlbl">${t("sugar")}</div><div class="sugars">${SUG.map((s,i)=>
             `<button class="sugar ${d.s===i?"on":""}" onclick="setSug('${m.id}',${i})">${dots(i)}<em>${esc(nm(s))}</em></button>`).join("")}</div>`:""}
+          ${m.milk?`<div class="optlbl">${t("milk")}</div><div class="sugars">
+            <button class="sugar ${!d.milk?"on":""}" onclick="setMilk('${m.id}',false)">🥛<em>${t("noMilk")}</em></button>
+            <button class="sugar ${d.milk?"on":""}" onclick="setMilk('${m.id}',true)">🥛<em>${t("withMilk")}</em></button>
+          </div>`:""}
           <div class="optlbl">${t("qty")}</div>
           <div class="qtyrow"><div class="stepper">
             <button onclick="stp('${m.id}',-1)">−</button><span class="v">${num(d.q)}</span><button onclick="stp('${m.id}',1)">+</button></div>
@@ -267,7 +274,7 @@ function vOrder(){
    <div class="card cart"><div class="ph"><h3>${t("yourOrder")}</h3></div>
      ${cart.length?cart.map((c,i)=>{const m=mi(c.m);return `<div class="cline">
         <span class="q">${num(c.q)}×</span>
-        <span style="flex:1">${esc(nm(m))}${c.s!=null?` <span style="color:var(--muted);font-size:11.5px">· ${esc(nm(SUG[c.s]))}</span>`:""}
+        <span style="flex:1">${esc(nm(m))}${c.s!=null?` <span style="color:var(--muted);font-size:11.5px">· ${esc(nm(SUG[c.s]))}</span>`:""}${c.milk?` <span style="color:var(--muted);font-size:11.5px">· ${t("withMilk")}</span>`:""}
           ${c.note?`<div style="font-size:11px;color:var(--coral-ink)">${esc(c.note)}</div>`:""}</span>
         <span class="mono" style="font-size:12px;color:var(--muted)">${num(m.price*c.q)}</span>
         <button class="x" onclick="rmCart(${i})">×</button></div>`}).join("")
@@ -289,13 +296,14 @@ function vPickBranch(){
         <span class="psub">${s.live?num(M.filter(m=>inBranch(m,s.id)&&m.avail).length)+" "+t("itemsAvail"):t("soon")}</span>
       </button>`).join("")}</div></div>`;
 }
-function tog(id){openM=openM===id?null:id;if(openM&&!draft[id])draft[id]={q:1,s:2,note:""};render()}
+function tog(id){openM=openM===id?null:id;if(openM&&!draft[id])draft[id]={q:1,s:2,milk:false,note:""};render()}
 function setSug(id,s){draft[id].s=s;render()}
+function setMilk(id,v){draft[id].milk=v;render()}
 function stp(id,d){draft[id].q=Math.max(1,Math.min(30,draft[id].q+d));render()}
 function setNote(id,v){draft[id].note=v}
 function addCart(id){const m=mi(id),d=draft[id];
-  cart.push({m:id,q:d.q,s:m.sugar?d.s:null,note:(d.note||"").trim()});
-  draft[id]={q:1,s:2,note:""};openM=null;render()}
+  cart.push({m:id,q:d.q,s:m.sugar?d.s:null,milk:m.milk?!!d.milk:null,note:(d.note||"").trim()});
+  draft[id]={q:1,s:2,milk:false,note:""};openM=null;render()}
 function rmCart(i){cart.splice(i,1);render()}
 function startPay(){if(!cart.length)return;paying=true;render()}
 function payBack(){paying=false;render()}
@@ -314,7 +322,7 @@ async function submitOrder(){
     const orderNo = await api.submitOrder({
       branchId: branch, requesterName: nm(myProfile), location: where || "—",
       lines: cart.map(c=>{ const m=mi(c.m); return {
-        menuItemId: c.m, nameAr: m.ar, nameEn: m.en, qty: c.q, sugar: c.s, note: c.note, price: m.price
+        menuItemId: c.m, nameAr: m.ar, nameEn: m.en, qty: c.q, sugar: c.s, milk: c.milk, note: c.note, price: m.price
       };})
     });
     lastOrderNo = orderNo; cart=[]; paying=false; view="confirmed"; render();
@@ -429,7 +437,9 @@ function form(k){
       <div class="fld"><label>${t("cat")}</label><select class="inp" onchange="setEditCat(this.value)">
         ${CATS.filter(c=>c.k!=="all").map(c=>`<option value="${c.k}" ${d.cat===c.k?"selected":""}>${esc(nm(c))}</option>`).join("")}</select></div>
       <div class="fld"><label>${t("hasSugar")}</label><select class="inp" onchange="setEditSugar(this.value)">
-        <option value="1" ${d.sugar?"selected":""}>✓</option><option value="0" ${d.sugar?"":"selected"}>✕</option></select></div>`:""}
+        <option value="1" ${d.sugar?"selected":""}>✓</option><option value="0" ${d.sugar?"":"selected"}>✕</option></select></div>
+      <div class="fld"><label>${t("hasMilk")}</label><select class="inp" onchange="setEditMilk(this.value)">
+        <option value="1" ${d.milk?"selected":""}>✓</option><option value="0" ${d.milk?"":"selected"}>✕</option></select></div>`:""}
     </div>
     <div class="formacts"><button class="btn sm" onclick="saveItem('${k}')">${t("save")}</button>
       <button class="btn ghost sm" onclick="cancelEdit()">${t("cancel")}</button></div></div>`;
@@ -437,7 +447,7 @@ function form(k){
 function startEdit(k,id){
   const arr=k==="menu"?M:C[k];
   edit = id ? structuredClone(arr.find(x=>x.id===id))
-    : (k==="menu" ? {site:"all",cat:"snacks",price:10,sugar:false,avail:true,col:"#B5651D"} : {});
+    : (k==="menu" ? {site:"all",cat:"snacks",price:10,sugar:false,milk:false,avail:true,col:"#B5651D"} : {});
   eKind=k; render();
 }
 function cancelEdit(){edit=null;render()}
@@ -445,6 +455,7 @@ function setEditField(key,v){edit[key]=v}
 function setEditSite(v){edit.site=v}
 function setEditCat(v){edit.cat=v}
 function setEditSugar(v){edit.sugar=(v==="1")}
+function setEditMilk(v){edit.milk=(v==="1")}
 async function saveItem(k){
   if(k==="menu")edit.price=Number(edit.price)||0;
   try{
@@ -521,7 +532,7 @@ async function setBranchAdm(id,bid){
 /* ═══════════════ expose handlers used by inline HTML onclick/onchange ═══════════════ */
 Object.assign(window, {
   doSignIn, doSignOut, go, setLang, setBranch, changeBranch, setCat, setWhere,
-  tog, setSug, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder,
-  setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar,
+  tog, setSug, setMilk, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder,
+  setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk,
   saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg,
 });

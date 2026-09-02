@@ -126,6 +126,7 @@ create table menu_items (
   category text not null,
   price numeric(10,2) not null default 0,
   has_sugar boolean default false,
+  has_milk boolean default false,
   is_available boolean default true,
   colour text default '#B5651D',
   is_square boolean default false,
@@ -224,6 +225,7 @@ create table order_items (
   name_ar text, name_en text,
   qty int not null default 1,
   sugar_level int check (sugar_level between 0 and 3),
+  milk boolean,
   note text,
   line_total numeric(10,2) default 0
 );
@@ -331,7 +333,7 @@ begin
            o.location, o.status, o.created_at,
            coalesce(jsonb_agg(jsonb_build_object(
              'name_ar', i.name_ar, 'name_en', i.name_en,
-             'qty', i.qty, 'sugar', i.sugar_level, 'note', i.note
+             'qty', i.qty, 'sugar', i.sugar_level, 'milk', i.milk, 'note', i.note
            )) filter (where i.id is not null), '[]'::jsonb)
       from orders o
       left join order_items i on i.order_id = o.id
