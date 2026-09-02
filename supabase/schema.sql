@@ -368,3 +368,15 @@ grant execute on function public.kitchen_set_status(text,text,text) to anon;
 -- ─── Realtime للشاشة (أحسن من polling كل ٣٠ ثانية) ───
 alter publication supabase_realtime add table orders;
 alter publication supabase_realtime add table order_items;
+
+-- ══════════════════════════════════════════════════════════════
+--  GRANT — دي طبقة منفصلة عن RLS، وده تفصيلة سهل حد ينساها:
+--  RLS بتحدد إيه الصفوف اللي تقدر تشوفها، لكن الـ role لازم يكون
+--  عنده أصلاً حق يلمس الجدول (GRANT) قبل ما RLS تتفعّل خالص.
+--  السطور دي احتياطية — لو الـ project عندك مظبوط صح بالفعل مش هتغيّر حاجة.
+-- ══════════════════════════════════════════════════════════════
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on all tables in schema public to authenticated;
+grant usage, select on all sequences in schema public to authenticated;
+alter default privileges in schema public grant select, insert, update, delete on tables to authenticated;
+alter default privileges in schema public grant usage, select on sequences to authenticated;

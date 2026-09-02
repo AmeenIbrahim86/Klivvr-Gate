@@ -14,3 +14,5 @@ create table if not exists org_people (
 alter table org_people enable row level security;
 
 create policy read_org on org_people for select to authenticated using (true);
+
+grant select, insert, update, delete on org_people to authenticated;

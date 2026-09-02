@@ -218,7 +218,7 @@ function vPortal(){
 
   <div class="eyebrow" style="margin-top:26px">${t("links")}</div>
   <div class="qgrid"><button class="qtile feat" onclick="go('order')"><span class="qicon">☕</span>${t("order")}</button>
-    ${links.map(l=>`<a class="qtile" href="${esc(l.url||"#")}" target="_blank" rel="noopener"><span class="qicon">${esc(l.icon)}</span>${esc(nm(l))}</a>`).join("")}</div>
+    ${links.map(l=>`<a class="qtile" href="${esc(l.url||"#")}"><span class="qicon">${esc(l.icon)}</span>${esc(nm(l))}</a>`).join("")}</div>
 
   <div class="eyebrow" style="margin-top:26px">${t("docs")} · ${t("events")}</div>
   <div class="twocol">
