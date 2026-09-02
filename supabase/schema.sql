@@ -341,8 +341,8 @@ create extension if not exists pgcrypto;
 
 alter table branches add column if not exists screen_password_hash text;
 -- باسوردات ابتدائية — غيّرهم فورًا من الإدارة → نظرة عامة
-update branches set screen_password_hash = crypt('710210', gen_salt('bf')) where id = 'kat';
-update branches set screen_password_hash = crypt('304576', gen_salt('bf')) where id = 'moh';
+update branches set screen_password_hash = extensions.crypt('710210', extensions.gen_salt('bf')) where id = 'kat';
+update branches set screen_password_hash = extensions.crypt('304576', extensions.gen_salt('bf')) where id = 'moh';
 
 create or replace function public.kitchen_login(_branch text, _password text)
 returns boolean language plpgsql security definer set search_path = public as $$
@@ -350,7 +350,7 @@ declare _hash text;
 begin
   select screen_password_hash into _hash from branches where id = _branch;
   if _hash is null then return false; end if;
-  return crypt(_password, _hash) = _hash;
+  return extensions.crypt(_password, _hash) = _hash;
 end $$;
 
 -- دالة القراءة: الباسورد بس هو اللي يفتح، وبترجّع الحاجة اللي الشاشة محتاجاها بس
@@ -411,7 +411,7 @@ begin
   if length(_new_password) < 4 then
     raise exception 'password too short';
   end if;
-  update branches set screen_password_hash = crypt(_new_password, gen_salt('bf')) where id = _branch;
+  update branches set screen_password_hash = extensions.crypt(_new_password, extensions.gen_salt('bf')) where id = _branch;
 end $$;
 
 -- الوصول للدالتين دول بس — مفيش وصول مباشر لأي جدول
