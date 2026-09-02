@@ -203,10 +203,10 @@ function renderError(e){
   </div></div>`;
 }
 function shell(inner){
-  const tabs=[["portal",t("portal")],["order",t("order")]];
+  const tabs=[["order",t("order")]];
   if(role().perms.length)tabs.push(["admin",t("admin")]);
   return `<div class="topbar">
-    <div class="brand"><img src="/klivvr-icon.png" alt="Klivvr" class="logomark"><b>${t("sitename")}</b></div>
+    <button class="brand" onclick="go('portal')"><img src="/klivvr-icon.png" alt="Klivvr" class="logomark"><b>${t("sitename")}</b></button>
     <nav class="topnav">${tabs.map(([k,v])=>`<button class="${view===k?"on":""}" onclick="go('${k}')">${v}</button>`).join("")}
       <span class="langsw"><button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
       <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span>
@@ -257,11 +257,12 @@ function vPortal(){
         <div><b>${esc(nm(e))}</b><div class="sub">${esc(lang==="ar"?e.placeAR:e.placeEN)}</div></div></div>`).join("")
        :`<div class="empty"><b>—</b>${t("events")}</div>`}</div></div>
 
-  ${GALLERY.length?`<div class="eyebrow" style="margin-top:26px">${t("gallery")}</div>
+  <div class="eyebrow" style="margin-top:26px">${t("gallery")}</div>
   <div class="card"><div class="ph"><h3>${t("gallery")}</h3><a href="#" onclick="go('gallery');return false">${t("viewall")}</a></div>
-    <div class="gal-grid gal-grid-sm" style="padding:16px">${GALLERY.slice(0,6).map(g=>`<div class="gal-item">
+    ${GALLERY.length?`<div class="gal-grid gal-grid-sm" style="padding:16px">${GALLERY.slice(0,6).map(g=>`<div class="gal-item">
         <img src="${esc(g.url)}" loading="lazy">
-        ${g.caption?`<div class="gal-cap">${esc(g.caption)}</div>`:""}</div>`).join("")}</div></div>` : ""}
+        ${g.caption?`<div class="gal-cap">${esc(g.caption)}</div>`:""}</div>`).join("")}</div>`
+     :`<div class="empty"><b>—</b>${t("galleryEmpty")}</div>`}</div>
 
   <div class="band"><div><h2>${t("bandT")}</h2><p>${t("bandB")}</p></div>
     <button class="btn" onclick="go('order')">${t("bandC")}</button></div>`;
