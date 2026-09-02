@@ -203,7 +203,7 @@ function renderError(e){
   </div></div>`;
 }
 function shell(inner){
-  const tabs=[["portal",t("portal")],["order",t("order")],["org",t("orgChart")],["gallery",t("gallery")]];
+  const tabs=[["portal",t("portal")],["order",t("order")]];
   if(role().perms.length)tabs.push(["admin",t("admin")]);
   return `<div class="topbar">
     <div class="brand"><img src="/klivvr-icon.png" alt="Klivvr" class="logomark"><b>${t("sitename")}</b></div>
@@ -239,6 +239,8 @@ function vPortal(){
 
   <div class="eyebrow" style="margin-top:26px">${t("links")}</div>
   <div class="qgrid"><button class="qtile feat" onclick="go('order')"><span class="qicon">☕</span>${t("order")}</button>
+    <button class="qtile feat" onclick="go('org')"><span class="qicon">🧭</span>${t("orgChart")}</button>
+    <button class="qtile feat" onclick="go('gallery')"><span class="qicon">🖼️</span>${t("gallery")}</button>
     ${links.map(l=>`<a class="qtile" href="${esc(l.url||"#")}"><span class="qicon">${esc(l.icon)}</span>${esc(nm(l))}</a>`).join("")}</div>
 
   <div class="eyebrow" style="margin-top:26px">${t("docs")} · ${t("events")}</div>
@@ -254,6 +256,12 @@ function vPortal(){
         ${e.image?`<img src="${esc(e.image)}" class="evt-thumb">`:""}
         <div><b>${esc(nm(e))}</b><div class="sub">${esc(lang==="ar"?e.placeAR:e.placeEN)}</div></div></div>`).join("")
        :`<div class="empty"><b>—</b>${t("events")}</div>`}</div></div>
+
+  ${GALLERY.length?`<div class="eyebrow" style="margin-top:26px">${t("gallery")}</div>
+  <div class="card"><div class="ph"><h3>${t("gallery")}</h3><a href="#" onclick="go('gallery');return false">${t("viewall")}</a></div>
+    <div class="gal-grid gal-grid-sm" style="padding:16px">${GALLERY.slice(0,6).map(g=>`<div class="gal-item">
+        <img src="${esc(g.url)}" loading="lazy">
+        ${g.caption?`<div class="gal-cap">${esc(g.caption)}</div>`:""}</div>`).join("")}</div></div>` : ""}
 
   <div class="band"><div><h2>${t("bandT")}</h2><p>${t("bandB")}</p></div>
     <button class="btn" onclick="go('order')">${t("bandC")}</button></div>`;
