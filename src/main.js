@@ -341,16 +341,20 @@ function orgNode(p, byManager){
   return `<li>${orgCard(p)}${kids.length?`<ul>${kids.map(k=>orgNode(k,byManager)).join("")}</ul>`:""}</li>`;
 }
 function vOrg(){
-  // يظهر بس اللي له منصب ومدير الاتنين مع بعض
-  const kept = ORG.filter(p=>p.title&&p.title.trim()&&p.managerId);
+  // لازم منصب دايمًا. المدير مطلوب إلا لو الشخص قمة هرم حقيقي (ليه ناس تحته بمنصب)
+  const titled = ORG.filter(p=>p.title&&p.title.trim());
+  const byManagerAll={};
+  titled.forEach(p=>{ if(p.managerId)(byManagerAll[p.managerId]=byManagerAll[p.managerId]||[]).push(p); });
+  const hasReports=id=>!!(byManagerAll[id]&&byManagerAll[id].length);
+  const kept = titled.filter(p=>p.managerId||hasReports(p.id));
   const keptIds = new Set(kept.map(p=>p.id));
   const byManager={};
-  kept.forEach(p=>{ (byManager[p.managerId]=byManager[p.managerId]||[]).push(p); });
+  kept.forEach(p=>{ if(p.managerId)(byManager[p.managerId]=byManager[p.managerId]||[]).push(p); });
   const roots = kept.filter(p=>!keptIds.has(p.managerId));
   return `<div class="eyebrow">${t("orgChart")}</div>
     ${can("access")?`<button class="btn ghost sm" style="margin-bottom:14px" onclick="syncOrg()" id="orgSyncBtn">${t("orgSync")}</button>`:""}
     ${kept.length
-      ?`<div class="card org-wrap" dir="ltr"><ul class="orgchart">${roots.map(r=>orgNode(r,byManager)).join("")}</ul></div>`
+      ?`<div class="card org-wrap"><div class="org-scroll" dir="ltr"><ul class="orgchart">${roots.map(r=>orgNode(r,byManager)).join("")}</ul></div></div>`
       :`<div class="card empty"><b>—</b>${t("orgEmpty")}</div>`}`;
 }
 async function syncOrg(){
