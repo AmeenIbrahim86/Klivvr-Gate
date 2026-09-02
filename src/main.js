@@ -336,20 +336,22 @@ function orgCard(p){
   return `<div class="org-card"><span class="av">${esc((p.name||"?")[0]||"?")}</span>
     <div><b>${esc(p.name||"—")}</b>${p.title?`<span>${esc(p.title)}</span>`:""}</div></div>`;
 }
-function orgTree(nodeId, byManager){
-  const kids=byManager[nodeId]||[];
-  if(!kids.length)return "";
-  return kids.map(k=>`<div class="org-node">${orgCard(k)}${orgTree(k.id,byManager)}</div>`).join("");
+function orgNode(p, byManager){
+  const kids = byManager[p.id]||[];
+  return `<li>${orgCard(p)}${kids.length?`<ul>${kids.map(k=>orgNode(k,byManager)).join("")}</ul>`:""}</li>`;
 }
 function vOrg(){
   const byManager={};
   ORG.forEach(p=>{ if(p.managerId){ (byManager[p.managerId]=byManager[p.managerId]||[]).push(p); } });
-  const knownIds=new Set(ORG.map(p=>p.id));
-  const roots=ORG.filter(p=>!p.managerId||!knownIds.has(p.managerId));
+  const hasReports=id=>!!(byManager[id]&&byManager[id].length);
+  // اللي معاهوش مدير ومعاهوش تقارير (يعني حساب خدمة/معزول) بيتشال خالص
+  const kept = ORG.filter(p=>p.managerId||hasReports(p.id));
+  const keptIds = new Set(kept.map(p=>p.id));
+  const roots = kept.filter(p=>!p.managerId||!keptIds.has(p.managerId));
   return `<div class="eyebrow">${t("orgChart")}</div>
     ${can("access")?`<button class="btn ghost sm" style="margin-bottom:14px" onclick="syncOrg()" id="orgSyncBtn">${t("orgSync")}</button>`:""}
-    ${ORG.length
-      ?`<div class="card org-wrap">${roots.map(r=>`<div class="org-root">${orgCard(r)}${orgTree(r.id,byManager)}</div>`).join("")}</div>`
+    ${kept.length
+      ?`<div class="card org-wrap" dir="ltr"><ul class="orgchart">${roots.map(r=>orgNode(r,byManager)).join("")}</ul></div>`
       :`<div class="card empty"><b>—</b>${t("orgEmpty")}</div>`}`;
 }
 async function syncOrg(){
