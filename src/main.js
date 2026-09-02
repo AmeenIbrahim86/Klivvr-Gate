@@ -27,6 +27,7 @@ const L = { ar: {
  add:"إضافة",save:"حفظ",cancel:"إلغاء",
  tag:"التصنيف",titleAR:"العنوان بالعربي",titleEN:"العنوان بالإنجليزي",bodyAR:"النص بالعربي",bodyEN:"النص بالإنجليزي",
  author:"الكاتب",date:"التاريخ",icon:"الأيقونة",url:"اللينك",dept:"القسم",version:"الإصدار",
+ image:"لينك الصورة",imageHint:"الصق لينك صورة من الإنترنت (اختياري)",
  place:"المكان",day:"اليوم",month:"الشهر",cat:"التصنيف",price:"السعر",hasSugar:"له اختيارات سكر",avail:"متاح",color:"اللون",
  branch:"الفرع",allBranches:"كل الفروع",branches:"الفروع",role:"الدور",people:"الناس",
  whichBranch:"انت في أنهي فرع؟",whichBranchB:"عشان الطلب يروح لبوفيه الفرع الصح.",
@@ -61,6 +62,7 @@ const L = { ar: {
  add:"Add",save:"Save",cancel:"Cancel",
  tag:"Tag",titleAR:"Title (Arabic)",titleEN:"Title (English)",bodyAR:"Body (Arabic)",bodyEN:"Body (English)",
  author:"Author",date:"Date",icon:"Icon",url:"Link",dept:"Department",version:"Version",
+ image:"Image link",imageHint:"Paste an image link from the internet (optional)",
  place:"Place",day:"Day",month:"Month",cat:"Category",price:"Price",hasSugar:"Has sugar options",avail:"Available",color:"Colour",
  branch:"Branch",allBranches:"All branches",branches:"Branches",role:"Role",people:"People",
  whichBranch:"Which branch are you at?",whichBranchB:"So the order reaches the right buffet.",
@@ -93,10 +95,10 @@ const TABS = [["overview","overview","▦",null],["news","aNews","✦","news"],[
  ["policies","aPolicies","▤","policies"],["events","aEvents","▣","events"],["menu","aMenu","☕","menu"],
  ["access","aAccess","⚿","access"]];
 const FIELDS = {
- news:[["tagAR","tag"],["tagEN","tag"],["titleAR","titleAR"],["titleEN","titleEN"],["bodyAR","bodyAR",1],["bodyEN","bodyEN",1],["author","author"],["date","date"]],
+ news:[["tagAR","tag"],["tagEN","tag"],["titleAR","titleAR"],["titleEN","titleEN"],["bodyAR","bodyAR",1],["bodyEN","bodyEN",1],["author","author"],["date","date"],["image","image"]],
  links:[["ar","titleAR"],["en","titleEN"],["icon","icon"],["url","url"]],
  policies:[["ar","titleAR"],["en","titleEN"],["dept","dept"],["ver","version"],["date","date"]],
- events:[["ar","titleAR"],["en","titleEN"],["placeAR","place"],["placeEN","place"],["day","day"],["monAR","month"],["monEN","month"]],
+ events:[["ar","titleAR"],["en","titleEN"],["placeAR","place"],["placeEN","place"],["day","day"],["monAR","month"],["monEN","month"],["image","image"]],
  menu:[["ar","titleAR"],["en","titleEN"],["price","price"],["col","color"]]};
 
 /* ═══════════════ state ═══════════════ */
@@ -211,13 +213,14 @@ function vPortal(){
   const news=C.news,lead=news[0],rest=news.slice(1,4);
   const links=C.links,pol=C.policies,ev=C.events;
   return `<div class="eyebrow">${t("news")}</div>
-  ${lead?`<div class="hero">
+  ${lead?`<div class="hero ${lead.image?"has-photo":""}" ${lead.image?`style="background-image:url('${esc(lead.image)}')"`:""}>
     <div class="hero-main"><span class="pill">${esc(lang==="ar"?lead.tagAR:lead.tagEN)}</span>
       <h2>${esc(lang==="ar"?lead.titleAR:lead.titleEN)}</h2>
       <p>${esc(lang==="ar"?lead.bodyAR:lead.bodyEN)}</p>
       <div class="by">${esc(lead.author)} · <span class="mono">${esc(lead.date)}</span></div></div>
-    <div class="hero-side">${rest.map(n=>`<button><h4>${esc(lang==="ar"?n.titleAR:n.titleEN)}</h4>
-      <span>${esc(lang==="ar"?n.tagAR:n.tagEN)} · ${esc(n.date)}</span></button>`).join("")||
+    <div class="hero-side">${rest.map(n=>`<button>${n.image?`<img src="${esc(n.image)}" class="news-thumb">`:""}
+      <span class="hero-side-txt"><h4>${esc(lang==="ar"?n.titleAR:n.titleEN)}</h4>
+      <span>${esc(lang==="ar"?n.tagAR:n.tagEN)} · ${esc(n.date)}</span></span></button>`).join("")||
       `<div style="color:#A5A2CB;font-size:12.5px;text-align:center">—</div>`}</div></div>`
    :`<div class="card empty"><b>${t("news")}</b>—</div>`}
 
@@ -235,6 +238,7 @@ function vPortal(){
     <div class="card"><div class="ph"><h3>${t("events")}</h3><a href="#">${t("calendar")}</a></div>
       ${ev.length?ev.map(e=>`<div class="row">
         <div class="datechip"><div class="m">${esc(lang==="ar"?e.monAR:e.monEN)}</div><div class="d mono">${esc(e.day)}</div></div>
+        ${e.image?`<img src="${esc(e.image)}" class="evt-thumb">`:""}
         <div><b>${esc(nm(e))}</b><div class="sub">${esc(lang==="ar"?e.placeAR:e.placeEN)}</div></div></div>`).join("")
        :`<div class="empty"><b>—</b>${t("events")}</div>`}</div></div>
 
@@ -477,10 +481,10 @@ function aList(k){
 function form(k){
   const d=edit;
   return `<div class="form"><div class="fgrid">
-    ${FIELDS[k].map(([key,lab,multi])=>`<div class="fld ${multi?"full":""}">
+    ${FIELDS[k].map(([key,lab,multi])=>`<div class="fld ${multi||key==="image"?"full":""}">
       <label>${t(lab)} <span class="mono" style="opacity:.45">${key}</span></label>
       ${multi?`<textarea class="inp" oninput="setEditField('${key}',this.value)">${esc(d[key]||"")}</textarea>`
-      :`<input class="inp" value="${esc(d[key]??"")}" oninput="setEditField('${key}',this.value)">`}</div>`).join("")}
+      :`<input class="inp" placeholder="${key==="image"?t("imageHint"):""}" value="${esc(d[key]??"")}" oninput="setEditField('${key}',this.value)">`}</div>`).join("")}
     ${k==="menu"?`<div class="fld"><label>${t("branch")}</label><select class="inp" onchange="setEditSite(this.value)">
         <option value="all" ${d.site==="all"?"selected":""}>${t("allBranches")}</option>
         ${LIVE().map(s=>`<option value="${s.id}" ${d.site===s.id?"selected":""}>${esc(nm(s))}</option>`).join("")}</select></div>

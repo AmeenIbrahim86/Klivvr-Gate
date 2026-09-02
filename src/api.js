@@ -97,9 +97,10 @@ const TABLES = { news: 'news', links: 'quick_links', policies: 'policies', event
 const MAP = {
   news: {
     toDb: r => ({ tag_ar: r.tagAR || '', tag_en: r.tagEN || '', title_ar: r.titleAR, title_en: r.titleEN,
-      body_ar: r.bodyAR || '', body_en: r.bodyEN || '', author: r.author || '', published_on: r.date || '' }),
+      body_ar: r.bodyAR || '', body_en: r.bodyEN || '', author: r.author || '', published_on: r.date || '',
+      image_url: r.image || null }),
     fromDb: r => ({ id: r.id, tagAR: r.tag_ar, tagEN: r.tag_en, titleAR: r.title_ar, titleEN: r.title_en,
-      bodyAR: r.body_ar, bodyEN: r.body_en, author: r.author, date: r.published_on }),
+      bodyAR: r.body_ar, bodyEN: r.body_en, author: r.author, date: r.published_on, image: r.image_url }),
   },
   links: {
     toDb: r => ({ label_ar: r.ar, label_en: r.en, icon: r.icon || '', url: r.url || '#' }),
@@ -111,9 +112,9 @@ const MAP = {
   },
   events: {
     toDb: r => ({ title_ar: r.ar, title_en: r.en, place_ar: r.placeAR || '', place_en: r.placeEN || '',
-      day: r.day || '', month_ar: r.monAR || '', month_en: r.monEN || '' }),
+      day: r.day || '', month_ar: r.monAR || '', month_en: r.monEN || '', image_url: r.image || null }),
     fromDb: r => ({ id: r.id, ar: r.title_ar, en: r.title_en, placeAR: r.place_ar, placeEN: r.place_en,
-      day: r.day, monAR: r.month_ar, monEN: r.month_en }),
+      day: r.day, monAR: r.month_ar, monEN: r.month_en, image: r.image_url }),
   },
   menu: {
     toDb: r => ({ name_ar: r.ar, name_en: r.en, category: r.cat, price: Number(r.price) || 0,

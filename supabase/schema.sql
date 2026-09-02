@@ -89,6 +89,7 @@ create table news (
   body_ar text, body_en text,
   author text,
   published_on text default '',
+  image_url text,
   is_published boolean default true,
   sort int default 0,
   created_at timestamptz default now()
@@ -115,6 +116,7 @@ create table events (
   title_ar text not null, title_en text not null,
   place_ar text, place_en text,
   day text not null, month_ar text not null, month_en text not null,
+  image_url text,
   sort int default 0
 );
 
