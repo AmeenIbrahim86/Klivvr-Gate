@@ -27,6 +27,10 @@ const L = { ar: {
  captionPH:"وصف الصورة (اختياري)",galleryAdded:"اتضافت الصورة",galleryDeleted:"اتمسحت الصورة",
  galleryConfirmDel:"متأكد إنك عايز تمسح الصورة دي؟",imageUploading:"بيترفع الصورة…",imageUploaded:"اتحطت",
  imageRemove:"شيل الصورة",uploadIcon:"رفع أيقونة مخصصة",
+ addBranch:"إضافة فرع",branchId:"كود الفرع",branchIdHint:"حروف إنجليزي صغيرة، مثال: alex",
+ branchLive:"الحالة",branchLiveYes:"شغّال",branchLiveNo:"قريباً",
+ branchIdInvalid:"كود الفرع لازم يكون حروف/أرقام إنجليزي بس، من غير مسافات",
+ branchNamesRequired:"لازم اسم بالعربي والإنجليزي",branchDeleteConfirm:"متأكد؟ لو الفرع ده عليه أصناف أو طلبات مش هينمسح.",
  orgSearchPH:"دوّر بالاسم…",orgSearchBtn:"بحث",orgNotFound:"ملقيتش حد بالاسم ده",
  add:"إضافة",save:"حفظ",cancel:"إلغاء",
  tag:"التصنيف",titleAR:"العنوان بالعربي",titleEN:"العنوان بالإنجليزي",bodyAR:"النص بالعربي",bodyEN:"النص بالإنجليزي",
@@ -68,6 +72,10 @@ const L = { ar: {
  captionPH:"Photo caption (optional)",galleryAdded:"Photo added",galleryDeleted:"Photo deleted",
  galleryConfirmDel:"Delete this photo?",imageUploading:"Uploading photo…",imageUploaded:"Added",
  imageRemove:"Remove photo",uploadIcon:"Upload custom icon",
+ addBranch:"Add branch",branchId:"Branch code",branchIdHint:"Lowercase letters, e.g. alex",
+ branchLive:"Status",branchLiveYes:"Live",branchLiveNo:"Coming soon",
+ branchIdInvalid:"Branch code must be lowercase letters/numbers only, no spaces",
+ branchNamesRequired:"Both Arabic and English names are required",branchDeleteConfirm:"Delete this branch? It won't delete if it still has menu items or orders.",
  orgSearchPH:"Search by name…",orgSearchBtn:"Search",orgNotFound:"No one found with that name",
  add:"Add",save:"Save",cancel:"Cancel",
  tag:"Tag",titleAR:"Title (Arabic)",titleEN:"Title (English)",bodyAR:"Body (Arabic)",bodyEN:"Body (English)",
@@ -395,7 +403,11 @@ function orgRows(list, byManager, depth){
           ${hasKids?`onclick="toggleOrgNode('${esc(p.id)}')"`:""}>
         <span class="org-chevron">${hasKids?(open?"▾":"▸"):""}</span>
         <span class="av">${esc((p.name||"?")[0]||"?")}</span>
-        <span class="org-name"><b>${esc(p.name||"—")}</b>${p.title?`<span>${esc(p.title)}</span>`:""}</span>
+        <span class="org-name"><b>${esc(p.name||"—")}</b>
+          ${p.title?`<span>${esc(p.title)}</span>`:""}
+          ${(p.email||p.phone||p.location)?`<span class="org-contact">${[
+            p.location?`📍 ${esc(p.location)}`:"", p.email?`✉️ ${esc(p.email)}`:"", p.phone?`📱 ${esc(p.phone)}`:""
+          ].filter(Boolean).join("  ·  ")}</span>`:""}</span>
         ${hasKids?`<span class="org-count">${kids.length}</span>`:""}
       </div>
       ${open?`<div class="org-children">${orgRows(kids,byManager,depth+1)}</div>`:""}
@@ -431,7 +443,7 @@ function orgSearch(q){
   q=(q||"").trim().toLowerCase();
   if(!q) return;
   const match = ORG.find(p=>(p.name||"").toLowerCase().includes(q));
-  if(!match){ toast(t("orgNotFound")); return; }
+  if(!match){ orgHighlight=null; toast(t("orgNotFound")); render(); return; }
   const byId={}; ORG.forEach(p=>byId[p.id]=p);
   orgForceOpen=new Set();
   let cur=match;
@@ -442,7 +454,6 @@ function orgSearch(q){
     const el=document.getElementById("org-"+match.id);
     if(el) el.scrollIntoView({behavior:"smooth",block:"center",inline:"center"});
   },50);
-  setTimeout(()=>{ orgHighlight=null; render(); },2600);
 }
 async function syncOrg(){
   const btn=$("#orgSyncBtn"); if(btn){btn.disabled=true;btn.textContent=t("orgSyncing");}
@@ -502,6 +513,54 @@ function vAdmin(){
       :tab==="overview"?aOver():tab==="access"?aAccess():aList(tab)}</div></div>`;
 }
 function setTab(k){tab=k;edit=null;render()}
+let branchEdit=null;
+function branchForm(){
+  const d=branchEdit;
+  return `<div class="form"><div class="fgrid">
+    <div class="fld"><label>${t("branchId")} <span class="mono" style="opacity:.45">id</span></label>
+      <input class="inp" ${d.isNew?"":"disabled"} value="${esc(d.id)}" placeholder="${t("branchIdHint")}"
+        oninput="setBranchField('id',this.value)"></div>
+    <div class="fld"><label>${t("titleAR")}</label>
+      <input class="inp" value="${esc(d.ar)}" oninput="setBranchField('ar',this.value)"></div>
+    <div class="fld"><label>${t("titleEN")}</label>
+      <input class="inp" value="${esc(d.en)}" oninput="setBranchField('en',this.value)"></div>
+    <div class="fld"><label>${t("branchLive")}</label>
+      <select class="inp" onchange="setBranchLive(this.value)">
+        <option value="1" ${d.live?"selected":""}>${t("branchLiveYes")}</option>
+        <option value="0" ${d.live?"":"selected"}>${t("branchLiveNo")}</option>
+      </select></div>
+  </div>
+  <div class="formacts"><button class="btn sm" onclick="saveBranch()">${t("save")}</button>
+    <button class="btn ghost sm" onclick="cancelBranchEdit()">${t("cancel")}</button></div></div>`;
+}
+function startBranchNew(){ branchEdit={id:"",ar:"",en:"",live:true,isNew:true}; render(); }
+function startBranchEdit(id){
+  const s=SITES.find(x=>x.id===id); if(!s) return;
+  branchEdit={id:s.id,ar:s.ar,en:s.en,live:s.live,isNew:false}; render();
+}
+function cancelBranchEdit(){ branchEdit=null; render(); }
+function setBranchField(k,v){ if(branchEdit) branchEdit[k]=v; }
+function setBranchLive(v){ if(branchEdit) branchEdit.live=(v==="1"); }
+async function saveBranch(){
+  if(!branchEdit) return;
+  const d=branchEdit;
+  if(d.isNew && !/^[a-z0-9-]{2,20}$/.test(d.id.trim())){ toast(t("branchIdInvalid")); return; }
+  if(!d.ar.trim()||!d.en.trim()){ toast(t("branchNamesRequired")); return; }
+  try{
+    const saved=await api.upsertBranch({...d,id:d.id.trim()});
+    const i=SITES.findIndex(x=>x.id===saved.id);
+    i>-1?SITES[i]=saved:SITES.push(saved);
+    branchEdit=null; toast(t("saved")); render();
+  }catch(e){ fail(e); }
+}
+async function deleteBranch(id){
+  if(!confirm(t("branchDeleteConfirm"))) return;
+  try{
+    await api.removeBranch(id);
+    SITES=SITES.filter(x=>x.id!==id);
+    toast(t("deleted")); render();
+  }catch(e){ fail(e); }
+}
 function aOver(){
   const live=O.filter(o=>o.st!=="done").length;
   const today=O.filter(o=>Date.now()-o.at<864e5).length;
@@ -512,11 +571,19 @@ function aOver(){
       <div class="sbox"><b style="color:var(--peri-ink)">${num(today)}</b><span>${t("todayOrders")}</span></div>
       <div class="sbox"><b>${num(C.news.length)}</b><span>${t("newsCount")}</span></div>
       <div class="sbox"><b>${num(C.policies.length)}</b><span>${t("policyCount")}</span></div></div></div>
-  <div class="sec"><div class="sechd"><div><h3>${t("branches")}</h3><p>${t("branchNote")}</p></div></div>
-    ${SITES.map(s=>{const op=O.filter(o=>o.site===s.id&&o.st!=="done").length;
+  <div class="sec"><div class="sechd"><div><h3>${t("branches")}</h3><p>${t("branchNote")}</p></div>
+      ${can("access")?`<button class="btn sm" onclick="startBranchNew()">+ ${t("addBranch")}</button>`:""}</div>
+    ${(can("access")&&branchEdit&&branchEdit.isNew)?branchForm():""}
+    ${SITES.map(s=>{
+      if(can("access")&&branchEdit&&!branchEdit.isNew&&branchEdit.id===s.id) return branchForm();
+      const op=O.filter(o=>o.site===s.id&&o.st!=="done").length;
       return `<div class="item"><div class="body"><b>${esc(nm(s))}</b>
         <p>${s.live?num(M.filter(m=>inBranch(m,s.id)&&m.avail).length)+" "+t("itemsAvail")+" · "+num(op)+" "+t("openOrders"):t("soon")}</p></div>
-        <span class="pill ${s.live?"p":""}">${s.live?"live":t("soon")}</span></div>`}).join("")}</div>
+        <span class="pill ${s.live?"p":""}">${s.live?"live":t("soon")}</span>
+        ${can("access")?`<div class="acts">
+          <button class="iact" onclick="startBranchEdit('${esc(s.id)}')">✎</button>
+          <button class="iact del" onclick="deleteBranch('${esc(s.id)}')">🗑</button></div>`:""}</div>`;
+    }).join("")}</div>
   ${can("access")?`<div class="sec"><div class="sechd"><div><h3>${t("kioskTitle")}</h3><p>${t("kioskNote")}</p></div></div>
     ${LIVE().map(s=>`<div class="item" style="flex-wrap:wrap;align-items:flex-start">
         <div class="body" style="flex-basis:100%">
@@ -706,5 +773,6 @@ Object.assign(window, {
   setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk,
   saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg, saveKioskPw,
   toggleOrgNode, orgSearch, uploadGalleryPhoto, delGalleryPhoto, uploadEditImage, removeEditImage,
-  setEditIcon, uploadEditIcon,
+  setEditIcon, uploadEditIcon, startBranchNew, startBranchEdit, cancelBranchEdit,
+  setBranchField, setBranchLive, saveBranch, deleteBranch,
 });

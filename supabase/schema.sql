@@ -199,6 +199,9 @@ create table org_people (
   id text primary key,
   display_name text not null default '',
   job_title text default '',
+  email text,
+  phone text,
+  office_location text,
   manager_id text references org_people(id) on delete set null,
   synced_at timestamptz default now()
 );
@@ -261,6 +264,9 @@ alter table gallery         enable row level security;
 
 -- جداول المراجع: أي موظف مسجّل يقرأ
 create policy read_branches on branches for select to authenticated using (true);
+create policy write_branches on branches for all to authenticated
+  using (has_perm('access')) with check (has_perm('access'));
+grant select, insert, update, delete on branches to authenticated;
 create policy read_roles    on roles    for select to authenticated using (true);
 create policy read_perms    on role_permissions for select to authenticated using (true);
 

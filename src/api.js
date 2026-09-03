@@ -56,6 +56,24 @@ export async function listBranches() {
   return data.map(b => ({ id: b.id, ar: b.name_ar, en: b.name_en, live: b.is_live }));
 }
 
+// row.isNew=true → إنشاء فرع جديد (لازم id فريد يكتبه الأدمن بنفسه)
+export async function upsertBranch(row) {
+  const dbRow = { name_ar: row.ar, name_en: row.en, is_live: !!row.live };
+  if (row.isNew) {
+    const { data, error } = await sb.from('branches')
+      .insert({ id: row.id, ...dbRow, sort: row.sort ?? 0 }).select().single();
+    if (error) throw error;
+    return { id: data.id, ar: data.name_ar, en: data.name_en, live: data.is_live };
+  }
+  const { data, error } = await sb.from('branches').update(dbRow).eq('id', row.id).select().single();
+  if (error) throw error;
+  return { id: data.id, ar: data.name_ar, en: data.name_en, live: data.is_live };
+}
+export async function removeBranch(id) {
+  const { error } = await sb.from('branches').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function loadRoles() {
   const [{ data: roles, error: e1 }, { data: perms, error: e2 }] = await Promise.all([
     sb.from('roles').select('*'),
@@ -227,7 +245,10 @@ export function watchOrders(branch, onChange) {
 export async function listOrgPeople() {
   const { data, error } = await sb.from('org_people').select('*').order('display_name');
   if (error) throw error;
-  return data.map(p => ({ id: p.id, name: p.display_name, title: p.job_title, managerId: p.manager_id }));
+  return data.map(p => ({
+    id: p.id, name: p.display_name, title: p.job_title, managerId: p.manager_id,
+    email: p.email, phone: p.phone, location: p.office_location
+  }));
 }
 
 // بينادي Edge Function اسمها sync-org، اللي بتسحب الداتا من Microsoft Graph

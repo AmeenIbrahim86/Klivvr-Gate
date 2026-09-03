@@ -71,10 +71,11 @@ Deno.serve(async (req) => {
     const gh = { Authorization: `Bearer ${accessToken}` };
 
     // ── 3) هات كل المستخدمين (بترقيم صفحات لو الشركة كبيرة) ──
-    type GUser = { id: string; displayName?: string; jobTitle?: string; accountEnabled?: boolean };
+    type GUser = { id: string; displayName?: string; jobTitle?: string; accountEnabled?: boolean;
+      mail?: string; mobilePhone?: string; businessPhones?: string[]; officeLocation?: string };
     let users: GUser[] = [];
     let url: string | null =
-      "https://graph.microsoft.com/v1.0/users?$select=id,displayName,jobTitle,accountEnabled&$top=999";
+      "https://graph.microsoft.com/v1.0/users?$select=id,displayName,jobTitle,accountEnabled,mail,mobilePhone,businessPhones,officeLocation&$top=999";
     while (url) {
       const r: Response = await fetch(url, { headers: gh });
       const j = await r.json();
@@ -110,6 +111,9 @@ Deno.serve(async (req) => {
       id: u.id,
       display_name: u.displayName || "",
       job_title: u.jobTitle || "",
+      email: u.mail || null,
+      phone: u.mobilePhone || (u.businessPhones && u.businessPhones[0]) || null,
+      office_location: u.officeLocation || null,
       manager_id: managerOf[u.id] || null,
       synced_at: new Date().toISOString(),
     }));
