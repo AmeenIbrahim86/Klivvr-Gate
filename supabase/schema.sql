@@ -247,6 +247,7 @@ create table orders (
   location text,
   status text not null default 'new' check (status in ('new','preparing','delivered','rejected')),
   rejection_reason text,
+  payment_method text default 'instapay' check (payment_method in ('instapay','cash')),
   total numeric(10,2) default 0,
   created_at timestamptz default now(),
   started_at timestamptz,
@@ -393,7 +394,7 @@ end $$;
 create or replace function public.kitchen_board(_branch text, _password text)
 returns table (
   order_no text, requester_first_ar text, requester_first_en text, location text, status text,
-  created_at timestamptz, items jsonb, rejection_reason text
+  created_at timestamptz, items jsonb, rejection_reason text, payment_method text
 ) language plpgsql security definer set search_path = public as $$
 begin
   if not kitchen_login(_branch, _password) then
@@ -409,7 +410,7 @@ begin
              'name_ar', i.name_ar, 'name_en', i.name_en,
              'qty', i.qty, 'sugar', i.sugar_level, 'milk', i.milk, 'note', i.note
            )) filter (where i.id is not null), '[]'::jsonb),
-           o.rejection_reason
+           o.rejection_reason, o.payment_method
       from orders o
       left join order_items i on i.order_id = o.id
      where o.branch_id = _branch

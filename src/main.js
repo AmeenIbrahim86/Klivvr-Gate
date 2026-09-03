@@ -19,7 +19,8 @@ const L = { ar: {
  sugar:"السكر",qty:"الكمية",notePH:"ملاحظة (اختياري)",addTo:"ضيف للطلب",
  milk:"اللبن",withMilk:"بلبن",noMilk:"من غير لبن",hasMilk:"له اختيار لبن",
  yourOrder:"طلبك",emptyCart:"لسه مضفتش حاجة",emptyCartB:"اختار من القائمة على الجنب",send:"ادفع الآن",cur:"ج.م",
- payTitle:"ادفع عن طريق InstaPay",payHint:"امسح الكود بتطبيق InstaPay وحوّل قيمة الطلب، وبعدين دوس تأكيد.",payConfirm:"تم الدفع، تأكيد الطلب",payBack:"رجوع للسلة",
+ payTitle:"الدفع",payHint:"امسح الكود بتطبيق InstaPay وحوّل قيمة الطلب، وبعدين دوس تأكيد.",payConfirm:"تأكيد الطلب",payBack:"رجوع للسلة",
+ payInstaPay:"InstaPay",payCash:"كاش",payCashHint:"هتدفع كاش لفريق البوفيه وقت الاستلام. دوس تأكيد عشان يبعت الطلب.",
  where:"مكانك",wherePH:"مثال: مكتب ٣١٢",whereOffice:"مكتب",whereRoom:"قاعة اجتماعات",wherePickRoom:"اختار القاعة…",
  overview:"نظرة عامة",aNews:"الأخبار",aLinks:"اللينكات",aPolicies:"السياسات",aEvents:"الأحداث",aMenu:"قائمة البوفيه",aAccess:"الصلاحيات",sites:"المواقع",
  orgChart:"الهيكل التنظيمي",orgSync:"مزامنة من Entra ID",orgSyncing:"بيزامن…",orgSynced:"اتزامن",orgEmpty:"لسه مفيش داتا — دوس مزامنة من Entra ID",
@@ -72,7 +73,8 @@ const L = { ar: {
  sugar:"Sugar",qty:"Quantity",notePH:"Note (optional)",addTo:"Add to order",
  milk:"Milk",withMilk:"With milk",noMilk:"No milk",hasMilk:"Has milk option",
  yourOrder:"Your order",emptyCart:"Nothing added yet",emptyCartB:"Pick something from the menu",send:"Pay now",cur:"EGP",
- payTitle:"Pay via InstaPay",payHint:"Scan the code in the InstaPay app and transfer the order total, then confirm.",payConfirm:"Paid — confirm order",payBack:"Back to cart",
+ payTitle:"Payment",payHint:"Scan the code in the InstaPay app and transfer the order total, then confirm.",payConfirm:"Confirm order",payBack:"Back to cart",
+ payInstaPay:"InstaPay",payCash:"Cash",payCashHint:"You'll pay cash to the buffet team on pickup. Confirm to send the order.",
  where:"Where you are",wherePH:"e.g. Office 312",whereOffice:"Office",whereRoom:"Meeting room",wherePickRoom:"Pick a room…",
  overview:"Overview",aNews:"News",aLinks:"Quick links",aPolicies:"Policies",aEvents:"Events",aMenu:"Buffet menu",aAccess:"Access",sites:"Sites",
  orgChart:"Org chart",orgSync:"Sync from Entra ID",orgSyncing:"Syncing…",orgSynced:"Synced",orgEmpty:"No data yet — click sync from Entra ID",
@@ -227,7 +229,7 @@ let lang="en", authed=false, view="portal", tab="overview";
 let myProfile=null, SITES=[], C={news:[],links:[],policies:[],events:[]}, M=[], O=[], A={roles:[],users:[]}, ORG=[], GALLERY=[];
 let ABOUT={ar:"",en:""}, aboutEditing=false;
 let MY_ORDERS=null;
-let branch=null, paying=false, lastOrderNo="";
+let branch=null, paying=false, lastOrderNo="", payMethod="instapay";
 let cart=[], openM=null, draft={}, cat="all", where="", whereType="office", whereRoom="", edit=null, eKind=null;
 
 const t=k=>L[lang][k]??k;
@@ -519,12 +521,19 @@ function payPanel(tot){
   const qr = so(branch).qr || (branch==="kat" ? "/instapay-qr-kat.png" : branch==="moh" ? "/instapay-qr-moh.png" : "/instapay-qr.png");
   return `<div class="paypanel">
     <div class="payhead"><b>${t("payTitle")}</b><span class="mono">${money(tot)}</span></div>
-    <img class="payqr" src="${qr}" alt="InstaPay QR — ${esc(nm(so(branch)))}">
-    <p class="payhint">${t("payHint")}</p>
+    <div class="paymethod">
+      <button class="${payMethod==="instapay"?"on":""}" onclick="setPayMethod('instapay')">${t("payInstaPay")}</button>
+      <button class="${payMethod==="cash"?"on":""}" onclick="setPayMethod('cash')">${t("payCash")}</button>
+    </div>
+    ${payMethod==="instapay"
+      ?`<img class="payqr" src="${qr}" alt="InstaPay QR — ${esc(nm(so(branch)))}">
+        <p class="payhint">${t("payHint")}</p>`
+      :`<p class="payhint">${t("payCashHint")}</p>`}
     <button class="btn" style="width:100%" onclick="submitOrder()">${t("payConfirm")}</button>
     <button class="btn ghost" style="width:100%;margin-top:8px" onclick="payBack()">${t("payBack")}</button>
   </div>`;
 }
+function setPayMethod(v){ payMethod=v; render(); }
 async function submitOrder(){
   try{
     const orderNo = await api.submitOrder({
@@ -533,9 +542,10 @@ async function submitOrder(){
       location: (whereType==="room" ? whereRoom : where) || "—",
       lines: cart.map(c=>{ const m=mi(c.m); return {
         menuItemId: c.m, nameAr: m.ar, nameEn: m.en, qty: c.q, sugar: c.s, milk: c.milk, note: c.note, price: effPrice(m)
-      };})
+      };}),
+      paymentMethod: payMethod
     });
-    lastOrderNo = orderNo; cart=[]; paying=false; where=""; whereRoom=""; whereType="office"; view="confirmed"; render();
+    lastOrderNo = orderNo; cart=[]; paying=false; where=""; whereRoom=""; whereType="office"; payMethod="instapay"; view="confirmed"; render();
   }catch(e){ fail(e); }
 }
 function vConfirmed(){
@@ -1006,7 +1016,7 @@ async function saveKioskPw(branchId){
 /* ═══════════════ expose handlers used by inline HTML onclick/onchange ═══════════════ */
 Object.assign(window, {
   doSignIn, doSignOut, go, setLang, setBranch, changeBranch, setCat, setWhere, setWhereType, setWhereRoom,
-  tog, setSug, setMilk, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder,
+  tog, setSug, setMilk, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder, setPayMethod,
   setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk,
   saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg, saveKioskPw,
   toggleOrgNode, orgSearch, uploadGalleryPhoto, delGalleryPhoto, uploadEditImage, removeEditImage,

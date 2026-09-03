@@ -191,14 +191,15 @@ export async function remove(kind, id) {
 }
 
 /* ═══════════════ الطلبات (الموظف) ═══════════════ */
-export async function submitOrder({ branchId, requesterName, requesterNameAr, requesterNameEn, location, lines }) {
+export async function submitOrder({ branchId, requesterName, requesterNameAr, requesterNameEn, location, lines, paymentMethod }) {
   const total = lines.reduce((s, l) => s + l.price * l.qty, 0);
   const { data: { user } } = await sb.auth.getUser();
 
   const { data: order, error } = await sb.from('orders').insert({
     branch_id: branchId, requester_id: user.id,
     requester_name: requesterName, requester_name_ar: requesterNameAr || requesterName,
-    requester_name_en: requesterNameEn || requesterName, location, total
+    requester_name_en: requesterNameEn || requesterName, location, total,
+    payment_method: total === 0 ? null : (paymentMethod || 'instapay')
   }).select().single();
   if (error) throw error;
 

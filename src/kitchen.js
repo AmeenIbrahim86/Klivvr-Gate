@@ -13,7 +13,7 @@ const L = { ar: {
  title:"شاشة البوفيه", noLogin:"بدون تسجيل دخول",
  kNew:"جديد", kProg:"بيتحضّر",
  kStart:"ابدأ التحضير", kDelivered:"اتسلّم ✓", kReject:"رفض",
- kEmpty:"مفيش طلبات مفتوحة", kEmptyB:"الطلبات الجديدة هتظهر هنا لوحدها", withMilk:"بلبن",
+ kEmpty:"مفيش طلبات مفتوحة", kEmptyB:"الطلبات الجديدة هتظهر هنا لوحدها", withMilk:"بلبن", cashDue:"كاش لسه",
  noBranch:"اللينك ده ناقصه الفرع", noBranchB:"كلّم الأدمن يديك لينك الشاشة الصح لفرعك.",
  enterPw:"باسورد الشاشة", enterPwB:"اكتب باسورد شاشة الفرع ده.",
  pwPH:"الباسورد", unlock:"دخول", wrongPw:"الباسورد غلط، جرّب تاني.",
@@ -23,7 +23,7 @@ const L = { ar: {
  title:"Buffet screen", noLogin:"No sign-in needed",
  kNew:"NEW", kProg:"PREPARING",
  kStart:"Start preparing", kDelivered:"Delivered ✓", kReject:"Reject",
- kEmpty:"No open orders", kEmptyB:"New orders appear here on their own", withMilk:"With milk",
+ kEmpty:"No open orders", kEmptyB:"New orders appear here on their own", withMilk:"With milk", cashDue:"Cash due",
  noBranch:"This link is missing a branch", noBranchB:"Ask an admin for your branch's screen link.",
  enterPw:"Screen password", enterPwB:"Enter this branch's screen password.",
  pwPH:"Password", unlock:"Unlock", wrongPw:"Wrong password, try again.",
@@ -146,7 +146,8 @@ function render(){
      return `<div class="ticket ${o.status==="preparing"?"prog":""} ${late?"late":""}">
        <div class="thd"><div class="t1"><span class="tno">${esc(o.order_no)}</span>
          <span class="timer">${String(mins).padStart(2,"0")}:00${late?" ⚠":""}</span></div>
-         <h4>${esc((lang==="ar"?o.requester_first_ar:o.requester_first_en)||o.requester_first_en||o.requester_first_ar||"")}</h4><div class="where">${esc(o.location||"")}</div></div>
+         <h4>${esc((lang==="ar"?o.requester_first_ar:o.requester_first_en)||o.requester_first_en||o.requester_first_ar||"")}</h4>
+         <div class="where">${esc(o.location||"")}${o.payment_method==="cash"?` <span class="cash-badge">💵 ${t("cashDue")}</span>`:""}</div></div>
        ${(o.items||[]).map(l=>`<div class="tl"><span class="qn">${num(l.qty)}×</span>
          <span><b>${esc(lang==="ar"?l.name_ar:l.name_en)}</b>
          ${l.sugar!=null?`<span class="sug">${dots(l.sugar)}<em>${esc(nm(SUG[l.sugar]))}</em></span>`:""}
