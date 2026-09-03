@@ -43,6 +43,7 @@ const L = { ar: {
  tag:"التصنيف",titleAR:"العنوان بالعربي",titleEN:"العنوان بالإنجليزي",bodyAR:"النص بالعربي",bodyEN:"النص بالإنجليزي",
  author:"الكاتب",date:"التاريخ",icon:"الأيقونة",url:"اللينك",dept:"القسم",version:"الإصدار",
  image:"لينك الصورة",imageHint:"الصق لينك صورة من الإنترنت (اختياري)",
+ descAR:"وصف قصير بالعربي",descEN:"وصف قصير بالإنجليزي",
  place:"المكان",day:"اليوم",month:"الشهر",cat:"التصنيف",price:"السعر",hasSugar:"له اختيارات سكر",avail:"متاح",color:"اللون",
  branch:"الفرع",allBranches:"كل الفروع",branches:"الفروع",role:"الدور",people:"الناس",
  whichBranch:"انت في أنهي فرع؟",whichBranchB:"عشان الطلب يروح لبوفيه الفرع الصح.",
@@ -95,6 +96,7 @@ const L = { ar: {
  tag:"Tag",titleAR:"Title (Arabic)",titleEN:"Title (English)",bodyAR:"Body (Arabic)",bodyEN:"Body (English)",
  author:"Author",date:"Date",icon:"Icon",url:"Link",dept:"Department",version:"Version",
  image:"Image link",imageHint:"Paste an image link from the internet (optional)",
+ descAR:"Short description (Arabic)",descEN:"Short description (English)",
  place:"Place",day:"Day",month:"Month",cat:"Category",price:"Price",hasSugar:"Has sugar options",avail:"Available",color:"Colour",
  branch:"Branch",allBranches:"All branches",branches:"Branches",role:"Role",people:"People",
  whichBranch:"Which branch are you at?",whichBranchB:"So the order reaches the right buffet.",
@@ -214,7 +216,7 @@ function swatchHtml(m,size){
 }
 const FIELDS = {
  news:[["tagAR","tag"],["tagEN","tag"],["titleAR","titleAR"],["titleEN","titleEN"],["bodyAR","bodyAR",1],["bodyEN","bodyEN",1],["author","author"],["date","date"],["image","image"]],
- links:[["ar","titleAR"],["en","titleEN"],["icon","icon"],["url","url"]],
+ links:[["ar","titleAR"],["en","titleEN"],["descAR","descAR"],["descEN","descEN"],["icon","icon"],["url","url"]],
  policies:[["ar","titleAR"],["en","titleEN"],["dept","dept"],["ver","version"],["date","date"],["url","url"]],
  events:[["ar","titleAR"],["en","titleEN"],["placeAR","place"],["placeEN","place"],["day","day"],["monAR","month"],["monEN","month"],["startsAt","eventDateTime"],["image","image"]],
  menu:[["ar","titleAR"],["en","titleEN"],["price","price"],["col","color"],["icon","icon"]]};
@@ -396,7 +398,9 @@ function vPortal(){
     <button class="qtile feat" onclick="go('org')"><span class="qicon">🧭</span>${t("orgChart")}</button>
     <button class="qtile feat" onclick="go('gallery')"><span class="qicon">🖼️</span>${t("gallery")}</button>
     <button class="qtile feat" onclick="go('myorders')"><span class="qicon">🧾</span>${t("myOrders")}</button>
-    ${links.map(l=>`<a class="qtile" href="${esc(l.url||"#")}"><span class="qicon">${iconHtml(l.icon)}</span>${esc(nm(l))}</a>`).join("")}</div>
+    ${links.map(l=>{const d=lang==="ar"?l.descAR:l.descEN;
+      return `<a class="qtile" href="${esc(l.url||"#")}"><span class="qicon">${iconHtml(l.icon)}</span>
+        <span class="qtile-txt"><b>${esc(nm(l))}</b>${d?`<span>${esc(d)}</span>`:""}</span></a>`}).join("")}</div>
 
   <div class="eyebrow" style="margin-top:26px">${t("docs")} · ${t("events")}</div>
   <div class="twocol">

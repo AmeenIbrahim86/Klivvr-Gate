@@ -138,8 +138,10 @@ const MAP = {
       bodyAR: r.body_ar, bodyEN: r.body_en, author: r.author, date: r.published_on, image: r.image_url }),
   },
   links: {
-    toDb: r => ({ label_ar: r.ar, label_en: r.en, icon: r.icon || '', url: r.url || '#' }),
-    fromDb: r => ({ id: r.id, ar: r.label_ar, en: r.label_en, icon: r.icon, url: r.url }),
+    toDb: r => ({ label_ar: r.ar, label_en: r.en, icon: r.icon || '', url: r.url || '#',
+      desc_ar: r.descAR || '', desc_en: r.descEN || '' }),
+    fromDb: r => ({ id: r.id, ar: r.label_ar, en: r.label_en, icon: r.icon, url: r.url,
+      descAR: r.desc_ar, descEN: r.desc_en }),
   },
   policies: {
     toDb: r => ({ title_ar: r.ar, title_en: r.en, department: r.dept || '', version: r.ver || '', effective_on: r.date || '', file_url: r.url || null }),

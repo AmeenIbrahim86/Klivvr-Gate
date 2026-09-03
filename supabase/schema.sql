@@ -100,6 +100,7 @@ create table news (
 create table quick_links (
   id uuid primary key default gen_random_uuid(),
   label_ar text not null, label_en text not null,
+  desc_ar text, desc_en text,
   icon text, url text not null,
   sort int default 0
 );
@@ -400,8 +401,8 @@ begin
 
   return query
     select o.order_no,
-           split_part(coalesce(o.requester_name_ar,o.requester_name), ' ', 1),
-           split_part(coalesce(o.requester_name_en,o.requester_name), ' ', 1),
+           array_to_string((string_to_array(trim(coalesce(o.requester_name_ar, o.requester_name)), ' '))[1:2], ' '),
+           array_to_string((string_to_array(trim(coalesce(o.requester_name_en, o.requester_name)), ' '))[1:2], ' '),
            o.location, o.status, o.created_at,
            coalesce(jsonb_agg(jsonb_build_object(
              'name_ar', i.name_ar, 'name_en', i.name_en,
