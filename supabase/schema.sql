@@ -9,6 +9,7 @@ create table branches (
   name_ar   text not null,
   name_en   text not null,
   is_live   boolean not null default true,
+  payment_qr_url text,
   sort      int    not null default 0
 );
 insert into branches (id, name_ar, name_en, is_live, sort) values
@@ -44,6 +45,7 @@ insert into role_permissions values
 create table profiles (
   id        uuid primary key references auth.users(id) on delete cascade,
   full_name text,
+  full_name_ar text,
   role_id   text references roles(id) default 'viewer',
   branch_id text references branches(id),
   created_at timestamptz default now()
@@ -131,6 +133,7 @@ create table menu_items (
   has_sugar boolean default false,
   has_milk boolean default false,
   icon text,
+  is_free boolean default false,
   is_available boolean default true,
   colour text default '#B5651D',
   is_square boolean default false,
@@ -238,8 +241,10 @@ create table orders (
   branch_id text not null references branches(id),
   requester_id uuid references profiles(id) on delete set null,
   requester_name text not null,
+  requester_name_ar text, requester_name_en text,
   location text,
   status text not null default 'new' check (status in ('new','preparing','delivered','rejected')),
+  rejection_reason text,
   total numeric(10,2) default 0,
   created_at timestamptz default now(),
   started_at timestamptz,
@@ -385,8 +390,8 @@ end $$;
 -- دالة القراءة: الباسورد بس هو اللي يفتح، وبترجّع الحاجة اللي الشاشة محتاجاها بس
 create or replace function public.kitchen_board(_branch text, _password text)
 returns table (
-  order_no text, requester_first text, location text, status text,
-  created_at timestamptz, items jsonb
+  order_no text, requester_first_ar text, requester_first_en text, location text, status text,
+  created_at timestamptz, items jsonb, rejection_reason text
 ) language plpgsql security definer set search_path = public as $$
 begin
   if not kitchen_login(_branch, _password) then
@@ -395,12 +400,14 @@ begin
 
   return query
     select o.order_no,
-           split_part(o.requester_name, ' ', 1),   -- الاسم الأول بس، مفيش داتا شخصية زيادة
+           split_part(coalesce(o.requester_name_ar,o.requester_name), ' ', 1),
+           split_part(coalesce(o.requester_name_en,o.requester_name), ' ', 1),
            o.location, o.status, o.created_at,
            coalesce(jsonb_agg(jsonb_build_object(
              'name_ar', i.name_ar, 'name_en', i.name_en,
              'qty', i.qty, 'sugar', i.sugar_level, 'milk', i.milk, 'note', i.note
-           )) filter (where i.id is not null), '[]'::jsonb)
+           )) filter (where i.id is not null), '[]'::jsonb),
+           o.rejection_reason
       from orders o
       left join order_items i on i.order_id = o.id
      where o.branch_id = _branch
@@ -409,8 +416,10 @@ begin
      order by o.created_at;
 end $$;
 
--- دالة تغيير الحالة من الشاشة
-create or replace function public.kitchen_set_status(_branch text, _password text, _order_no text, _status text)
+-- دالة تغيير الحالة من الشاشة (مع سبب اختياري لو رفض)
+create or replace function public.kitchen_set_status(
+  _branch text, _password text, _order_no text, _status text, _reason text default null
+)
 returns void language plpgsql security definer set search_path = public as $$
 begin
   if _status not in ('preparing','delivered','rejected') then
@@ -423,7 +432,8 @@ begin
   update orders set
     status = _status,
     started_at   = case when _status = 'preparing' then now() else started_at end,
-    delivered_at = case when _status = 'delivered' then now() else delivered_at end
+    delivered_at = case when _status = 'delivered' then now() else delivered_at end,
+    rejection_reason = case when _status = 'rejected' then _reason else rejection_reason end
   where order_no = _order_no and branch_id = _branch and status in ('new','preparing');
 end $$;
 
@@ -445,10 +455,10 @@ end $$;
 
 -- الوصول للدالتين دول بس — مفيش وصول مباشر لأي جدول
 revoke all on function public.kitchen_board(text,text) from public, anon, authenticated;
-revoke all on function public.kitchen_set_status(text,text,text,text) from public, anon, authenticated;
+revoke all on function public.kitchen_set_status(text,text,text,text,text) from public, anon, authenticated;
 revoke all on function public.kitchen_login(text,text) from public, anon, authenticated;
 grant execute on function public.kitchen_board(text,text) to anon;
-grant execute on function public.kitchen_set_status(text,text,text,text) to anon;
+grant execute on function public.kitchen_set_status(text,text,text,text,text) to anon;
 grant execute on function public.kitchen_login(text,text) to anon;
 
 revoke all on function public.set_screen_password(text,text) from public, anon;

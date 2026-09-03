@@ -34,7 +34,7 @@ export async function loadMe() {
   if (!user) return null;
 
   const { data: profile, error } = await sb.from('profiles')
-    .select('id, full_name, role_id, branch_id').eq('id', user.id).single();
+    .select('id, full_name, full_name_ar, role_id, branch_id').eq('id', user.id).single();
   if (error) throw error;
 
   const { data: perms } = await sb.from('role_permissions')
@@ -42,7 +42,7 @@ export async function loadMe() {
 
   return {
     id: profile.id, email: user.email,
-    ar: profile.full_name, en: profile.full_name,   // الاسم الحقيقي مش بيتترجم
+    ar: profile.full_name_ar || profile.full_name, en: profile.full_name,
     role: profile.role_id, site: profile.branch_id,
     perms: (perms || []).map(p => p.section)
   };
@@ -63,23 +63,23 @@ export async function setSetting(key, valueAr, valueEn) {
 
 export async function listBranches() {
   const { data, error } = await sb.from('branches')
-    .select('id, name_ar, name_en, is_live, sort').order('sort');
+    .select('id, name_ar, name_en, is_live, payment_qr_url, sort').order('sort');
   if (error) throw error;
-  return data.map(b => ({ id: b.id, ar: b.name_ar, en: b.name_en, live: b.is_live }));
+  return data.map(b => ({ id: b.id, ar: b.name_ar, en: b.name_en, live: b.is_live, qr: b.payment_qr_url }));
 }
 
 // row.isNew=true → إنشاء فرع جديد (لازم id فريد يكتبه الأدمن بنفسه)
 export async function upsertBranch(row) {
-  const dbRow = { name_ar: row.ar, name_en: row.en, is_live: !!row.live };
+  const dbRow = { name_ar: row.ar, name_en: row.en, is_live: !!row.live, payment_qr_url: row.qr || null };
   if (row.isNew) {
     const { data, error } = await sb.from('branches')
       .insert({ id: row.id, ...dbRow, sort: row.sort ?? 0 }).select().single();
     if (error) throw error;
-    return { id: data.id, ar: data.name_ar, en: data.name_en, live: data.is_live };
+    return { id: data.id, ar: data.name_ar, en: data.name_en, live: data.is_live, qr: data.payment_qr_url };
   }
   const { data, error } = await sb.from('branches').update(dbRow).eq('id', row.id).select().single();
   if (error) throw error;
-  return { id: data.id, ar: data.name_ar, en: data.name_en, live: data.is_live };
+  return { id: data.id, ar: data.name_ar, en: data.name_en, live: data.is_live, qr: data.payment_qr_url };
 }
 export async function removeBranch(id) {
   const { error } = await sb.from('branches').delete().eq('id', id);
@@ -100,9 +100,13 @@ export async function loadRoles() {
 
 export async function listProfiles() {
   const { data, error } = await sb.from('profiles')
-    .select('id, full_name, role_id, branch_id').order('created_at');
+    .select('id, full_name, full_name_ar, role_id, branch_id').order('created_at');
   if (error) throw error;
-  return data.map(p => ({ id: p.id, ar: p.full_name, en: p.full_name, role: p.role_id, site: p.branch_id }));
+  return data.map(p => ({ id: p.id, ar: p.full_name_ar || p.full_name, en: p.full_name, role: p.role_id, site: p.branch_id }));
+}
+export async function setFullNameAr(userId, nameAr) {
+  const { error } = await sb.from('profiles').update({ full_name_ar: nameAr || null }).eq('id', userId);
+  if (error) throw error;
 }
 
 export async function setUserRole(userId, roleId) {
@@ -150,10 +154,10 @@ const MAP = {
   },
   menu: {
     toDb: r => ({ name_ar: r.ar, name_en: r.en, category: r.cat, price: Number(r.price) || 0,
-      has_sugar: !!r.sugar, has_milk: !!r.milk, is_available: r.avail !== false, colour: r.col || '#B5651D', is_square: !!r.sq,
+      has_sugar: !!r.sugar, has_milk: !!r.milk, is_free: !!r.free, is_available: r.avail !== false, colour: r.col || '#B5651D', is_square: !!r.sq,
       icon: r.icon || null, branch_id: (!r.site || r.site === 'all') ? null : r.site }),
     fromDb: r => ({ id: r.id, ar: r.name_ar, en: r.name_en, cat: r.category, price: Number(r.price),
-      sugar: r.has_sugar, milk: r.has_milk, avail: r.is_available, col: r.colour, sq: r.is_square,
+      sugar: r.has_sugar, milk: r.has_milk, free: r.is_free, avail: r.is_available, col: r.colour, sq: r.is_square,
       icon: r.icon, site: r.branch_id || 'all' }),
   },
 };
@@ -185,13 +189,14 @@ export async function remove(kind, id) {
 }
 
 /* ═══════════════ الطلبات (الموظف) ═══════════════ */
-export async function submitOrder({ branchId, requesterName, location, lines }) {
+export async function submitOrder({ branchId, requesterName, requesterNameAr, requesterNameEn, location, lines }) {
   const total = lines.reduce((s, l) => s + l.price * l.qty, 0);
   const { data: { user } } = await sb.auth.getUser();
 
   const { data: order, error } = await sb.from('orders').insert({
     branch_id: branchId, requester_id: user.id,
-    requester_name: requesterName, location, total
+    requester_name: requesterName, requester_name_ar: requesterNameAr || requesterName,
+    requester_name_en: requesterNameEn || requesterName, location, total
   }).select().single();
   if (error) throw error;
 
@@ -205,6 +210,15 @@ export async function submitOrder({ branchId, requesterName, location, lines }) 
   );
   if (e2) throw e2;
   return order.order_no;
+}
+
+export async function myOrders() {
+  const { data: { user } } = await sb.auth.getUser();
+  const { data, error } = await sb.from('orders')
+    .select('order_no, status, created_at, rejection_reason, total')
+    .eq('requester_id', user.id).order('created_at', { ascending: false }).limit(20);
+  if (error) throw error;
+  return data.map(o => ({ no: o.order_no, status: o.status, at: o.created_at, reason: o.rejection_reason, total: o.total }));
 }
 
 // لإحصائيات لوحة الإدارة بس — st بترجع new/prog/done عشان تتوافق مع اللي الواجهة متعوّدة عليه
@@ -234,9 +248,9 @@ export async function kitchenBoard(branch, password) {
   if (error) throw error;
   return data;
 }
-export async function kitchenSetStatus(branch, password, orderNo, status) {
+export async function kitchenSetStatus(branch, password, orderNo, status, reason) {
   const { error } = await sb.rpc('kitchen_set_status', {
-    _branch: branch, _password: password, _order_no: orderNo, _status: status
+    _branch: branch, _password: password, _order_no: orderNo, _status: status, _reason: reason || null
   });
   if (error) throw error;
 }

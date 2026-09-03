@@ -29,6 +29,10 @@ const L = { ar: {
  imageRemove:"شيل الصورة",uploadIcon:"رفع أيقونة مخصصة",
  addBranch:"إضافة فرع",branchId:"كود الفرع",branchIdHint:"حروف إنجليزي صغيرة، مثال: alex",
  branchLive:"الحالة",branchLiveYes:"شغّال",branchLiveNo:"قريباً",
+ branchQr:"كود InstaPay",nameArHint:"الاسم بالعربي (اختياري)",isFree:"مجاني",free:"مجاني",
+ myOrders:"طلباتي",reasonUnavailable:"غير متوفر",reasonOutOfStock:"خلص من المخزون",reasonOtherPH:"سبب تاني...",
+ confirmReject:"تأكيد الرفض",statusNew:"جديد",statusPreparing:"بيتحضّر",statusDelivered:"اتسلّم",statusRejected:"مرفوض",
+ rejectedBecause:"سبب الرفض",noOrdersYet:"لسه معملتش أي طلب",
  branchIdInvalid:"كود الفرع لازم يكون حروف/أرقام إنجليزي بس، من غير مسافات",
  branchNamesRequired:"لازم اسم بالعربي والإنجليزي",branchDeleteConfirm:"متأكد؟ لو الفرع ده عليه أصناف أو طلبات مش هينمسح.",
  aboutEmpty:"لسه مفيش وصف — دوس ✎ تكتب واحد",aboutAR:"الوصف بالعربي",aboutEN:"الوصف بالإنجليزي",
@@ -76,6 +80,10 @@ const L = { ar: {
  imageRemove:"Remove photo",uploadIcon:"Upload custom icon",
  addBranch:"Add branch",branchId:"Branch code",branchIdHint:"Lowercase letters, e.g. alex",
  branchLive:"Status",branchLiveYes:"Live",branchLiveNo:"Coming soon",
+ branchQr:"InstaPay QR code",nameArHint:"Arabic name (optional)",isFree:"Free item",free:"Free",
+ myOrders:"My orders",reasonUnavailable:"Not available",reasonOutOfStock:"Out of stock",reasonOtherPH:"Other reason...",
+ confirmReject:"Confirm rejection",statusNew:"New",statusPreparing:"Preparing",statusDelivered:"Delivered",statusRejected:"Rejected",
+ rejectedBecause:"Rejected because",noOrdersYet:"You haven't placed any orders yet",
  branchIdInvalid:"Branch code must be lowercase letters/numbers only, no spaces",
  branchNamesRequired:"Both Arabic and English names are required",branchDeleteConfirm:"Delete this branch? It won't delete if it still has menu items or orders.",
  aboutEmpty:"No description yet — click ✎ to write one",aboutAR:"Description (Arabic)",aboutEN:"Description (English)",
@@ -158,6 +166,7 @@ const FIELDS = {
 let lang="en", authed=false, view="portal", tab="overview";
 let myProfile=null, SITES=[], C={news:[],links:[],policies:[],events:[]}, M=[], O=[], A={roles:[],users:[]}, ORG=[], GALLERY=[];
 let ABOUT={ar:"",en:""}, aboutEditing=false;
+let MY_ORDERS=null;
 let branch=null, paying=false, lastOrderNo="";
 let cart=[], openM=null, draft={}, cat="all", where="", edit=null, eKind=null;
 
@@ -165,6 +174,8 @@ const t=k=>L[lang][k]??k;
 const nm=o=>o?(o[lang]??o.ar??o.en??""):"";
 const num=n=>Number(n).toLocaleString(lang==="ar"?"ar-EG":"en-US");
 const money=n=>num(n)+" "+t("cur");
+const effPrice=m=>m.free?0:m.price;
+const priceLabel=m=>m.free?t("free"):money(m.price);
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const role=()=>A.roles.find(r=>r.id===myProfile?.role)||{perms:[]};
@@ -218,7 +229,8 @@ function render(){
     view==="portal" ? vPortal() :
     view==="order" ? vOrder() :
     view==="org" ? vOrg() :
-    view==="gallery" ? vGallery() : vAdmin()
+    view==="gallery" ? vGallery() :
+    view==="myorders" ? vMyOrders() : vAdmin()
   );
 }
 function renderSignIn(){
@@ -257,7 +269,11 @@ function shell(inner){
     </nav></div>
     <div class="wrap">${inner}</div>`;
 }
-function go(v){view=v;edit=null;paying=false;render();scrollTo({top:0,behavior:"instant"})}
+function go(v){view=v;edit=null;paying=false;if(v==="myorders")loadMyOrders();render();scrollTo({top:0,behavior:"instant"})}
+async function loadMyOrders(){
+  try{ MY_ORDERS=await api.myOrders(); }catch(e){ console.error(e); MY_ORDERS=[]; }
+  render();
+}
 function setLang(l){lang=l;render()}
 function setBranch(b){if(!so(b).live)return;branch=b;cart=[];paying=false;render()}
 function changeBranch(){branch=null;cart=[];paying=false;render()}
@@ -315,6 +331,7 @@ function vPortal(){
   <div class="qgrid"><button class="qtile feat" onclick="go('order')"><span class="qicon">☕</span>${t("order")}</button>
     <button class="qtile feat" onclick="go('org')"><span class="qicon">🧭</span>${t("orgChart")}</button>
     <button class="qtile feat" onclick="go('gallery')"><span class="qicon">🖼️</span>${t("gallery")}</button>
+    <button class="qtile feat" onclick="go('myorders')"><span class="qicon">🧾</span>${t("myOrders")}</button>
     ${links.map(l=>`<a class="qtile" href="${esc(l.url||"#")}"><span class="qicon">${iconHtml(l.icon)}</span>${esc(nm(l))}</a>`).join("")}</div>
 
   <div class="eyebrow" style="margin-top:26px">${t("docs")} · ${t("events")}</div>
@@ -351,7 +368,7 @@ function vPortal(){
 function vOrder(){
   if(!branch)return vPickBranch();
   const list=M.filter(m=>inBranch(m,branch)&&m.avail&&(cat==="all"||m.cat===cat));
-  const tot=cart.reduce((a,c)=>a+mi(c.m).price*c.q,0);
+  const tot=cart.reduce((a,c)=>a+effPrice(mi(c.m))*c.q,0);
   return `<div class="eyebrow">${t("order")}</div>
   <div class="atbr"><span>${t("youAt")} <b>${esc(nm(so(branch)))}</b></span>
     <button onclick="changeBranch()">${t("change")}</button></div>
@@ -363,7 +380,7 @@ function vOrder(){
         <button class="mrow" onclick="tog('${m.id}')">
           ${swatchHtml(m,38)}
           <span class="nm"><b>${esc(nm(m))}</b><span>${esc(catLabel(m.cat))}</span></span>
-          <span class="price">${money(m.price)}</span><span class="plus">+</span></button>
+          <span class="price">${priceLabel(m)}</span><span class="plus">+</span></button>
         <div class="opts">
           ${m.sugar?`<div class="optlbl">${t("sugar")}</div><div class="sugars">${SUG.map((s,i)=>
             `<button class="sugar ${d.s===i?"on":""}" onclick="setSug('${m.id}',${i})">${dots(i)}<em>${esc(nm(s))}</em></button>`).join("")}</div>`:""}
@@ -375,7 +392,7 @@ function vOrder(){
           <div class="qtyrow"><div class="stepper">
             <button onclick="stp('${m.id}',-1)">−</button><span class="v">${num(d.q)}</span><button onclick="stp('${m.id}',1)">+</button></div>
             <input class="inp" placeholder="${t("notePH")}" value="${esc(d.note)}" oninput="setNote('${m.id}',this.value)"></div>
-          <button class="addbtn" onclick="addCart('${m.id}')">${t("addTo")} · ${money(m.price*d.q)}</button>
+          <button class="addbtn" onclick="addCart('${m.id}')">${t("addTo")} · ${m.free?t("free"):money(m.price*d.q)}</button>
         </div></div>`}).join("")||`<div class="card empty" style="grid-column:1/-1"><b>—</b>${t("aMenu")}</div>`}</div>
    </div>
    <div class="card cart"><div class="ph"><h3>${t("yourOrder")}</h3></div>
@@ -383,7 +400,7 @@ function vOrder(){
         <span class="q">${num(c.q)}×</span>
         <span style="flex:1">${esc(nm(m))}${c.s!=null?` <span style="color:var(--muted);font-size:11.5px">· ${esc(nm(SUG[c.s]))}</span>`:""}${c.milk?` <span style="color:var(--muted);font-size:11.5px">· ${t("withMilk")}</span>`:""}
           ${c.note?`<div style="font-size:11px;color:var(--coral-ink)">${esc(c.note)}</div>`:""}</span>
-        <span class="mono" style="font-size:12px;color:var(--muted)">${num(m.price*c.q)}</span>
+        <span class="mono" style="font-size:12px;color:var(--muted)">${m.free?t("free"):num(m.price*c.q)}</span>
         <button class="x" onclick="rmCart(${i})">×</button></div>`}).join("")
       :`<div class="empty"><b>${t("emptyCart")}</b>${t("emptyCartB")}</div>`}
      <div class="cfoot">${paying?payPanel(tot):`
@@ -412,10 +429,15 @@ function addCart(id){const m=mi(id),d=draft[id];
   cart.push({m:id,q:d.q,s:m.sugar?d.s:null,milk:m.milk?!!d.milk:null,note:(d.note||"").trim()});
   draft[id]={q:1,s:2,milk:false,note:""};openM=null;render()}
 function rmCart(i){cart.splice(i,1);render()}
-function startPay(){if(!cart.length)return;paying=true;render()}
+function startPay(){
+  if(!cart.length)return;
+  const tot=cart.reduce((a,c)=>a+effPrice(mi(c.m))*c.q,0);
+  if(tot===0){ submitOrder(); return; }
+  paying=true;render();
+}
 function payBack(){paying=false;render()}
 function payPanel(tot){
-  const qr = branch==="kat" ? "/instapay-qr-kat.png" : branch==="moh" ? "/instapay-qr-moh.png" : "/instapay-qr.png";
+  const qr = so(branch).qr || (branch==="kat" ? "/instapay-qr-kat.png" : branch==="moh" ? "/instapay-qr-moh.png" : "/instapay-qr.png");
   return `<div class="paypanel">
     <div class="payhead"><b>${t("payTitle")}</b><span class="mono">${money(tot)}</span></div>
     <img class="payqr" src="${qr}" alt="InstaPay QR — ${esc(nm(so(branch)))}">
@@ -427,9 +449,11 @@ function payPanel(tot){
 async function submitOrder(){
   try{
     const orderNo = await api.submitOrder({
-      branchId: branch, requesterName: nm(myProfile), location: where || "—",
+      branchId: branch, requesterName: nm(myProfile),
+      requesterNameAr: myProfile.ar, requesterNameEn: myProfile.en,
+      location: where || "—",
       lines: cart.map(c=>{ const m=mi(c.m); return {
-        menuItemId: c.m, nameAr: m.ar, nameEn: m.en, qty: c.q, sugar: c.s, milk: c.milk, note: c.note, price: m.price
+        menuItemId: c.m, nameAr: m.ar, nameEn: m.en, qty: c.q, sugar: c.s, milk: c.milk, note: c.note, price: effPrice(m)
       };})
     });
     lastOrderNo = orderNo; cart=[]; paying=false; view="confirmed"; render();
@@ -569,6 +593,22 @@ async function delGalleryPhoto(id){
   }catch(e){ fail(e); }
 }
 
+/* ═══════════════ طلباتي ═══════════════ */
+const STATUS_LBL={new:"statusNew",preparing:"statusPreparing",delivered:"statusDelivered",rejected:"statusRejected"};
+const STATUS_CLS={new:"",preparing:"p",delivered:"d",rejected:"r"};
+function vMyOrders(){
+  if(MY_ORDERS===null) return `<div class="eyebrow">${t("myOrders")}</div><div class="card empty"><b>—</b>${t("loading")}</div>`;
+  return `<div class="eyebrow">${t("myOrders")}</div>
+    ${MY_ORDERS.length?`<div class="card">${MY_ORDERS.map(o=>`<div class="item" style="flex-wrap:wrap">
+        <div class="body"><b class="mono">${esc(o.no)}</b>
+          <p>${new Date(o.at).toLocaleString(lang==="ar"?"ar-EG":"en-US",{dateStyle:"medium",timeStyle:"short"})} · ${money(o.total)}</p>
+          ${o.status==="rejected"&&o.reason?`<p style="color:var(--coral-ink)">${t("rejectedBecause")}: ${esc(o.reason)}</p>`:""}
+        </div>
+        <span class="pill ${STATUS_CLS[o.status]?"p":""}" style="${o.status==='rejected'?'background:var(--coral-soft);color:var(--coral-ink)':''}">${t(STATUS_LBL[o.status]||o.status)}</span>
+      </div>`).join("")}</div>`
+     :`<div class="card empty"><b>—</b>${t("noOrdersYet")}</div>`}`;
+}
+
 /* ═══════════════ admin ═══════════════ */
 function vAdmin(){
   const cur=TABS.find(x=>x[0]===tab)||TABS[0],ok=!cur[3]||can(cur[3]);
@@ -597,16 +637,34 @@ function branchForm(){
         <option value="1" ${d.live?"selected":""}>${t("branchLiveYes")}</option>
         <option value="0" ${d.live?"":"selected"}>${t("branchLiveNo")}</option>
       </select></div>
+    <div class="fld full"><label>${t("branchQr")}</label>
+      <div class="img-edit">
+        ${d.qr?`<img src="${esc(d.qr)}" class="img-edit-preview">
+          <button class="iact del" type="button" onclick="setBranchField('qr','')">🗑</button>`
+        :`<label class="btn ghost sm gal-picklabel">${t("uploadPhoto")}
+            <input type="file" accept="image/*" style="display:none" onchange="uploadBranchQr(this)"></label>`}
+      </div>
+    </div>
   </div>
   <div class="formacts"><button class="btn sm" onclick="saveBranch()">${t("save")}</button>
     <button class="btn ghost sm" onclick="cancelBranchEdit()">${t("cancel")}</button></div></div>`;
 }
-function startBranchNew(){ branchEdit={id:"",ar:"",en:"",live:true,isNew:true}; render(); }
+function startBranchNew(){ branchEdit={id:"",ar:"",en:"",live:true,qr:"",isNew:true}; render(); }
 function startBranchEdit(id){
   const s=SITES.find(x=>x.id===id); if(!s) return;
-  branchEdit={id:s.id,ar:s.ar,en:s.en,live:s.live,isNew:false}; render();
+  branchEdit={id:s.id,ar:s.ar,en:s.en,live:s.live,qr:s.qr||"",isNew:false}; render();
 }
 function cancelBranchEdit(){ branchEdit=null; render(); }
+async function uploadBranchQr(input){
+  const file = input.files && input.files[0];
+  if(!file || !branchEdit) return;
+  toast(t("imageUploading"));
+  try{
+    const url = await api.uploadImage(file);
+    branchEdit.qr = url;
+    toast(t("imageUploaded")); render();
+  }catch(e){ fail(e); }
+}
 function setBranchField(k,v){ if(branchEdit) branchEdit[k]=v; }
 function setBranchLive(v){ if(branchEdit) branchEdit.live=(v==="1"); }
 async function saveBranch(){
@@ -718,7 +776,9 @@ function form(k){
       <div class="fld"><label>${t("hasSugar")}</label><select class="inp" onchange="setEditSugar(this.value)">
         <option value="1" ${d.sugar?"selected":""}>✓</option><option value="0" ${d.sugar?"":"selected"}>✕</option></select></div>
       <div class="fld"><label>${t("hasMilk")}</label><select class="inp" onchange="setEditMilk(this.value)">
-        <option value="1" ${d.milk?"selected":""}>✓</option><option value="0" ${d.milk?"":"selected"}>✕</option></select></div>`:""}
+        <option value="1" ${d.milk?"selected":""}>✓</option><option value="0" ${d.milk?"":"selected"}>✕</option></select></div>
+      <div class="fld"><label>${t("isFree")}</label><select class="inp" onchange="setEditFree(this.value)">
+        <option value="1" ${d.free?"selected":""}>✓</option><option value="0" ${d.free?"":"selected"}>✕</option></select></div>`:""}
     </div>
     <div class="formacts"><button class="btn sm" onclick="saveItem('${k}')">${t("save")}</button>
       <button class="btn ghost sm" onclick="cancelEdit()">${t("cancel")}</button></div></div>`;
@@ -726,7 +786,7 @@ function form(k){
 function startEdit(k,id){
   const arr=k==="menu"?M:C[k];
   edit = id ? structuredClone(arr.find(x=>x.id===id))
-    : (k==="menu" ? {site:"all",cat:"snacks",price:10,sugar:false,milk:false,avail:true,col:"#B5651D"} : {});
+    : (k==="menu" ? {site:"all",cat:"snacks",price:10,sugar:false,milk:false,free:false,avail:true,col:"#B5651D"} : {});
   eKind=k; render();
 }
 function cancelEdit(){edit=null;render()}
@@ -735,6 +795,7 @@ function setEditSite(v){edit.site=v}
 function setEditCat(v){edit.cat=v}
 function setEditSugar(v){edit.sugar=(v==="1")}
 function setEditMilk(v){edit.milk=(v==="1")}
+function setEditFree(v){edit.free=(v==="1")}
 async function uploadEditImage(input){
   const file = input.files && input.files[0];
   if(!file || !edit) return;
@@ -791,11 +852,23 @@ function aAccess(){
     ${A.users.map(u=>{const cls=u.role==="admin"?"c":u.role==="hr"?"o":"";
       return `<div class="item"><span class="av ${cls}">${esc((nm(u)||"?")[0])}</span>
         <div class="body"><b>${esc(nm(u))}</b><p>${u.site?esc(nm(so(u.site))):"—"}</p></div>
+        <input class="inp" style="width:130px" placeholder="${t("nameArHint")}" value="${esc(u.ar!==u.en?u.ar:'')}"
+          onblur="saveNameAr('${u.id}',this.value)">
         <select class="inp" style="width:auto" onchange="setBranchAdm('${u.id}',this.value)">
           <option value="">—</option>
           ${SITES.map(s=>`<option value="${s.id}" ${u.site===s.id?"selected":""}>${esc(nm(s))}</option>`).join("")}</select>
         <select class="inp" style="width:auto" onchange="setRole('${u.id}',this.value)">
           ${A.roles.map(x=>`<option value="${x.id}" ${x.id===u.role?"selected":""}>${esc(nm(x))}</option>`).join("")}</select></div>`}).join("")}</div>`;
+}
+async function saveNameAr(id,v){
+  v=v.trim();
+  try{
+    await api.setFullNameAr(id, v||null);
+    const u=A.users.find(x=>x.id===id);
+    if(u) u.ar = v || u.en;
+    if(id===myProfile.id) myProfile.ar = v || myProfile.en;
+    toast(t("saved"));
+  }catch(e){ fail(e); }
 }
 async function togPerm(rid,s){
   const r=A.roles.find(x=>x.id===rid), on=!r.perms.includes(s);
@@ -844,6 +917,6 @@ Object.assign(window, {
   saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg, saveKioskPw,
   toggleOrgNode, orgSearch, uploadGalleryPhoto, delGalleryPhoto, uploadEditImage, removeEditImage,
   setEditIcon, uploadEditIcon, startBranchNew, startBranchEdit, cancelBranchEdit,
-  setBranchField, setBranchLive, saveBranch, deleteBranch,
+  setBranchField, setBranchLive, saveBranch, deleteBranch, uploadBranchQr, saveNameAr, setEditFree,
   startAboutEdit, cancelAboutEdit, saveAbout,
 });

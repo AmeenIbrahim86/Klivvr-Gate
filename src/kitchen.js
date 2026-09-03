@@ -17,6 +17,8 @@ const L = { ar: {
  noBranch:"اللينك ده ناقصه الفرع", noBranchB:"كلّم الأدمن يديك لينك الشاشة الصح لفرعك.",
  enterPw:"باسورد الشاشة", enterPwB:"اكتب باسورد شاشة الفرع ده.",
  pwPH:"الباسورد", unlock:"دخول", wrongPw:"الباسورد غلط، جرّب تاني.",
+ reasonUnavailable:"غير متوفر", reasonOutOfStock:"خلص من المخزون", reasonOtherPH:"سبب تاني...",
+ confirmReject:"تأكيد الرفض", cancel:"إلغاء",
 },en:{
  title:"Buffet screen", noLogin:"No sign-in needed",
  kNew:"NEW", kProg:"PREPARING",
@@ -25,11 +27,14 @@ const L = { ar: {
  noBranch:"This link is missing a branch", noBranchB:"Ask an admin for your branch's screen link.",
  enterPw:"Screen password", enterPwB:"Enter this branch's screen password.",
  pwPH:"Password", unlock:"Unlock", wrongPw:"Wrong password, try again.",
+ reasonUnavailable:"Not available", reasonOutOfStock:"Out of stock", reasonOtherPH:"Other reason...",
+ confirmReject:"Confirm rejection", cancel:"Cancel",
 }};
 
 const branch = branchFromUrl();
 const pwKey = "kitchen_pw_" + (branch || "x");
 let lang="en", rows=[], unlocked=false, password="", loginErr="", checking=false;
+let rejectingOrder=null, rejectCustom="";
 const t=k=>L[lang][k]??k;
 const num=n=>Number(n).toLocaleString(lang==="ar"?"ar-EG":"en-US");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -75,11 +80,24 @@ async function refresh(){
   }
   render();
 }
-async function setSt(orderNo, status){
-  try{ await kitchenSetStatus(branch, password, orderNo, status); await refresh(); }
+async function setSt(orderNo, status, reason){
+  try{ await kitchenSetStatus(branch, password, orderNo, status, reason); await refresh(); }
   catch(e){ console.error(e); }
 }
 window.setSt = setSt;
+
+function startReject(orderNo){ rejectingOrder=orderNo; rejectCustom=""; render(); }
+function cancelReject(){ rejectingOrder=null; rejectCustom=""; render(); }
+function pickRejectReason(orderNo, reason){ setSt(orderNo,"rejected",reason); rejectingOrder=null; }
+function setRejectCustom(v){ rejectCustom=v; }
+function confirmRejectCustom(orderNo){
+  const v=(rejectCustom||"").trim();
+  if(!v) return;
+  setSt(orderNo,"rejected",v); rejectingOrder=null;
+}
+window.startReject=startReject; window.cancelReject=cancelReject;
+window.pickRejectReason=pickRejectReason; window.setRejectCustom=setRejectCustom;
+window.confirmRejectCustom=confirmRejectCustom;
 
 function render(){
   document.documentElement.lang=lang;
@@ -128,15 +146,25 @@ function render(){
      return `<div class="ticket ${o.status==="preparing"?"prog":""} ${late?"late":""}">
        <div class="thd"><div class="t1"><span class="tno">${esc(o.order_no)}</span>
          <span class="timer">${String(mins).padStart(2,"0")}:00${late?" ⚠":""}</span></div>
-         <h4>${esc(o.requester_first)}</h4><div class="where">${esc(o.location||"")}</div></div>
+         <h4>${esc((lang==="ar"?o.requester_first_ar:o.requester_first_en)||o.requester_first_en||o.requester_first_ar||"")}</h4><div class="where">${esc(o.location||"")}</div></div>
        ${(o.items||[]).map(l=>`<div class="tl"><span class="qn">${num(l.qty)}×</span>
          <span><b>${esc(lang==="ar"?l.name_ar:l.name_en)}</b>
          ${l.sugar!=null?`<span class="sug">${dots(l.sugar)}<em>${esc(nm(SUG[l.sugar]))}</em></span>`:""}
          ${l.milk?`<span class="sug">🥛<em>${t("withMilk")}</em></span>`:""}
          ${l.note?`<div class="note">✎ ${esc(l.note)}</div>`:""}</span></div>`).join("")}
        <div class="tft">${o.status==="new"
-         ?`<button class="b-s" onclick="setSt('${o.order_no}','preparing')">${t("kStart")}</button>
-           <button class="b-r" onclick="setSt('${o.order_no}','rejected')">${t("kReject")}</button>`
+         ?(rejectingOrder===o.order_no
+           ?`<div class="reject-picker">
+               <button class="b-reason" onclick="pickRejectReason('${o.order_no}','${t("reasonUnavailable")}')">${t("reasonUnavailable")}</button>
+               <button class="b-reason" onclick="pickRejectReason('${o.order_no}','${t("reasonOutOfStock")}')">${t("reasonOutOfStock")}</button>
+               <div class="reject-custom">
+                 <input class="inp" placeholder="${t("reasonOtherPH")}" oninput="setRejectCustom(this.value)">
+                 <button class="b-s sm" onclick="confirmRejectCustom('${o.order_no}')">${t("confirmReject")}</button>
+               </div>
+               <button class="b-cancel" onclick="cancelReject()">${t("cancel")}</button>
+             </div>`
+           :`<button class="b-s" onclick="setSt('${o.order_no}','preparing')">${t("kStart")}</button>
+           <button class="b-r" onclick="startReject('${o.order_no}')">${t("kReject")}</button>`)
          :`<button class="b-d" onclick="setSt('${o.order_no}','delivered')">${t("kDelivered")}</button>`}</div></div>`}).join("")
     :`<div class="kempty"><b>${t("kEmpty")}</b>${t("kEmptyB")}</div>`}</div></div>`;
 }
