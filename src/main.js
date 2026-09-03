@@ -452,7 +452,7 @@ function vOrder(){
       return `<div class="mitem ${o?"open":""}">
         <button class="mrow" onclick="tog('${m.id}')">
           ${swatchHtml(m,38)}
-          <span class="nm"><b>${esc(nm(m))}</b><span>${esc(catLabel(m.cat))}</span></span>
+          <span class="nm"><b>${esc(nm(m))}</b><span>${esc(catLabel(m.cat))}${m.stock!=null?` · <span class="stock-left">${num(m.stock)} ${t("stockLeft")}</span>`:""}</span></span>
           <span class="price">${priceLabel(m)}</span><span class="plus">+</span></button>
         <div class="opts">
           ${m.sugar?`<div class="optlbl">${t("sugar")}</div><div class="sugars">${SUG.map((s,i)=>

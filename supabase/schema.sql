@@ -501,6 +501,10 @@ begin
      order by o.created_at desc;
 end $$;
 grant execute on function public.kitchen_report(text,text,timestamptz,timestamptz) to anon;
+
+-- أي دالة جديدة تتعمل بعد كده (حتى لو بـ DROP ثم CREATE) تاخد صلاحية anon
+-- تلقائي — نفس فئة المشكلة اللي اتصلحت قبل كده مرتين، ده بيمنعها تتكرر تاني
+alter default privileges in schema public grant execute on functions to anon;
 grant execute on function public.kitchen_login(text,text) to anon;
 
 revoke all on function public.set_screen_password(text,text) from public, anon;
