@@ -45,6 +45,7 @@ const L = { ar: {
  author:"الكاتب",date:"التاريخ",icon:"الأيقونة",url:"اللينك",dept:"القسم",version:"الإصدار",
  image:"لينك الصورة",imageHint:"الصق لينك صورة من الإنترنت (اختياري)",
  descAR:"وصف قصير بالعربي",descEN:"وصف قصير بالإنجليزي",
+ stockQty:"الكمية المتاحة",stockHint:"اسيبها فاضية = بلا حد (متاح دايمًا)",stockLeft:"متبقي",
  place:"المكان",day:"اليوم",month:"الشهر",cat:"التصنيف",price:"السعر",hasSugar:"له اختيارات سكر",avail:"متاح",color:"اللون",
  branch:"الفرع",allBranches:"كل الفروع",branches:"الفروع",role:"الدور",people:"الناس",
  whichBranch:"انت في أنهي فرع؟",whichBranchB:"عشان الطلب يروح لبوفيه الفرع الصح.",
@@ -99,6 +100,7 @@ const L = { ar: {
  author:"Author",date:"Date",icon:"Icon",url:"Link",dept:"Department",version:"Version",
  image:"Image link",imageHint:"Paste an image link from the internet (optional)",
  descAR:"Short description (Arabic)",descEN:"Short description (English)",
+ stockQty:"Stock quantity",stockHint:"Leave empty = unlimited (always available)",stockLeft:"left",
  place:"Place",day:"Day",month:"Month",cat:"Category",price:"Price",hasSugar:"Has sugar options",avail:"Available",color:"Colour",
  branch:"Branch",allBranches:"All branches",branches:"Branches",role:"Role",people:"People",
  whichBranch:"Which branch are you at?",whichBranchB:"So the order reaches the right buffet.",
@@ -222,7 +224,7 @@ const FIELDS = {
  links:[["ar","titleAR"],["en","titleEN"],["descAR","descAR"],["descEN","descEN"],["icon","icon"],["url","url"]],
  policies:[["ar","titleAR"],["en","titleEN"],["dept","dept"],["ver","version"],["date","date"],["url","url"]],
  events:[["ar","titleAR"],["en","titleEN"],["placeAR","place"],["placeEN","place"],["day","day"],["monAR","month"],["monEN","month"],["startsAt","eventDateTime"],["image","image"]],
- menu:[["ar","titleAR"],["en","titleEN"],["price","price"],["col","color"],["icon","icon"]]};
+ menu:[["ar","titleAR"],["en","titleEN"],["price","price"],["stock","stockQty"],["col","color"],["icon","icon"]]};
 
 /* ═══════════════ state ═══════════════ */
 let lang="en", authed=false, view="portal", tab="overview";
@@ -814,7 +816,7 @@ function lbl(k,x){
   if(k==="links")return[nm(x),x.icon+"  "+x.url];
   if(k==="policies")return[nm(x),x.dept+" · v"+x.ver+" · "+x.date];
   if(k==="events")return[nm(x),(lang==="ar"?x.placeAR:x.placeEN)+" · "+x.day];
-  if(k==="menu")return[nm(x),catLabel(x.cat)+" · "+money(x.price)+(x.avail?"":" · ✕")];
+  if(k==="menu")return[nm(x),catLabel(x.cat)+" · "+money(x.price)+(x.stock!=null?" · "+num(x.stock)+" "+t("stockLeft"):"")+(x.avail?"":" · ✕")];
   return[nm(x),""];
 }
 function aList(k){
@@ -856,7 +858,7 @@ function form(k){
         </div>`
       :key==="startsAt"?`<input type="datetime-local" class="inp" value="${esc(d.startsAt?toLocalInput(d.startsAt):"")}"
           oninput="setEditField('startsAt',this.value?new Date(this.value).toISOString():null)">`
-      :`<input class="inp" value="${esc(d[key]??"")}" oninput="setEditField('${key}',this.value)">`}</div>`).join("")}
+      :`<input class="inp" placeholder="${key==="stock"?t("stockHint"):""}" value="${esc(d[key]??"")}" oninput="setEditField('${key}',this.value)">`}</div>`).join("")}
     ${k==="menu"?`<div class="fld"><label>${t("branch")}</label><select class="inp" onchange="setEditSite(this.value)">
         <option value="all" ${d.site==="all"?"selected":""}>${t("allBranches")}</option>
         ${LIVE().map(s=>`<option value="${s.id}" ${d.site===s.id?"selected":""}>${esc(nm(s))}</option>`).join("")}</select></div>

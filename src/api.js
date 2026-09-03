@@ -157,10 +157,11 @@ const MAP = {
   menu: {
     toDb: r => ({ name_ar: r.ar, name_en: r.en, category: r.cat, price: Number(r.price) || 0,
       has_sugar: !!r.sugar, has_milk: !!r.milk, is_free: !!r.free, is_available: r.avail !== false, colour: r.col || '#B5651D', is_square: !!r.sq,
-      icon: r.icon || null, branch_id: (!r.site || r.site === 'all') ? null : r.site }),
+      icon: r.icon || null, stock_qty: (r.stock===''||r.stock==null) ? null : Number(r.stock),
+      branch_id: (!r.site || r.site === 'all') ? null : r.site }),
     fromDb: r => ({ id: r.id, ar: r.name_ar, en: r.name_en, cat: r.category, price: Number(r.price),
       sugar: r.has_sugar, milk: r.has_milk, free: r.is_free, avail: r.is_available, col: r.colour, sq: r.is_square,
-      icon: r.icon, site: r.branch_id || 'all' }),
+      icon: r.icon, stock: r.stock_qty, site: r.branch_id || 'all' }),
   },
 };
 

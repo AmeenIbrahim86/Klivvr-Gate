@@ -135,6 +135,7 @@ create table menu_items (
   has_milk boolean default false,
   icon text,
   is_free boolean default false,
+  stock_qty int,
   is_available boolean default true,
   colour text default '#B5651D',
   is_square boolean default false,
@@ -267,6 +268,23 @@ create table order_items (
   line_total numeric(10,2) default 0
 );
 create index on order_items (order_id);
+
+-- كمية مخزون اختيارية لكل صنف — لو محطوطة، بتقل مع كل طلب، ولما توصل صفر
+-- الصنف يبقى "غير متاح" تلقائي. لو مش محطوطة، الصنف يفضل متاح زي الأول.
+create or replace function public.decrement_menu_stock()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  update menu_items
+     set stock_qty    = greatest(stock_qty - new.qty, 0),
+         is_available  = case when (stock_qty - new.qty) <= 0 then false else is_available end
+   where id = new.menu_item_id
+     and stock_qty is not null;
+  return new;
+end $$;
+
+create trigger trg_decrement_menu_stock
+  after insert on order_items
+  for each row execute function public.decrement_menu_stock();
 
 -- ══════════════════════════════════════════════════════════════
 --  RLS — الأهم في الملف كله
