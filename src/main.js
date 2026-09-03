@@ -20,7 +20,7 @@ const L = { ar: {
  milk:"اللبن",withMilk:"بلبن",noMilk:"من غير لبن",hasMilk:"له اختيار لبن",
  yourOrder:"طلبك",emptyCart:"لسه مضفتش حاجة",emptyCartB:"اختار من القائمة على الجنب",send:"ادفع الآن",cur:"ج.م",
  payTitle:"ادفع عن طريق InstaPay",payHint:"امسح الكود بتطبيق InstaPay وحوّل قيمة الطلب، وبعدين دوس تأكيد.",payConfirm:"تم الدفع، تأكيد الطلب",payBack:"رجوع للسلة",
- where:"مكانك",wherePH:"مثال: مكتب ٣١٢",
+ where:"مكانك",wherePH:"مثال: مكتب ٣١٢",whereOffice:"مكتب",whereRoom:"قاعة اجتماعات",wherePickRoom:"اختار القاعة…",
  overview:"نظرة عامة",aNews:"الأخبار",aLinks:"اللينكات",aPolicies:"السياسات",aEvents:"الأحداث",aMenu:"قائمة البوفيه",aAccess:"الصلاحيات",sites:"المواقع",
  orgChart:"الهيكل التنظيمي",orgSync:"مزامنة من Entra ID",orgSyncing:"بيزامن…",orgSynced:"اتزامن",orgEmpty:"لسه مفيش داتا — دوس مزامنة من Entra ID",
  gallery:"معرض الصور",galleryEmpty:"لسه مفيش صور",uploadPhoto:"رفع صورة",uploading:"بيترفع…",
@@ -33,6 +33,7 @@ const L = { ar: {
  myOrders:"طلباتي",reasonUnavailable:"غير متوفر",reasonOutOfStock:"خلص من المخزون",reasonOtherPH:"سبب تاني...",
  confirmReject:"تأكيد الرفض",statusNew:"جديد",statusPreparing:"بيتحضّر",statusDelivered:"اتسلّم",statusRejected:"مرفوض",
  rejectedBecause:"سبب الرفض",noOrdersYet:"لسه معملتش أي طلب",
+ autoTranslateAll:"ترجمة تلقائية للكل",autoTranslateNone:"كل الأسماء متعرّبة بالفعل",autoTranslateDone:"اتعرّبت الأسماء",
  branchIdInvalid:"كود الفرع لازم يكون حروف/أرقام إنجليزي بس، من غير مسافات",
  branchNamesRequired:"لازم اسم بالعربي والإنجليزي",branchDeleteConfirm:"متأكد؟ لو الفرع ده عليه أصناف أو طلبات مش هينمسح.",
  aboutEmpty:"لسه مفيش وصف — دوس ✎ تكتب واحد",aboutAR:"الوصف بالعربي",aboutEN:"الوصف بالإنجليزي",
@@ -71,7 +72,7 @@ const L = { ar: {
  milk:"Milk",withMilk:"With milk",noMilk:"No milk",hasMilk:"Has milk option",
  yourOrder:"Your order",emptyCart:"Nothing added yet",emptyCartB:"Pick something from the menu",send:"Pay now",cur:"EGP",
  payTitle:"Pay via InstaPay",payHint:"Scan the code in the InstaPay app and transfer the order total, then confirm.",payConfirm:"Paid — confirm order",payBack:"Back to cart",
- where:"Where you are",wherePH:"e.g. Office 312",
+ where:"Where you are",wherePH:"e.g. Office 312",whereOffice:"Office",whereRoom:"Meeting room",wherePickRoom:"Pick a room…",
  overview:"Overview",aNews:"News",aLinks:"Quick links",aPolicies:"Policies",aEvents:"Events",aMenu:"Buffet menu",aAccess:"Access",sites:"Sites",
  orgChart:"Org chart",orgSync:"Sync from Entra ID",orgSyncing:"Syncing…",orgSynced:"Synced",orgEmpty:"No data yet — click sync from Entra ID",
  gallery:"Gallery",galleryEmpty:"No photos yet",uploadPhoto:"Upload photo",uploading:"Uploading…",
@@ -84,6 +85,7 @@ const L = { ar: {
  myOrders:"My orders",reasonUnavailable:"Not available",reasonOutOfStock:"Out of stock",reasonOtherPH:"Other reason...",
  confirmReject:"Confirm rejection",statusNew:"New",statusPreparing:"Preparing",statusDelivered:"Delivered",statusRejected:"Rejected",
  rejectedBecause:"Rejected because",noOrdersYet:"You haven't placed any orders yet",
+ autoTranslateAll:"Auto-translate all",autoTranslateNone:"All names already have an Arabic version",autoTranslateDone:"Names translated",
  branchIdInvalid:"Branch code must be lowercase letters/numbers only, no spaces",
  branchNamesRequired:"Both Arabic and English names are required",branchDeleteConfirm:"Delete this branch? It won't delete if it still has menu items or orders.",
  aboutEmpty:"No description yet — click ✎ to write one",aboutAR:"Description (Arabic)",aboutEN:"Description (English)",
@@ -116,6 +118,7 @@ const L = { ar: {
 const SECTIONS = ["news","links","policies","events","menu","orders","access","gallery"];
 const CATS = [
  {k:"all",ar:"الكل",en:"All"},
+ {k:"free",ar:"مجاني",en:"Free"},
  {k:"snacks",ar:"كيك وحلويات",en:"Snack Cakes"},
  {k:"biscuits",ar:"بسكويت وكوكيز",en:"Biscuits & Cookies"},
  {k:"protein",ar:"بروتين بار",en:"Protein Bars"},
@@ -123,6 +126,60 @@ const CATS = [
  {k:"drinks",ar:"مشروبات",en:"Beverages"},
  {k:"sandwiches",ar:"سندوتشات",en:"Sandwiches"}];
 const SUG = [{ar:"سادة",en:"None"},{ar:"خفيف",en:"Light"},{ar:"مظبوط",en:"Medium"},{ar:"زيادة",en:"Extra"}];
+const ROOMS = ["Dusk","Dawn","Skyline","Golden Hour","Whisper 1","Whisper 2","Whisper 3","Whisper 4",
+  "Whisper 5","Whisper 6","Board Room","New Dawn","Euphoria","Liberty"];
+
+// تحويل تلقائي تقريبي من الاسم بالإنجليزي للعربي — قاموس لأشهر الأسماء المصرية/العربية،
+// وتحويل صوتي بسيط لأي اسم مش في القاموس. مش مثالي ١٠٠٪، بس بيوفّر الكتابة اليدوية
+// في الغالبية العظمى من الحالات، وبيفضل قابل للتعديل اليدوي بعد كده لو غلط.
+const NAME_DICT = {
+  mohamed:"محمد",mohammed:"محمد",muhammad:"محمد",ahmed:"أحمد",ahmad:"أحمد",mahmoud:"محمود",mahmood:"محمود",
+  ibrahim:"إبراهيم",ebrahim:"إبراهيم",omar:"عمر",amr:"عمرو",ali:"علي",hassan:"حسن",hussein:"حسين",husein:"حسين",
+  khaled:"خالد",khalid:"خالد",tarek:"طارق",tariq:"طارق",sherif:"شريف",sharif:"شريف",karim:"كريم",kareem:"كريم",
+  yousef:"يوسف",youssef:"يوسف",yusuf:"يوسف",amin:"أمين",ameen:"أمين",sameh:"سامح",sami:"سامي",samy:"سامي",
+  tamer:"تامر",waleed:"وليد",walid:"وليد",wael:"وائل",hany:"هاني",hani:"هاني",ashraf:"أشرف",medhat:"مدحت",
+  hazem:"حازم",hisham:"هشام",hesham:"هشام",gamal:"جمال",jamal:"جمال",fady:"فادي",adel:"عادل",essam:"عصام",
+  islam:"إسلام",ehab:"إيهاب",eslam:"إسلام",mostafa:"مصطفى",mustafa:"مصطفى",moustafa:"مصطفى",ayman:"أيمن",
+  amir:"أمير",ameer:"أمير",fady2:"فادي",ramy:"رامي",rami:"رامي",bassem:"باسم",basem:"باسم",magdy:"مجدي",
+  raafat:"رأفت",rafaat:"رأفت",sameer:"سمير",samir:"سمير",salah:"صلاح",mazen:"مازن",fouad:"فؤاد",foad:"فؤاد",
+  nabil:"نبيل",medo:"ميدو",abdo:"عبده",abdelrahman:"عبدالرحمن",abdulrahman:"عبدالرحمن",abdallah:"عبدالله",
+  abdullah:"عبدالله",abdelaziz:"عبدالعزيز",abdelmoneim:"عبدالمنعم",abdelfattah:"عبدالفتاح",moataz:"معتز",
+  emad:"عماد",imad:"عماد",kamal:"كمال",galal:"جلال",fathy:"فتحي",saeed:"سعيد",said:"سعيد",hosny:"حسني",
+  mina:"مينا",peter:"بيتر",george:"جورج",joseph:"جوزيف",andrew:"أندرو",mark:"مارك",
+  sara:"سارة",sarah:"سارة",mariam:"مريم",maryam:"مريم",nour:"نور",noor:"نور",mona:"منى",hala:"هالة",
+  dina:"دينا",dalia:"داليا",rania:"رانيا",rana:"رنا",yasmin:"ياسمين",yasmine:"ياسمين",heba:"هبة",
+  hoda:"هدى",amira:"أميرة",ameera:"أميرة",salma:"سلمى",laila:"ليلى",layla:"ليلى",fatma:"فاطمة",
+  fatima:"فاطمة",aya:"آية",ayah:"آية",farida:"فريدة",jana:"جنى",habiba:"حبيبة",malak:"ملك",
+  nada:"ندى",nadia:"نادية",reem:"ريم",rim:"ريم",asmaa:"أسماء",asma:"أسماء",eman:"إيمان",iman:"إيمان",
+  shaimaa:"شيماء",shorouk:"شروق",samar:"سمر",marwa:"مروة",radwa:"رضوى",esraa:"إسراء",israa:"إسراء",
+  ibrahim2:"إبراهيم",fahmy:"فهمي",naguib:"نجيب",farag:"فرج",zaki:"زكي",farghaly:"فرغلي",elgarhy:"الجارحي",
+  abdo2:"عبده",arous:"عروس",albaroudy:"الباروودي",sherif2:"شريف",hadhod:"هدهد",awad:"عوض",hassan2:"حسن",
+  gouda:"جودة",elshamy:"الشامي",sallam:"سلام",gomaa:"جمعة",fouad2:"فؤاد",ghali:"غالي",wahba:"وهبة",
+  aboul:"أبو",abou:"أبو",abu:"أبو",elsayed:"السيد",sayed:"سيد",sayyed:"سيد",hafez:"حافظ",soliman:"سليمان",
+  suleiman:"سليمان",attia:"عطية",kandil:"قنديل",sabry:"صبري",lotfy:"لطفي",fikry:"فكري",labib:"لبيب",
+  hegazy:"حجازي",hegazi:"حجازي",youssry:"يسري",amer:"عامر",gaber:"جابر",gabr:"جبر",naeem:"نعيم",
+  nasr:"نصر",farouk:"فاروق",farouq:"فاروق",anwar:"أنور",zaghloul:"زغلول",badawy:"بدوي",shawky:"شوقي"
+};
+function translitWord(w){
+  const key=w.toLowerCase().replace(/[^a-z]/g,"");
+  if(NAME_DICT[key]) return NAME_DICT[key];
+  // تحويل صوتي تقريبي لأي كلمة مش في القاموس
+  let s=w.toLowerCase();
+  const multi=[["kh","خ"],["gh","غ"],["sh","ش"],["th","ث"],["dh","ذ"],["ch","تش"],["ph","ف"],
+    ["ee","ي"],["oo","و"],["aa","ا"],["ou","و"],["ei","ي"],["ai","اي"],["ny","ني"]];
+  for(const[a,b]of multi) s=s.split(a).join("§"+b+"§");
+  const map={a:"ا",b:"ب",t:"ت",g:"ج",j:"ج",h:"ه",d:"د",r:"ر",z:"ز",s:"س",f:"ف",q:"ق",k:"ك",
+    l:"ل",m:"م",n:"ن",w:"و",y:"ي",x:"كس",c:"ك",v:"ف",u:"و",o:"و",i:"ي",e:"ي","'":"ع"};
+  let out="";
+  for(const ch of s){
+    if(ch==="§"){continue}
+    out += map[ch] ?? "";
+  }
+  return out||w;
+}
+function transliterateToArabic(fullName){
+  return (fullName||"").trim().split(/\s+/).map(translitWord).join(" ");
+}
 const TABS = [["overview","overview","▦",null],["news","aNews","✦","news"],["links","aLinks","◫","links"],
  ["policies","aPolicies","▤","policies"],["events","aEvents","▣","events"],["menu","aMenu","☕","menu"],
  ["access","aAccess","⚿","access"]];
@@ -168,7 +225,7 @@ let myProfile=null, SITES=[], C={news:[],links:[],policies:[],events:[]}, M=[], 
 let ABOUT={ar:"",en:""}, aboutEditing=false;
 let MY_ORDERS=null;
 let branch=null, paying=false, lastOrderNo="";
-let cart=[], openM=null, draft={}, cat="all", where="", edit=null, eKind=null;
+let cart=[], openM=null, draft={}, cat="all", where="", whereType="office", whereRoom="", edit=null, eKind=null;
 
 const t=k=>L[lang][k]??k;
 const nm=o=>o?(o[lang]??o.ar??o.en??""):"";
@@ -194,6 +251,11 @@ function fail(e){console.error(e);toast(t("errGeneric"))}
 /* ═══════════════ boot / auth ═══════════════ */
 async function loadEverything(){
   myProfile = await api.loadMe();
+  // لو مفيش اسم عربي متسجّل، جرّب تحويل تلقائي واحفظه مرة واحدة (يفضل قابل للتعديل بعد كده)
+  if(myProfile && myProfile.ar===myProfile.en){
+    const guess=transliterateToArabic(myProfile.en);
+    if(guess){ myProfile.ar=guess; api.setFullNameAr(myProfile.id, guess).catch(()=>{}); }
+  }
   const results = await Promise.allSettled([
     api.listBranches(), api.loadRoles(), api.list("news"), api.list("links"),
     api.list("policies"), api.list("events"), api.list("menu"),
@@ -279,6 +341,8 @@ function setBranch(b){if(!so(b).live)return;branch=b;cart=[];paying=false;render
 function changeBranch(){branch=null;cart=[];paying=false;render()}
 function setCat(c){cat=c;openM=null;render()}
 function setWhere(v){where=v}
+function setWhereType(v){whereType=v;render()}
+function setWhereRoom(v){whereRoom=v;render()}
 
 /* ═══════════════ portal ═══════════════ */
 function aboutCard(){
@@ -367,7 +431,7 @@ function vPortal(){
 /* ═══════════════ order ═══════════════ */
 function vOrder(){
   if(!branch)return vPickBranch();
-  const list=M.filter(m=>inBranch(m,branch)&&m.avail&&(cat==="all"||m.cat===cat));
+  const list=M.filter(m=>inBranch(m,branch)&&m.avail&&(cat==="all"||(cat==="free"?m.free:m.cat===cat)));
   const tot=cart.reduce((a,c)=>a+effPrice(mi(c.m))*c.q,0);
   return `<div class="eyebrow">${t("order")}</div>
   <div class="atbr"><span>${t("youAt")} <b>${esc(nm(so(branch)))}</b></span>
@@ -405,7 +469,17 @@ function vOrder(){
       :`<div class="empty"><b>${t("emptyCart")}</b>${t("emptyCartB")}</div>`}
      <div class="cfoot">${paying?payPanel(tot):`
        <div class="fld"><label>${t("where")}</label>
-        <input class="inp" placeholder="${t("wherePH")}" value="${esc(where)}" oninput="setWhere(this.value)"></div>
+        <div class="wheretype">
+          <button class="${whereType==="office"?"on":""}" onclick="setWhereType('office')">${t("whereOffice")}</button>
+          <button class="${whereType==="room"?"on":""}" onclick="setWhereType('room')">${t("whereRoom")}</button>
+        </div>
+        ${whereType==="room"
+          ?`<select class="inp" onchange="setWhereRoom(this.value)">
+              <option value="">${t("wherePickRoom")}</option>
+              ${ROOMS.map(r=>`<option value="${esc(r)}" ${whereRoom===r?"selected":""}>${esc(r)}</option>`).join("")}
+            </select>`
+          :`<input class="inp" placeholder="${t("wherePH")}" value="${esc(where)}" oninput="setWhere(this.value)">`}
+       </div>
        <div class="ctot"><b>${t("yourOrder")}</b><span class="mono">${money(tot)}</span></div>
        <button class="btn" style="width:100%" ${cart.length?"":"disabled"} onclick="startPay()">${t("send")}</button>`}
      </div></div></div>`;
@@ -451,12 +525,12 @@ async function submitOrder(){
     const orderNo = await api.submitOrder({
       branchId: branch, requesterName: nm(myProfile),
       requesterNameAr: myProfile.ar, requesterNameEn: myProfile.en,
-      location: where || "—",
+      location: (whereType==="room" ? whereRoom : where) || "—",
       lines: cart.map(c=>{ const m=mi(c.m); return {
         menuItemId: c.m, nameAr: m.ar, nameEn: m.en, qty: c.q, sugar: c.s, milk: c.milk, note: c.note, price: effPrice(m)
       };})
     });
-    lastOrderNo = orderNo; cart=[]; paying=false; view="confirmed"; render();
+    lastOrderNo = orderNo; cart=[]; paying=false; where=""; whereRoom=""; whereType="office"; view="confirmed"; render();
   }catch(e){ fail(e); }
 }
 function vConfirmed(){
@@ -848,7 +922,8 @@ function aAccess(){
         const on=r.perms.includes(s),ro=r.id==="admin";
         return `<td><button class="chk ${on?"on":""} ${ro?"ro":""}" ${ro?"disabled":`onclick="togPerm('${r.id}','${s}')"`}>✓</button></td>`}).join("")}</tr>`).join("")}
       </tbody></table></div></div>
-  <div class="sec"><div class="sechd"><div><h3>${t("people")}</h3><p>${num(A.users.length)}</p></div></div>
+  <div class="sec"><div class="sechd"><div><h3>${t("people")}</h3><p>${num(A.users.length)}</p></div>
+      <button class="btn ghost sm" onclick="autoTranslateAll()">${t("autoTranslateAll")}</button></div>
     ${A.users.map(u=>{const cls=u.role==="admin"?"c":u.role==="hr"?"o":"";
       return `<div class="item"><span class="av ${cls}">${esc((nm(u)||"?")[0])}</span>
         <div class="body"><b>${esc(nm(u))}</b><p>${u.site?esc(nm(so(u.site))):"—"}</p></div>
@@ -868,6 +943,20 @@ async function saveNameAr(id,v){
     if(u) u.ar = v || u.en;
     if(id===myProfile.id) myProfile.ar = v || myProfile.en;
     toast(t("saved"));
+  }catch(e){ fail(e); }
+}
+async function autoTranslateAll(){
+  const todo=A.users.filter(u=>u.ar===u.en);
+  if(!todo.length){ toast(t("autoTranslateNone")); return; }
+  try{
+    await Promise.all(todo.map(async u=>{
+      const guess=transliterateToArabic(u.en);
+      if(!guess) return;
+      await api.setFullNameAr(u.id, guess);
+      u.ar=guess;
+      if(u.id===myProfile.id) myProfile.ar=guess;
+    }));
+    toast(t("autoTranslateDone")); render();
   }catch(e){ fail(e); }
 }
 async function togPerm(rid,s){
@@ -911,12 +1000,12 @@ async function saveKioskPw(branchId){
 
 /* ═══════════════ expose handlers used by inline HTML onclick/onchange ═══════════════ */
 Object.assign(window, {
-  doSignIn, doSignOut, go, setLang, setBranch, changeBranch, setCat, setWhere,
+  doSignIn, doSignOut, go, setLang, setBranch, changeBranch, setCat, setWhere, setWhereType, setWhereRoom,
   tog, setSug, setMilk, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder,
   setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk,
   saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg, saveKioskPw,
   toggleOrgNode, orgSearch, uploadGalleryPhoto, delGalleryPhoto, uploadEditImage, removeEditImage,
   setEditIcon, uploadEditIcon, startBranchNew, startBranchEdit, cancelBranchEdit,
-  setBranchField, setBranchLive, saveBranch, deleteBranch, uploadBranchQr, saveNameAr, setEditFree,
+  setBranchField, setBranchLive, saveBranch, deleteBranch, uploadBranchQr, saveNameAr, setEditFree, autoTranslateAll,
   startAboutEdit, cancelAboutEdit, saveAbout,
 });
