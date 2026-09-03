@@ -185,7 +185,8 @@ function transliterateToArabic(fullName){
 const TABS = [["overview","overview","▦",null],["news","aNews","✦","news"],["links","aLinks","◫","links"],
  ["policies","aPolicies","▤","policies"],["events","aEvents","▣","events"],["menu","aMenu","☕","menu"],
  ["access","aAccess","⚿","access"]];
-const ICON_PRESETS = ["✉️","📅","📁","⚙️","🏢","📊","💰","🎯","📋","🔔","📞","🗂️","🧑‍💻","📦","🧾","🛠️"];
+const ICON_PRESETS_LINKS = ["✉️","📅","📁","⚙️","🏢","📊","💰","🎯","📋","🔔","📞","🗂️","🧑‍💻","📦","🧾","🛠️"];
+const ICON_PRESETS_MENU = ["☕","🍵","🧋","🥤","🧃","🥛","🍫","🍪","🍩","🍰","🧁","🍭","🍿","🥐","🥪","🍟","🧀","🍎","🍌","🍇"];
 const isUrl=s=>/^https?:\/\//.test(s||"");
 const iconHtml=icon=>isUrl(icon)?`<img src="${esc(icon)}" class="qicon-img">`:esc(icon||"");
 function toLocalInput(iso){
@@ -834,7 +835,7 @@ function form(k){
               <input type="file" accept="image/*" style="display:none" onchange="uploadEditImage(this)"></label>`}
         </div>`
       :key==="icon"?`<div class="icon-edit">
-          <div class="icon-presets">${ICON_PRESETS.map(ic=>`<button type="button" class="icon-pick ${d.icon===ic?"on":""}"
+          <div class="icon-presets">${(k==="menu"?ICON_PRESETS_MENU:ICON_PRESETS_LINKS).map(ic=>`<button type="button" class="icon-pick ${d.icon===ic?"on":""}"
             onclick="setEditIcon('${ic}')">${ic}</button>`).join("")}</div>
           <div class="icon-custom">
             ${isUrl(d.icon)?`<img src="${esc(d.icon)}" class="img-edit-preview">
