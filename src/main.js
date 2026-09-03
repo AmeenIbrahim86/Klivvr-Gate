@@ -26,7 +26,7 @@ const L = { ar: {
  gallery:"معرض الصور",galleryEmpty:"لسه مفيش صور",uploadPhoto:"رفع صورة",uploading:"بيترفع…",
  captionPH:"وصف الصورة (اختياري)",galleryAdded:"اتضافت الصورة",galleryDeleted:"اتمسحت الصورة",
  galleryConfirmDel:"متأكد إنك عايز تمسح الصورة دي؟",imageUploading:"بيترفع الصورة…",imageUploaded:"اتحطت",
- imageRemove:"شيل الصورة",
+ imageRemove:"شيل الصورة",uploadIcon:"رفع أيقونة مخصصة",
  orgSearchPH:"دوّر بالاسم…",orgSearchBtn:"بحث",orgNotFound:"ملقيتش حد بالاسم ده",
  add:"إضافة",save:"حفظ",cancel:"إلغاء",
  tag:"التصنيف",titleAR:"العنوان بالعربي",titleEN:"العنوان بالإنجليزي",bodyAR:"النص بالعربي",bodyEN:"النص بالإنجليزي",
@@ -67,7 +67,7 @@ const L = { ar: {
  gallery:"Gallery",galleryEmpty:"No photos yet",uploadPhoto:"Upload photo",uploading:"Uploading…",
  captionPH:"Photo caption (optional)",galleryAdded:"Photo added",galleryDeleted:"Photo deleted",
  galleryConfirmDel:"Delete this photo?",imageUploading:"Uploading photo…",imageUploaded:"Added",
- imageRemove:"Remove photo",
+ imageRemove:"Remove photo",uploadIcon:"Upload custom icon",
  orgSearchPH:"Search by name…",orgSearchBtn:"Search",orgNotFound:"No one found with that name",
  add:"Add",save:"Save",cancel:"Cancel",
  tag:"Tag",titleAR:"Title (Arabic)",titleEN:"Title (English)",bodyAR:"Body (Arabic)",bodyEN:"Body (English)",
@@ -106,6 +106,9 @@ const SUG = [{ar:"سادة",en:"None"},{ar:"خفيف",en:"Light"},{ar:"مظبو�
 const TABS = [["overview","overview","▦",null],["news","aNews","✦","news"],["links","aLinks","◫","links"],
  ["policies","aPolicies","▤","policies"],["events","aEvents","▣","events"],["menu","aMenu","☕","menu"],
  ["access","aAccess","⚿","access"]];
+const ICON_PRESETS = ["✉️","📅","📁","⚙️","🏢","📊","💰","🎯","📋","🔔","📞","🗂️","🧑‍💻","📦","🧾","🛠️"];
+const isUrl=s=>/^https?:\/\//.test(s||"");
+const iconHtml=icon=>isUrl(icon)?`<img src="${esc(icon)}" class="qicon-img">`:esc(icon||"");
 const FIELDS = {
  news:[["tagAR","tag"],["tagEN","tag"],["titleAR","titleAR"],["titleEN","titleEN"],["bodyAR","bodyAR",1],["bodyEN","bodyEN",1],["author","author"],["date","date"],["image","image"]],
  links:[["ar","titleAR"],["en","titleEN"],["icon","icon"],["url","url"]],
@@ -241,7 +244,7 @@ function vPortal(){
   <div class="qgrid"><button class="qtile feat" onclick="go('order')"><span class="qicon">☕</span>${t("order")}</button>
     <button class="qtile feat" onclick="go('org')"><span class="qicon">🧭</span>${t("orgChart")}</button>
     <button class="qtile feat" onclick="go('gallery')"><span class="qicon">🖼️</span>${t("gallery")}</button>
-    ${links.map(l=>`<a class="qtile" href="${esc(l.url||"#")}"><span class="qicon">${esc(l.icon)}</span>${esc(nm(l))}</a>`).join("")}</div>
+    ${links.map(l=>`<a class="qtile" href="${esc(l.url||"#")}"><span class="qicon">${iconHtml(l.icon)}</span>${esc(nm(l))}</a>`).join("")}</div>
 
   <div class="eyebrow" style="margin-top:26px">${t("docs")} · ${t("events")}</div>
   <div class="twocol">
@@ -550,7 +553,7 @@ function aList(k){
 function form(k){
   const d=edit;
   return `<div class="form"><div class="fgrid">
-    ${FIELDS[k].map(([key,lab,multi])=>`<div class="fld ${multi||key==="image"?"full":""}">
+    ${FIELDS[k].map(([key,lab,multi])=>`<div class="fld ${multi||key==="image"||key==="icon"?"full":""}">
       <label>${t(lab)} <span class="mono" style="opacity:.45">${key}</span></label>
       ${multi?`<textarea class="inp" oninput="setEditField('${key}',this.value)">${esc(d[key]||"")}</textarea>`
       :key==="image"?`<div class="img-edit">
@@ -558,6 +561,16 @@ function form(k){
             <button class="iact del" type="button" onclick="removeEditImage()">🗑</button>`
           :`<label class="btn ghost sm gal-picklabel">${t("uploadPhoto")}
               <input type="file" accept="image/*" style="display:none" onchange="uploadEditImage(this)"></label>`}
+        </div>`
+      :key==="icon"?`<div class="icon-edit">
+          <div class="icon-presets">${ICON_PRESETS.map(ic=>`<button type="button" class="icon-pick ${d.icon===ic?"on":""}"
+            onclick="setEditIcon('${ic}')">${ic}</button>`).join("")}</div>
+          <div class="icon-custom">
+            ${isUrl(d.icon)?`<img src="${esc(d.icon)}" class="img-edit-preview">
+              <button class="iact del" type="button" onclick="setEditIcon('')">🗑</button>`
+            :`<label class="btn ghost sm gal-picklabel">${t("uploadIcon")}
+                <input type="file" accept="image/*" style="display:none" onchange="uploadEditIcon(this)"></label>`}
+          </div>
         </div>`
       :`<input class="inp" value="${esc(d[key]??"")}" oninput="setEditField('${key}',this.value)">`}</div>`).join("")}
     ${k==="menu"?`<div class="fld"><label>${t("branch")}</label><select class="inp" onchange="setEditSite(this.value)">
@@ -596,6 +609,17 @@ async function uploadEditImage(input){
   }catch(e){ fail(e); }
 }
 function removeEditImage(){ if(edit){ edit.image=null; render(); } }
+function setEditIcon(v){ if(edit){ edit.icon=v; render(); } }
+async function uploadEditIcon(input){
+  const file = input.files && input.files[0];
+  if(!file || !edit) return;
+  toast(t("imageUploading"));
+  try{
+    const url = await api.uploadImage(file);
+    edit.icon = url;
+    toast(t("imageUploaded")); render();
+  }catch(e){ fail(e); }
+}
 async function saveItem(k){
   if(k==="menu")edit.price=Number(edit.price)||0;
   try{
@@ -682,4 +706,5 @@ Object.assign(window, {
   setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk,
   saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg, saveKioskPw,
   toggleOrgNode, orgSearch, uploadGalleryPhoto, delGalleryPhoto, uploadEditImage, removeEditImage,
+  setEditIcon, uploadEditIcon,
 });
