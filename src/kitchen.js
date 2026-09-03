@@ -7,7 +7,7 @@
  * الباسورد بيتفضّل في الجهاز نفسه (sessionStorage) عشان الشاشة متطلبش
  * الباسورد تاني كل ما الصفحة تتحدّث لوحدها.
  */
-import { branchFromUrl, kitchenLogin, kitchenBoard, kitchenSetStatus, watchOrders } from './api.js';
+import { branchFromUrl, kitchenLogin, kitchenBoard, kitchenSetStatus, kitchenReport, watchOrders } from './api.js';
 
 const L = { ar: {
  title:"شاشة البوفيه", noLogin:"بدون تسجيل دخول",
@@ -19,6 +19,10 @@ const L = { ar: {
  pwPH:"الباسورد", unlock:"دخول", wrongPw:"الباسورد غلط، جرّب تاني.",
  reasonUnavailable:"غير متوفر", reasonOutOfStock:"خلص من المخزون", reasonOtherPH:"سبب تاني...",
  confirmReject:"تأكيد الرفض", cancel:"إلغاء",
+ reports:"التقارير", backToBoard:"رجوع للطلبات", from:"من", to:"لحد", show:"عرض", exportCsv:"تصدير CSV",
+ pickRangeHint:"اختار المدة ودوس عرض.", noOrdersInRange:"مفيش طلبات في المدة دي.",
+ totalOrders:"عدد الطلبات", totalRevenue:"الإجمالي", order:"الطلب", name:"الاسم", total:"القيمة",
+ payment:"طريقة الدفع", status:"الحالة", date:"التاريخ", payCash:"كاش", loading:"بيحمّل…",
 },en:{
  title:"Buffet screen", noLogin:"No sign-in needed",
  kNew:"NEW", kProg:"PREPARING",
@@ -29,12 +33,17 @@ const L = { ar: {
  pwPH:"Password", unlock:"Unlock", wrongPw:"Wrong password, try again.",
  reasonUnavailable:"Not available", reasonOutOfStock:"Out of stock", reasonOtherPH:"Other reason...",
  confirmReject:"Confirm rejection", cancel:"Cancel",
+ reports:"Reports", backToBoard:"Back to orders", from:"From", to:"To", show:"Show", exportCsv:"Export CSV",
+ pickRangeHint:"Pick a date range and click show.", noOrdersInRange:"No orders in this range.",
+ totalOrders:"Total orders", totalRevenue:"Total", order:"Order", name:"Name", total:"Total",
+ payment:"Payment", status:"Status", date:"Date", payCash:"Cash", loading:"Loading…",
 }};
 
 const branch = branchFromUrl();
 const pwKey = "kitchen_pw_" + (branch || "x");
 let lang="en", rows=[], unlocked=false, password="", loginErr="", checking=false;
 let rejectingOrder=null, rejectCustom="";
+let reportsOpen=false, reportFrom="", reportTo="", reportRows=null, reportLoading=false;
 const t=k=>L[lang][k]??k;
 const num=n=>Number(n).toLocaleString(lang==="ar"?"ar-EG":"en-US");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -99,6 +108,79 @@ window.startReject=startReject; window.cancelReject=cancelReject;
 window.pickRejectReason=pickRejectReason; window.setRejectCustom=setRejectCustom;
 window.confirmRejectCustom=confirmRejectCustom;
 
+function openReports(){
+  reportsOpen=true;
+  const today=new Date().toISOString().slice(0,10);
+  if(!reportFrom) reportFrom=today;
+  if(!reportTo) reportTo=today;
+  render();
+}
+function closeReports(){ reportsOpen=false; render(); }
+function setReportFrom(v){ reportFrom=v; }
+function setReportTo(v){ reportTo=v; }
+async function runReport(){
+  if(!reportFrom||!reportTo) return;
+  reportLoading=true; render();
+  try{
+    const from=new Date(reportFrom+"T00:00:00").toISOString();
+    const to=new Date(reportTo+"T23:59:59.999").toISOString();
+    reportRows=await kitchenReport(branch, password, from, to);
+  }catch(e){ console.error(e); reportRows=[]; }
+  reportLoading=false; render();
+}
+function csvEscape(v){
+  v=String(v??"");
+  return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v;
+}
+function exportCsv(){
+  if(!reportRows||!reportRows.length) return;
+  const headers=["Order","Name","Total","Payment","Status","Date"];
+  const lines=[headers.join(",")];
+  for(const r of reportRows){
+    lines.push([r.order_no, r.requester_name, r.total,
+      r.payment_method||"", r.status, new Date(r.created_at).toLocaleString()].map(csvEscape).join(","));
+  }
+  const blob=new Blob(["\uFEFF"+lines.join("\n")], {type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download=`orders-${branch}-${reportFrom}-to-${reportTo}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+window.openReports=openReports; window.closeReports=closeReports;
+window.setReportFrom=setReportFrom; window.setReportTo=setReportTo;
+window.runReport=runReport; window.exportCsv=exportCsv;
+
+function renderReports(){
+  const rev = reportRows ? reportRows.reduce((s,r)=>s+Number(r.total||0),0) : 0;
+  return `<div class="kwrap"><div class="khead">
+     <div><h2>${t("reports")}</h2>
+       <button class="reports-link" onclick="closeReports()">← ${t("backToBoard")}</button></div>
+     <span class="langsw">
+       <button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
+       <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span>
+   </div>
+   <div class="report-panel">
+     <div class="report-filters">
+       <label>${t("from")} <input type="date" class="inp" value="${esc(reportFrom)}" onchange="setReportFrom(this.value)"></label>
+       <label>${t("to")} <input type="date" class="inp" value="${esc(reportTo)}" onchange="setReportTo(this.value)"></label>
+       <button class="btn sm" onclick="runReport()">${t("show")}</button>
+       <button class="btn ghost sm" ${reportRows&&reportRows.length?"":"disabled"} onclick="exportCsv()">⬇ ${t("exportCsv")}</button>
+     </div>
+     ${reportLoading?`<p class="report-hint">${t("loading")}</p>`
+      :reportRows===null?`<p class="report-hint">${t("pickRangeHint")}</p>`
+      :reportRows.length===0?`<p class="report-hint">${t("noOrdersInRange")}</p>`
+      :`<div class="report-summary">${t("totalOrders")}: <b>${num(reportRows.length)}</b> &nbsp;·&nbsp; ${t("totalRevenue")}: <b>${num(rev)} EGP</b></div>
+        <div class="report-table-wrap"><table class="report-table"><thead><tr>
+          <th>${t("order")}</th><th>${t("name")}</th><th>${t("total")}</th><th>${t("payment")}</th><th>${t("status")}</th><th>${t("date")}</th>
+        </tr></thead><tbody>${reportRows.map(r=>`<tr>
+          <td class="mono">${esc(r.order_no)}</td><td>${esc(r.requester_name)}</td>
+          <td class="mono">${num(r.total)}</td>
+          <td>${r.payment_method==="cash"?"💵 "+t("payCash"):r.payment_method==="instapay"?"📱 InstaPay":"—"}</td>
+          <td>${esc(r.status)}</td><td class="mono">${esc(new Date(r.created_at).toLocaleString())}</td>
+        </tr>`).join("")}</tbody></table></div>`}
+   </div></div>`;
+}
 function render(){
   document.documentElement.lang=lang;
   document.documentElement.dir=lang==="ar"?"rtl":"ltr";
@@ -127,6 +209,8 @@ function render(){
     return;
   }
 
+  if(reportsOpen){ $("#app").innerHTML = renderReports(); return; }
+
   const d=new Date(), clk=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
   const newCount = rows.filter(r=>r.status==="new").length;
   const progCount = rows.filter(r=>r.status==="preparing").length;
@@ -134,6 +218,7 @@ function render(){
   $("#app").innerHTML = `<div class="kwrap"><div class="khead">
      <div><h2>${t("title")}</h2>
        <div class="sub">AUTO-REFRESH · 30s <span class="nologin">${t("noLogin")}</span>
+       <button class="reports-link" onclick="openReports()">📊 ${t("reports")}</button>
        <span class="langsw" style="margin-inline-start:8px">
          <button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
          <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span></div></div>

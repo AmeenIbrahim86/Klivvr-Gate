@@ -258,6 +258,14 @@ export async function kitchenSetStatus(branch, password, orderNo, status, reason
   if (error) throw error;
 }
 
+export async function kitchenReport(branch, password, fromIso, toIso) {
+  const { data, error } = await sb.rpc('kitchen_report', {
+    _branch: branch, _password: password, _from: fromIso, _to: toIso
+  });
+  if (error) throw error;
+  return data;
+}
+
 // تغيير باسورد شاشة فرع — للأدمن بس (الدالة نفسها بترفض أي حد مالوش صلاحية access)
 export async function setScreenPassword(branch, newPassword) {
   const { error } = await sb.rpc('set_screen_password', { _branch: branch, _new_password: newPassword });
