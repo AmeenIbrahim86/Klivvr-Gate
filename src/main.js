@@ -31,6 +31,7 @@ const L = { ar: {
  branchLive:"الحالة",branchLiveYes:"شغّال",branchLiveNo:"قريباً",
  branchIdInvalid:"كود الفرع لازم يكون حروف/أرقام إنجليزي بس، من غير مسافات",
  branchNamesRequired:"لازم اسم بالعربي والإنجليزي",branchDeleteConfirm:"متأكد؟ لو الفرع ده عليه أصناف أو طلبات مش هينمسح.",
+ aboutEmpty:"لسه مفيش وصف — دوس ✎ تكتب واحد",aboutAR:"الوصف بالعربي",aboutEN:"الوصف بالإنجليزي",
  orgSearchPH:"دوّر بالاسم…",orgSearchBtn:"بحث",orgNotFound:"ملقيتش حد بالاسم ده",
  add:"إضافة",save:"حفظ",cancel:"إلغاء",
  tag:"التصنيف",titleAR:"العنوان بالعربي",titleEN:"العنوان بالإنجليزي",bodyAR:"النص بالعربي",bodyEN:"النص بالإنجليزي",
@@ -76,6 +77,7 @@ const L = { ar: {
  branchLive:"Status",branchLiveYes:"Live",branchLiveNo:"Coming soon",
  branchIdInvalid:"Branch code must be lowercase letters/numbers only, no spaces",
  branchNamesRequired:"Both Arabic and English names are required",branchDeleteConfirm:"Delete this branch? It won't delete if it still has menu items or orders.",
+ aboutEmpty:"No description yet — click ✎ to write one",aboutAR:"Description (Arabic)",aboutEN:"Description (English)",
  orgSearchPH:"Search by name…",orgSearchBtn:"Search",orgNotFound:"No one found with that name",
  add:"Add",save:"Save",cancel:"Cancel",
  tag:"Tag",titleAR:"Title (Arabic)",titleEN:"Title (English)",bodyAR:"Body (Arabic)",bodyEN:"Body (English)",
@@ -117,16 +119,27 @@ const TABS = [["overview","overview","▦",null],["news","aNews","✦","news"],[
 const ICON_PRESETS = ["✉️","📅","📁","⚙️","🏢","📊","💰","🎯","📋","🔔","📞","🗂️","🧑‍💻","📦","🧾","🛠️"];
 const isUrl=s=>/^https?:\/\//.test(s||"");
 const iconHtml=icon=>isUrl(icon)?`<img src="${esc(icon)}" class="qicon-img">`:esc(icon||"");
+function swatchHtml(m,size){
+  size=size||38;
+  const shape=m.sq?"sq":"";
+  if(m.icon){
+    return isUrl(m.icon)
+      ?`<span class="swatch ${shape}" style="width:${size}px;height:${size}px"><img src="${esc(m.icon)}" style="width:100%;height:100%;object-fit:cover"></span>`
+      :`<span class="swatch ${shape}" style="width:${size}px;height:${size}px;background:var(--peri-soft);display:grid;place-items:center;font-size:${Math.round(size*0.55)}px">${esc(m.icon)}</span>`;
+  }
+  return `<span class="swatch ${shape}" style="width:${size}px;height:${size}px"><i style="background:${esc(m.col)};${m.sq?"height:100%":""}"></i></span>`;
+}
 const FIELDS = {
  news:[["tagAR","tag"],["tagEN","tag"],["titleAR","titleAR"],["titleEN","titleEN"],["bodyAR","bodyAR",1],["bodyEN","bodyEN",1],["author","author"],["date","date"],["image","image"]],
  links:[["ar","titleAR"],["en","titleEN"],["icon","icon"],["url","url"]],
  policies:[["ar","titleAR"],["en","titleEN"],["dept","dept"],["ver","version"],["date","date"]],
  events:[["ar","titleAR"],["en","titleEN"],["placeAR","place"],["placeEN","place"],["day","day"],["monAR","month"],["monEN","month"],["image","image"]],
- menu:[["ar","titleAR"],["en","titleEN"],["price","price"],["col","color"]]};
+ menu:[["ar","titleAR"],["en","titleEN"],["price","price"],["col","color"],["icon","icon"]]};
 
 /* ═══════════════ state ═══════════════ */
 let lang="en", authed=false, view="portal", tab="overview";
 let myProfile=null, SITES=[], C={news:[],links:[],policies:[],events:[]}, M=[], O=[], A={roles:[],users:[]}, ORG=[], GALLERY=[];
+let ABOUT={ar:"",en:""}, aboutEditing=false;
 let branch=null, paying=false, lastOrderNo="";
 let cart=[], openM=null, draft={}, cat="all", where="", edit=null, eKind=null;
 
@@ -155,13 +168,14 @@ async function loadEverything(){
   const results = await Promise.allSettled([
     api.listBranches(), api.loadRoles(), api.list("news"), api.list("links"),
     api.list("policies"), api.list("events"), api.list("menu"),
-    api.listProfiles(), api.listOrders(), api.listOrgPeople(), api.listGallery()
+    api.listProfiles(), api.listOrders(), api.listOrgPeople(), api.listGallery(),
+    api.getSetting("about")
   ]);
   results.forEach((r,i)=>{ if(r.status==="rejected") console.error("load section", i, "failed:", r.reason); });
   const val=(i,fallback)=>results[i].status==="fulfilled"?results[i].value:fallback;
   SITES=val(0,[]); A={roles:val(1,[]),users:val(7,[])};
   C={news:val(2,[]),links:val(3,[]),policies:val(4,[]),events:val(5,[])};
-  M=val(6,[]); O=val(8,[]); ORG=val(9,[]); GALLERY=val(10,[]);
+  M=val(6,[]); O=val(8,[]); ORG=val(9,[]); GALLERY=val(10,[]); ABOUT=val(11,{ar:"",en:""});
 }
 async function start(session){
   if(!session){ authed=false; myProfile=null; renderSignIn(); return; }
@@ -233,10 +247,40 @@ function setCat(c){cat=c;openM=null;render()}
 function setWhere(v){where=v}
 
 /* ═══════════════ portal ═══════════════ */
+function aboutCard(){
+  const txt=lang==="ar"?ABOUT.ar:ABOUT.en;
+  if(!txt&&!can("news")&&!can("access")) return "";
+  return `<div class="card about-card">
+    <p>${esc(txt)||`<span style="color:var(--muted)">${t("aboutEmpty")}</span>`}</p>
+    ${(can("news")||can("access"))?`<button class="iact about-edit-btn" onclick="startAboutEdit()">✎</button>`:""}
+  </div>`;
+}
+function aboutForm(){
+  return `<div class="card about-card">
+    <div class="fgrid" style="margin-bottom:10px">
+      <div class="fld"><label>${t("aboutAR")}</label>
+        <textarea class="inp" id="aboutArInput" style="min-height:70px">${esc(ABOUT.ar)}</textarea></div>
+      <div class="fld"><label>${t("aboutEN")}</label>
+        <textarea class="inp" id="aboutEnInput" style="min-height:70px">${esc(ABOUT.en)}</textarea></div>
+    </div>
+    <div class="formacts"><button class="btn sm" onclick="saveAbout()">${t("save")}</button>
+      <button class="btn ghost sm" onclick="cancelAboutEdit()">${t("cancel")}</button></div>
+  </div>`;
+}
+function startAboutEdit(){ aboutEditing=true; render(); }
+function cancelAboutEdit(){ aboutEditing=false; render(); }
+async function saveAbout(){
+  const ar=$("#aboutArInput")?.value.trim()||"", en=$("#aboutEnInput")?.value.trim()||"";
+  try{
+    await api.setSetting("about", ar, en);
+    ABOUT={ar,en}; aboutEditing=false; toast(t("saved")); render();
+  }catch(e){ fail(e); }
+}
 function vPortal(){
   const news=C.news,lead=news[0],rest=news.slice(1,4);
   const links=C.links,pol=C.policies,ev=C.events;
-  return `<div class="eyebrow">${t("news")}</div>
+  return `${aboutEditing?aboutForm():aboutCard()}
+  <div class="eyebrow">${t("news")}</div>
   ${lead?`<div class="hero ${lead.image?"has-photo":""}" ${lead.image?`style="background-image:url('${esc(lead.image)}')"`:""}>
     <div class="hero-main"><span class="pill">${esc(lang==="ar"?lead.tagAR:lead.tagEN)}</span>
       <h2>${esc(lang==="ar"?lead.titleAR:lead.titleEN)}</h2>
@@ -293,7 +337,7 @@ function vOrder(){
     <div class="mgrid">${list.map(m=>{const o=openM===m.id,d=draft[m.id]||{q:1,s:2,milk:false,note:""};
       return `<div class="mitem ${o?"open":""}">
         <button class="mrow" onclick="tog('${m.id}')">
-          <span class="swatch ${m.sq?"sq":""}"><i style="background:${esc(m.col)};${m.sq?"height:100%":""}"></i></span>
+          ${swatchHtml(m,38)}
           <span class="nm"><b>${esc(nm(m))}</b><span>${esc(catLabel(m.cat))}</span></span>
           <span class="price">${money(m.price)}</span><span class="plus">+</span></button>
         <div class="opts">
@@ -608,7 +652,7 @@ function aList(k){
       <button class="btn sm" onclick="startEdit('${k}',null)">+ ${t("add")}</button></div>
     ${edit&&eKind===k?form(k):""}
     ${arr.length?arr.map(x=>{const[a,b]=lbl(k,x);return `<div class="item">
-        ${k==="menu"?`<span class="swatch ${x.sq?"sq":""}" style="width:30px;height:30px"><i style="background:${esc(x.col)};${x.sq?"height:100%":""}"></i></span>`:""}
+        ${k==="menu"?swatchHtml(x,30):""}
         ${(k==="news"||k==="events")&&x.image?`<img src="${esc(x.image)}" style="width:30px;height:30px;border-radius:7px;object-fit:cover;flex-shrink:0">`:""}
         <div class="body"><b>${esc(a)}</b><p>${esc(b)}</p></div>
         ${k==="menu"?`<span class="pill ${x.site==="all"?"":"o"}">${x.site==="all"?t("allBranches"):esc(nm(so(x.site)))}</span>`:""}
@@ -775,4 +819,5 @@ Object.assign(window, {
   toggleOrgNode, orgSearch, uploadGalleryPhoto, delGalleryPhoto, uploadEditImage, removeEditImage,
   setEditIcon, uploadEditIcon, startBranchNew, startBranchEdit, cancelBranchEdit,
   setBranchField, setBranchLive, saveBranch, deleteBranch,
+  startAboutEdit, cancelAboutEdit, saveAbout,
 });

@@ -49,6 +49,18 @@ export async function loadMe() {
 }
 
 /* ═══════════════ الفروع والأدوار (بيانات مرجعية) ═══════════════ */
+/* ═══════════════ إعدادات مفردة (زي "عن البوابة") ═══════════════ */
+export async function getSetting(key) {
+  const { data, error } = await sb.from('app_settings').select('*').eq('key', key).maybeSingle();
+  if (error) throw error;
+  return data ? { ar: data.value_ar || '', en: data.value_en || '' } : { ar: '', en: '' };
+}
+export async function setSetting(key, valueAr, valueEn) {
+  const { error } = await sb.from('app_settings')
+    .upsert({ key, value_ar: valueAr, value_en: valueEn, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
+
 export async function listBranches() {
   const { data, error } = await sb.from('branches')
     .select('id, name_ar, name_en, is_live, sort').order('sort');
@@ -138,9 +150,10 @@ const MAP = {
   menu: {
     toDb: r => ({ name_ar: r.ar, name_en: r.en, category: r.cat, price: Number(r.price) || 0,
       has_sugar: !!r.sugar, has_milk: !!r.milk, is_available: r.avail !== false, colour: r.col || '#B5651D', is_square: !!r.sq,
-      branch_id: (!r.site || r.site === 'all') ? null : r.site }),
+      icon: r.icon || null, branch_id: (!r.site || r.site === 'all') ? null : r.site }),
     fromDb: r => ({ id: r.id, ar: r.name_ar, en: r.name_en, cat: r.category, price: Number(r.price),
-      sugar: r.has_sugar, milk: r.has_milk, avail: r.is_available, col: r.colour, sq: r.is_square, site: r.branch_id || 'all' }),
+      sugar: r.has_sugar, milk: r.has_milk, avail: r.is_available, col: r.colour, sq: r.is_square,
+      icon: r.icon, site: r.branch_id || 'all' }),
   },
 };
 

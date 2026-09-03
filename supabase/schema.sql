@@ -129,6 +129,7 @@ create table menu_items (
   price numeric(10,2) not null default 0,
   has_sugar boolean default false,
   has_milk boolean default false,
+  icon text,
   is_available boolean default true,
   colour text default '#B5651D',
   is_square boolean default false,
@@ -208,6 +209,19 @@ create table org_people (
 
 create sequence order_seq start 1000;
 
+-- ─── إعداد مفرد بسيط (زي نص "عن البوابة") ───
+create table app_settings (
+  key text primary key,
+  value_ar text,
+  value_en text,
+  updated_at timestamptz default now()
+);
+insert into app_settings (key, value_ar, value_en) values (
+  'about',
+  'بوابة كليفر هي المكان الواحد لكل حاجة محتاجها في الشركة — الأخبار، السياسات، طلب البوفيه، ودليل الموظفين.',
+  'Klivvr Gate is the one place for everything at the company — news, policies, ordering from the buffet, and the staff directory.'
+);
+
 -- ─── 8. معرض الصور ───
 create table gallery (
   id uuid primary key default gen_random_uuid(),
@@ -261,6 +275,7 @@ alter table orders          enable row level security;
 alter table order_items     enable row level security;
 alter table org_people      enable row level security;
 alter table gallery         enable row level security;
+alter table app_settings    enable row level security;
 
 -- جداول المراجع: أي موظف مسجّل يقرأ
 create policy read_branches on branches for select to authenticated using (true);
@@ -321,6 +336,13 @@ create policy write_gallery on gallery for all to authenticated
   using (has_perm('gallery') or has_perm('access'))
   with check (has_perm('gallery') or has_perm('access'));
 grant select, insert, update, delete on gallery to authenticated;
+
+-- إعداد "عن البوابة": أي موظف يقرأ، الكتابة بصلاحية news أو access
+create policy read_settings on app_settings for select to authenticated using (true);
+create policy write_settings on app_settings for all to authenticated
+  using (has_perm('news') or has_perm('access'))
+  with check (has_perm('news') or has_perm('access'));
+grant select, insert, update, delete on app_settings to authenticated;
 
 -- مكان تخزين الملفات (الصور) — bucket عام للقراءة، مقيّد للرفع
 insert into storage.buckets (id, name, public)
