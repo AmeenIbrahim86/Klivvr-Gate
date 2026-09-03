@@ -573,7 +573,7 @@ function orgRows(list, byManager, depth){
       <div class="org-line ${hasKids?"clickable":""} ${orgHighlight===p.id?"org-hl":""}" id="org-${esc(p.id)}"
           ${hasKids?`onclick="toggleOrgNode('${esc(p.id)}')"`:""}>
         <span class="org-chevron">${hasKids?(open?"▾":"▸"):""}</span>
-        <span class="av">${esc((p.name||"?")[0]||"?")}</span>
+        ${p.photo?`<img src="${esc(p.photo)}" class="av av-photo">`:`<span class="av">${esc((p.name||"?")[0]||"?")}</span>`}
         <span class="org-name"><b>${esc(p.name||"—")}</b>
           ${p.title?`<span>${esc(p.title)}</span>`:""}
           ${(p.email||p.phone||p.location)?`<span class="org-contact">${[

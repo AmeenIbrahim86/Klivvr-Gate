@@ -106,7 +106,31 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 5) اكتب في org_people (upsert واحد لكل الصفوف) ──
+    // ── 5) صور الموظفين — بترفع على Supabase Storage والرابط بس هو اللي بيتحفظ ──
+    const photoUrlOf: Record<string, string | null> = {};
+    const CONCURRENCY = 8;
+    for (let i = 0; i < users.length; i += CONCURRENCY) {
+      const chunk = users.slice(i, i + CONCURRENCY);
+      await Promise.all(chunk.map(async (u) => {
+        try {
+          const pr = await fetch(
+            `https://graph.microsoft.com/v1.0/users/${u.id}/photos/120x120/$value`,
+            { headers: gh },
+          );
+          if (pr.status !== 200) return; // مفيش صورة متسجّلة للشخص ده، عادي
+          const bytes = new Uint8Array(await pr.arrayBuffer());
+          const path = `org-photos/${u.id}.jpg`;
+          const { error: upErr } = await admin.storage.from("media")
+            .upload(path, bytes, { contentType: "image/jpeg", upsert: true });
+          if (!upErr) {
+            const { data } = admin.storage.from("media").getPublicUrl(path);
+            photoUrlOf[u.id] = data.publicUrl;
+          }
+        } catch (_e) { /* صورة الشخص ده بس اللي هتفضل فاضية، الباقي مش بيتأثر */ }
+      }));
+    }
+
+    // ── 6) اكتب في org_people (upsert واحد لكل الصفوف) ──
     const rows = users.map((u) => ({
       id: u.id,
       display_name: u.displayName || "",
@@ -114,6 +138,7 @@ Deno.serve(async (req) => {
       email: u.mail || null,
       phone: u.mobilePhone || (u.businessPhones && u.businessPhones[0]) || null,
       office_location: u.officeLocation || null,
+      photo_url: photoUrlOf[u.id] || null,
       manager_id: managerOf[u.id] || null,
       synced_at: new Date().toISOString(),
     }));

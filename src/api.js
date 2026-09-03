@@ -277,7 +277,7 @@ export async function listOrgPeople() {
   if (error) throw error;
   return data.map(p => ({
     id: p.id, name: p.display_name, title: p.job_title, managerId: p.manager_id,
-    email: p.email, phone: p.phone, location: p.office_location
+    email: p.email, phone: p.phone, location: p.office_location, photo: p.photo_url
   }));
 }
 

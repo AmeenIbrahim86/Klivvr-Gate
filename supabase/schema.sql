@@ -208,6 +208,7 @@ create table org_people (
   email text,
   phone text,
   office_location text,
+  photo_url text,
   manager_id text references org_people(id) on delete set null,
   synced_at timestamptz default now()
 );
