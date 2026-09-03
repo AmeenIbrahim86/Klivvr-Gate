@@ -93,6 +93,10 @@ html[lang="en"] .empty b{font-family:"Space Grotesk"}
 .ph{padding:13px 16px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between;gap:10px}
 .ph h3{font-size:15px}
 .row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line-soft);font-size:13.5px}
+a.row{color:inherit;text-decoration:none;transition:.12s}
+a.row:hover{background:#FAFAFE}
+.evt-outlook{flex-shrink:0;font-size:15px;padding:4px;border-radius:7px;transition:.12s;text-decoration:none}
+.evt-outlook:hover{background:var(--indigo-soft)}
 .row:last-child{border-bottom:none}
 .dicon{width:26px;height:32px;border-radius:4px;background:#F4F3FA;border:1px solid var(--line);position:relative;flex-shrink:0}
 .dicon::after{content:"";position:absolute;bottom:0;inset-inline:0;height:8px;background:var(--g-peri);border-radius:0 0 3px 3px}
@@ -333,10 +337,13 @@ textarea.inp{min-height:62px;resize:vertical;line-height:1.55}
 .icon-pick.on{background:var(--indigo);border-color:var(--indigo)}
 .icon-custom{display:flex;align-items:center;gap:10px}
 .qicon-img{width:20px;height:20px;object-fit:cover;border-radius:5px}
-.about-card{position:relative;padding:16px 44px 16px 18px;margin-bottom:18px}
-html[dir="rtl"] .about-card{padding:16px 18px 16px 44px}
-.about-card p{font-size:13.5px;color:var(--indigo);line-height:1.7}
-.about-edit-btn{position:absolute;top:12px;inset-inline-end:12px}
+.about-card{position:relative;border-radius:var(--r);overflow:hidden;color:#fff;padding:22px 26px;margin-bottom:18px;
+  background:radial-gradient(70% 130% at 92% 10%,rgba(245,138,92,.5),transparent 60%),linear-gradient(115deg,var(--indigo),var(--slate))}
+.about-card h2{font-size:19px;margin-bottom:5px}
+.about-card p{font-size:13.5px;color:#C7C5E2;max-width:640px;padding-inline-end:36px}
+.about-edit-btn{position:absolute;top:14px;inset-inline-end:14px;width:30px;height:30px;border-radius:8px;
+  background:rgba(255,255,255,.12);color:#fff;font-size:13px;display:grid;place-items:center;transition:.15s}
+.about-edit-btn:hover{background:rgba(255,255,255,.22)}
 
 @media (max-width:900px){
   .hero{grid-template-columns:1fr}

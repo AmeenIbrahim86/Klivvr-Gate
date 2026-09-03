@@ -138,14 +138,15 @@ const MAP = {
     fromDb: r => ({ id: r.id, ar: r.label_ar, en: r.label_en, icon: r.icon, url: r.url }),
   },
   policies: {
-    toDb: r => ({ title_ar: r.ar, title_en: r.en, department: r.dept || '', version: r.ver || '', effective_on: r.date || '' }),
-    fromDb: r => ({ id: r.id, ar: r.title_ar, en: r.title_en, dept: r.department, ver: r.version, date: r.effective_on }),
+    toDb: r => ({ title_ar: r.ar, title_en: r.en, department: r.dept || '', version: r.ver || '', effective_on: r.date || '', file_url: r.url || null }),
+    fromDb: r => ({ id: r.id, ar: r.title_ar, en: r.title_en, dept: r.department, ver: r.version, date: r.effective_on, url: r.file_url }),
   },
   events: {
     toDb: r => ({ title_ar: r.ar, title_en: r.en, place_ar: r.placeAR || '', place_en: r.placeEN || '',
-      day: r.day || '', month_ar: r.monAR || '', month_en: r.monEN || '', image_url: r.image || null }),
+      day: r.day || '', month_ar: r.monAR || '', month_en: r.monEN || '', image_url: r.image || null,
+      starts_at: r.startsAt || null }),
     fromDb: r => ({ id: r.id, ar: r.title_ar, en: r.title_en, placeAR: r.place_ar, placeEN: r.place_en,
-      day: r.day, monAR: r.month_ar, monEN: r.month_en, image: r.image_url }),
+      day: r.day, monAR: r.month_ar, monEN: r.month_en, image: r.image_url, startsAt: r.starts_at }),
   },
   menu: {
     toDb: r => ({ name_ar: r.ar, name_en: r.en, category: r.cat, price: Number(r.price) || 0,

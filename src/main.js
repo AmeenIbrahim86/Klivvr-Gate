@@ -32,6 +32,7 @@ const L = { ar: {
  branchIdInvalid:"كود الفرع لازم يكون حروف/أرقام إنجليزي بس، من غير مسافات",
  branchNamesRequired:"لازم اسم بالعربي والإنجليزي",branchDeleteConfirm:"متأكد؟ لو الفرع ده عليه أصناف أو طلبات مش هينمسح.",
  aboutEmpty:"لسه مفيش وصف — دوس ✎ تكتب واحد",aboutAR:"الوصف بالعربي",aboutEN:"الوصف بالإنجليزي",
+ eventDateTime:"تاريخ ووقت الحدث (لينك Outlook)",addToOutlook:"أضف لتقويم Outlook",
  orgSearchPH:"دوّر بالاسم…",orgSearchBtn:"بحث",orgNotFound:"ملقيتش حد بالاسم ده",
  add:"إضافة",save:"حفظ",cancel:"إلغاء",
  tag:"التصنيف",titleAR:"العنوان بالعربي",titleEN:"العنوان بالإنجليزي",bodyAR:"النص بالعربي",bodyEN:"النص بالإنجليزي",
@@ -78,6 +79,7 @@ const L = { ar: {
  branchIdInvalid:"Branch code must be lowercase letters/numbers only, no spaces",
  branchNamesRequired:"Both Arabic and English names are required",branchDeleteConfirm:"Delete this branch? It won't delete if it still has menu items or orders.",
  aboutEmpty:"No description yet — click ✎ to write one",aboutAR:"Description (Arabic)",aboutEN:"Description (English)",
+ eventDateTime:"Event date & time (for Outlook link)",addToOutlook:"Add to Outlook calendar",
  orgSearchPH:"Search by name…",orgSearchBtn:"Search",orgNotFound:"No one found with that name",
  add:"Add",save:"Save",cancel:"Cancel",
  tag:"Tag",titleAR:"Title (Arabic)",titleEN:"Title (English)",bodyAR:"Body (Arabic)",bodyEN:"Body (English)",
@@ -119,6 +121,22 @@ const TABS = [["overview","overview","▦",null],["news","aNews","✦","news"],[
 const ICON_PRESETS = ["✉️","📅","📁","⚙️","🏢","📊","💰","🎯","📋","🔔","📞","🗂️","🧑‍💻","📦","🧾","🛠️"];
 const isUrl=s=>/^https?:\/\//.test(s||"");
 const iconHtml=icon=>isUrl(icon)?`<img src="${esc(icon)}" class="qicon-img">`:esc(icon||"");
+function toLocalInput(iso){
+  const d=new Date(iso);
+  const pad=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function outlookLink(e){
+  if(!e.startsAt) return null;
+  const start=new Date(e.startsAt), end=new Date(start.getTime()+60*60000);
+  const iso=d=>d.toISOString().replace(/\.\d{3}Z$/,"Z");
+  const params=new URLSearchParams({
+    path:"/calendar/action/compose", rru:"addevent",
+    subject:nm(e), startdt:iso(start), enddt:iso(end),
+    location: lang==="ar"?(e.placeAR||""):(e.placeEN||"")
+  });
+  return `https://outlook.office.com/calendar/0/deeplink/compose?${params.toString()}`;
+}
 function swatchHtml(m,size){
   size=size||38;
   const shape=m.sq?"sq":"";
@@ -132,8 +150,8 @@ function swatchHtml(m,size){
 const FIELDS = {
  news:[["tagAR","tag"],["tagEN","tag"],["titleAR","titleAR"],["titleEN","titleEN"],["bodyAR","bodyAR",1],["bodyEN","bodyEN",1],["author","author"],["date","date"],["image","image"]],
  links:[["ar","titleAR"],["en","titleEN"],["icon","icon"],["url","url"]],
- policies:[["ar","titleAR"],["en","titleEN"],["dept","dept"],["ver","version"],["date","date"]],
- events:[["ar","titleAR"],["en","titleEN"],["placeAR","place"],["placeEN","place"],["day","day"],["monAR","month"],["monEN","month"],["image","image"]],
+ policies:[["ar","titleAR"],["en","titleEN"],["dept","dept"],["ver","version"],["date","date"],["url","url"]],
+ events:[["ar","titleAR"],["en","titleEN"],["placeAR","place"],["placeEN","place"],["day","day"],["monAR","month"],["monEN","month"],["startsAt","eventDateTime"],["image","image"]],
  menu:[["ar","titleAR"],["en","titleEN"],["price","price"],["col","color"],["icon","icon"]]};
 
 /* ═══════════════ state ═══════════════ */
@@ -250,20 +268,21 @@ function setWhere(v){where=v}
 function aboutCard(){
   const txt=lang==="ar"?ABOUT.ar:ABOUT.en;
   if(!txt&&!can("news")&&!can("access")) return "";
-  return `<div class="card about-card">
-    <p>${esc(txt)||`<span style="color:var(--muted)">${t("aboutEmpty")}</span>`}</p>
-    ${(can("news")||can("access"))?`<button class="iact about-edit-btn" onclick="startAboutEdit()">✎</button>`:""}
+  return `<div class="about-card">
+    <h2>${esc(t("sitename"))}</h2>
+    <p>${esc(txt)||t("aboutEmpty")}</p>
+    ${(can("news")||can("access"))?`<button class="about-edit-btn" onclick="startAboutEdit()" title="${t("save")}">✎</button>`:""}
   </div>`;
 }
 function aboutForm(){
-  return `<div class="card about-card">
-    <div class="fgrid" style="margin-bottom:10px">
+  return `<div class="card" style="margin-bottom:18px">
+    <div class="fgrid" style="margin-bottom:10px;padding:16px 16px 0">
       <div class="fld"><label>${t("aboutAR")}</label>
         <textarea class="inp" id="aboutArInput" style="min-height:70px">${esc(ABOUT.ar)}</textarea></div>
       <div class="fld"><label>${t("aboutEN")}</label>
         <textarea class="inp" id="aboutEnInput" style="min-height:70px">${esc(ABOUT.en)}</textarea></div>
     </div>
-    <div class="formacts"><button class="btn sm" onclick="saveAbout()">${t("save")}</button>
+    <div class="formacts" style="padding:0 16px 16px"><button class="btn sm" onclick="saveAbout()">${t("save")}</button>
       <button class="btn ghost sm" onclick="cancelAboutEdit()">${t("cancel")}</button></div>
   </div>`;
 }
@@ -301,7 +320,10 @@ function vPortal(){
   <div class="eyebrow" style="margin-top:26px">${t("docs")} · ${t("events")}</div>
   <div class="twocol">
     <div class="card"><div class="ph"><h3>${t("docs")}</h3><a href="#">${t("viewall")}</a></div>
-      ${pol.length?pol.map(p=>`<div class="row"><span class="dicon"></span>
+      ${pol.length?pol.map(p=>p.url?`<a class="row" href="${esc(p.url)}" target="_blank" rel="noopener"><span class="dicon"></span>
+        <div><b>${esc(nm(p))}</b><div class="sub">${esc(p.dept)}</div></div>
+        <div class="meta"><span class="mono">v${esc(p.ver)}</span><br>${esc(p.date)}</div></a>`
+       :`<div class="row"><span class="dicon"></span>
         <div><b>${esc(nm(p))}</b><div class="sub">${esc(p.dept)}</div></div>
         <div class="meta"><span class="mono">v${esc(p.ver)}</span><br>${esc(p.date)}</div></div>`).join("")
        :`<div class="empty"><b>—</b>${t("docs")}</div>`}</div>
@@ -309,7 +331,9 @@ function vPortal(){
       ${ev.length?ev.map(e=>`<div class="row">
         <div class="datechip"><div class="m">${esc(lang==="ar"?e.monAR:e.monEN)}</div><div class="d mono">${esc(e.day)}</div></div>
         ${e.image?`<img src="${esc(e.image)}" class="evt-thumb">`:""}
-        <div><b>${esc(nm(e))}</b><div class="sub">${esc(lang==="ar"?e.placeAR:e.placeEN)}</div></div></div>`).join("")
+        <div style="flex:1"><b>${esc(nm(e))}</b><div class="sub">${esc(lang==="ar"?e.placeAR:e.placeEN)}</div></div>
+        ${outlookLink(e)?`<a class="evt-outlook" href="${outlookLink(e)}" target="_blank" rel="noopener" title="${t("addToOutlook")}">📅</a>`:""}
+        </div>`).join("")
        :`<div class="empty"><b>—</b>${t("events")}</div>`}</div></div>
 
   <div class="eyebrow" style="margin-top:26px">${t("gallery")}</div>
@@ -683,6 +707,8 @@ function form(k){
                 <input type="file" accept="image/*" style="display:none" onchange="uploadEditIcon(this)"></label>`}
           </div>
         </div>`
+      :key==="startsAt"?`<input type="datetime-local" class="inp" value="${esc(d.startsAt?toLocalInput(d.startsAt):"")}"
+          oninput="setEditField('startsAt',this.value?new Date(this.value).toISOString():null)">`
       :`<input class="inp" value="${esc(d[key]??"")}" oninput="setEditField('${key}',this.value)">`}</div>`).join("")}
     ${k==="menu"?`<div class="fld"><label>${t("branch")}</label><select class="inp" onchange="setEditSite(this.value)">
         <option value="all" ${d.site==="all"?"selected":""}>${t("allBranches")}</option>
