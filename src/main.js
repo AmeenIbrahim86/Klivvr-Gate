@@ -307,6 +307,14 @@ function render(){
   document.documentElement.lang=lang;
   document.documentElement.dir=lang==="ar"?"rtl":"ltr";
   if(!authed){ renderSignIn(); return; }
+
+  // احتفظ بمكان الكتابة قبل إعادة الرسم عشان الفوكس ماياعش من خانات البحث الحيّة
+  const active=document.activeElement;
+  let focusId=null, selStart=null, selEnd=null;
+  if(active && (active.tagName==="INPUT"||active.tagName==="TEXTAREA") && active.id){
+    focusId=active.id; selStart=active.selectionStart; selEnd=active.selectionEnd;
+  }
+
   $("#app").innerHTML = shell(
     view==="confirmed" ? vConfirmed() :
     view==="portal" ? vPortal() :
@@ -316,6 +324,14 @@ function render(){
     view==="myorders" ? vMyOrders() :
     view==="rooms" ? vRooms() : vAdmin()
   );
+
+  if(focusId){
+    const el=document.getElementById(focusId);
+    if(el){
+      el.focus();
+      if(selStart!=null && el.setSelectionRange){ try{ el.setSelectionRange(selStart,selEnd); }catch(e){} }
+    }
+  }
 }
 function renderSignIn(){
   document.documentElement.lang=lang;
@@ -793,7 +809,7 @@ function vRooms(){
         <div class="room-attendees">
           <label>${t("roomAttendeesLabel")}</label>
           ${roomAttendees.length?`<div class="attendee-chips">${roomAttendees.map(a=>`<span class="chip">${esc(a.name)}<button onclick="removeAttendee('${esc(a.email)}')">×</button></span>`).join("")}</div>`:""}
-          <input class="inp" placeholder="${t("roomAttendeeSearchPH")}" value="${esc(roomAttendeeQuery)}" oninput="setAttendeeQuery(this.value)">
+          <input id="attendeeSearchInput" class="inp" placeholder="${t("roomAttendeeSearchPH")}" value="${esc(roomAttendeeQuery)}" oninput="setAttendeeQuery(this.value)">
           ${matches.length?`<div class="attendee-matches">${matches.map(p=>`<button onclick="addAttendee('${esc(p.email)}','${esc(p.name)}')">${esc(p.name)}</button>`).join("")}</div>`:""}
         </div>
         <button class="btn" style="width:100%;margin-top:4px" onclick="confirmRoomBook()">${t("applyBooking")}</button>
