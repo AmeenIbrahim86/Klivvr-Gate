@@ -40,6 +40,8 @@ const L = { ar: {
  roomBookingFor:"حجز الساعة",roomSubjectPH:"عنوان الاجتماع (اختياري)",min:"د",
  roomCapNote:"أقصى حجز مسموح به ساعتين في اليوم لكل موظف.",roomDefaultSubject:"اجتماع",bookRoom:"احجز قاعة",date:"التاريخ",
  roomEmailNote:"إيميل الـ resource mailbox الحقيقي بتاع كل قاعة في Microsoft — من غيره القاعة مش هتشتغل",roomEmailPH:"room@company.com",
+ roomId:"كود القاعة",roomEmailLabel:"الإيميل",addRoom:"إضافة قاعة",roomNameRequired:"لازم اسم للقاعة",
+ roomDeleteConfirm:"متأكد إنك عايز تمسح القاعة دي؟",
  roomWeekendNote:"الغرف شغّالة من الأحد للخميس بس، من ٩ص لـ ٦م",roomTitleRequired:"لازم تكتب عنوان للاجتماع",
  roomAttendeesLabel:"ضيف زمايلك (اختياري)",roomAttendeeSearchPH:"دوّر بالاسم...",applyBooking:"تأكيد الحجز",
  myRoomReservations:"حجوزات القاعات بتاعتي",roomNoBookingsYet:"لسه معملتش أي حجز",
@@ -110,6 +112,8 @@ const L = { ar: {
  roomBookingFor:"Booking at",roomSubjectPH:"Meeting title (optional)",min:"m",
  roomCapNote:"Maximum 2 hours of bookings per employee per day.",roomDefaultSubject:"Meeting",bookRoom:"Book a room",date:"Date",
  roomEmailNote:"Each room's real Microsoft resource mailbox address — without it, the room won't work",roomEmailPH:"room@company.com",
+ roomId:"Room code",roomEmailLabel:"Email",addRoom:"Add room",roomNameRequired:"Room name is required",
+ roomDeleteConfirm:"Delete this room?",
  roomWeekendNote:"Rooms are only available Sunday to Thursday, 9 AM to 6 PM",roomTitleRequired:"Please enter a meeting title",
  roomAttendeesLabel:"Invite colleagues (optional)",roomAttendeeSearchPH:"Search by name...",applyBooking:"Confirm booking",
  myRoomReservations:"My Room Reservations",roomNoBookingsYet:"You haven't booked any rooms yet",
@@ -1036,13 +1040,66 @@ function aDashboardRooms(){
         </div></div>`).join("")}
     </div>`;
 }
+let roomEdit=null;
+function roomAdminForm(){
+  const d=roomEdit;
+  return `<div class="form"><div class="fgrid">
+    <div class="fld"><label>${t("roomId")} <span class="mono" style="opacity:.45">id</span></label>
+      <input class="inp" ${d.isNew?"":"disabled"} value="${esc(d.id)}" placeholder="dusk" oninput="setRoomField('id',this.value)"></div>
+    <div class="fld"><label>${t("titleEN")}</label>
+      <input class="inp" value="${esc(d.name)}" oninput="setRoomField('name',this.value)"></div>
+    <div class="fld"><label>${t("branch")}</label>
+      <select class="inp" onchange="setRoomField('site',this.value)">
+        <option value="">—</option>
+        ${SITES.map(s=>`<option value="${s.id}" ${d.site===s.id?"selected":""}>${esc(nm(s))}</option>`).join("")}
+      </select></div>
+    <div class="fld"><label>${t("roomEmailLabel")}</label>
+      <input class="inp" placeholder="${t("roomEmailPH")}" value="${esc(d.email||'')}" oninput="setRoomField('email',this.value)"></div>
+  </div>
+  <div class="formacts"><button class="btn sm" onclick="saveRoomFull()">${t("save")}</button>
+    <button class="btn ghost sm" onclick="cancelRoomEdit()">${t("cancel")}</button></div></div>`;
+}
+function startRoomNew(){ roomEdit={id:"",name:"",email:"",site:"",isNew:true}; render(); }
+function startRoomEdit(id){
+  const r=MEETING_ROOMS.find(x=>x.id===id); if(!r) return;
+  roomEdit={id:r.id,name:r.name,email:r.email||"",site:r.site||"",isNew:false}; render();
+}
+function cancelRoomEdit(){ roomEdit=null; render(); }
+function setRoomField(k,v){ if(roomEdit) roomEdit[k]=v; }
+async function saveRoomFull(){
+  if(!roomEdit) return;
+  const d=roomEdit;
+  if(d.isNew && !/^[a-z0-9-]{2,30}$/.test(d.id.trim())){ toast(t("branchIdInvalid")); return; }
+  if(!d.name.trim()){ toast(t("roomNameRequired")); return; }
+  try{
+    const saved=await api.upsertRoom({...d,id:d.id.trim()});
+    const i=MEETING_ROOMS.findIndex(x=>x.id===saved.id);
+    i>-1?MEETING_ROOMS[i]=saved:MEETING_ROOMS.push(saved);
+    roomEdit=null; toast(t("saved")); render();
+  }catch(e){ fail(e); }
+}
+async function deleteRoom(id){
+  if(!confirm(t("roomDeleteConfirm"))) return;
+  try{
+    await api.removeRoom(id);
+    MEETING_ROOMS=MEETING_ROOMS.filter(x=>x.id!==id);
+    toast(t("deleted")); render();
+  }catch(e){ fail(e); }
+}
 function aRooms(){
-  return `<div class="sec"><div class="sechd"><div><h3>${t("meetingRooms")}</h3><p>${t("roomEmailNote")}</p></div></div>
-    ${MEETING_ROOMS.map(r=>`<div class="item">
-      <div class="body"><b>${esc(r.name)}</b></div>
-      <input class="inp" style="width:230px" placeholder="${t("roomEmailPH")}" value="${esc(r.email||'')}"
-        onblur="saveRoomEmail('${esc(r.id)}',this.value)">
-    </div>`).join("")}</div>`;
+  return `<div class="sec"><div class="sechd"><div><h3>${t("meetingRooms")}</h3><p>${t("roomEmailNote")}</p></div>
+      <button class="btn sm" onclick="startRoomNew()">+ ${t("addRoom")}</button></div>
+    ${roomEdit&&roomEdit.isNew?roomAdminForm():""}
+    ${MEETING_ROOMS.map(r=>{
+      if(roomEdit&&!roomEdit.isNew&&roomEdit.id===r.id) return roomAdminForm();
+      return `<div class="item">
+        <div class="body"><b>${esc(r.name)}</b><p>${r.site?esc(nm(so(r.site))):"—"}${r.email?" · "+esc(r.email):""}</p></div>
+        <div class="acts">
+          <button class="iact" onclick="startRoomEdit('${esc(r.id)}')">✎</button>
+          <button class="iact del" onclick="deleteRoom('${esc(r.id)}')">🗑</button>
+        </div>
+      </div>`;
+    }).join("")}</div>`;
 }
 function aOver(){
   const live=O.filter(o=>o.st!=="done").length;
@@ -1228,15 +1285,6 @@ async function saveNameAr(id,v){
     toast(t("saved"));
   }catch(e){ fail(e); }
 }
-async function saveRoomEmail(id,v){
-  v=v.trim();
-  try{
-    await api.setRoomEmail(id, v);
-    const r=MEETING_ROOMS.find(x=>x.id===id);
-    if(r) r.email=v||null;
-    toast(t("saved"));
-  }catch(e){ fail(e); }
-}
 async function autoTranslateAll(){
   const todo=A.users.filter(u=>u.ar===u.en);
   if(!todo.length){ toast(t("autoTranslateNone")); return; }
@@ -1300,7 +1348,8 @@ Object.assign(window, {
   setEditIcon, uploadEditIcon, startBranchNew, startBranchEdit, cancelBranchEdit,
   setBranchField, setBranchLive, saveBranch, deleteBranch, uploadBranchQr, saveNameAr, setEditFree, autoTranslateAll,
   startAboutEdit, cancelAboutEdit, saveAbout,
-  setRoomDate, pickRoomSlot, cancelRoomSlot, setRoomSubject, confirmRoomBook, saveRoomEmail,
+  setRoomDate, pickRoomSlot, cancelRoomSlot, setRoomSubject, confirmRoomBook,
   setRoomDuration, setAttendeeQuery, addAttendee, removeAttendee, cancelMyRoomBooking,
+  startRoomNew, startRoomEdit, cancelRoomEdit, setRoomField, saveRoomFull, deleteRoom,
   setSuggestBody, suggestWriteAnother, submitSuggestionForm, delSuggestion,
 });

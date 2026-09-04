@@ -302,12 +302,29 @@ export async function syncOrgFromEntra() {
 
 /* ═══════════════ حجز قاعات الاجتماعات ═══════════════ */
 export async function listRooms() {
-  const { data, error } = await sb.from('meeting_rooms').select('id, name, email, sort').order('sort');
+  const { data, error } = await sb.from('meeting_rooms').select('id, name, email, branch_id, sort').order('sort');
   if (error) throw error;
-  return data.map(r => ({ id: r.id, name: r.name, email: r.email }));
+  return data.map(r => ({ id: r.id, name: r.name, email: r.email, site: r.branch_id }));
 }
 export async function setRoomEmail(id, email) {
   const { error } = await sb.from('meeting_rooms').update({ email: email || null }).eq('id', id);
+  if (error) throw error;
+}
+// row.isNew=true → إنشاء قاعة جديدة (لازم id فريد يكتبه الأدمن)
+export async function upsertRoom(row) {
+  const dbRow = { name: row.name, email: row.email || null, branch_id: row.site || null };
+  if (row.isNew) {
+    const { data, error } = await sb.from('meeting_rooms')
+      .insert({ id: row.id, ...dbRow, sort: row.sort ?? 99 }).select().single();
+    if (error) throw error;
+    return { id: data.id, name: data.name, email: data.email, site: data.branch_id };
+  }
+  const { data, error } = await sb.from('meeting_rooms').update(dbRow).eq('id', row.id).select().single();
+  if (error) throw error;
+  return { id: data.id, name: data.name, email: data.email, site: data.branch_id };
+}
+export async function removeRoom(id) {
+  const { error } = await sb.from('meeting_rooms').delete().eq('id', id);
   if (error) throw error;
 }
 export async function getRoomAvailability(date) {

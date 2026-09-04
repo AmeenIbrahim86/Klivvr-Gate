@@ -313,6 +313,9 @@ create policy write_branches on branches for all to authenticated
 grant select, insert, update, delete on branches to authenticated;
 create policy read_roles    on roles    for select to authenticated using (true);
 create policy read_perms    on role_permissions for select to authenticated using (true);
+create policy write_perms on role_permissions for all to authenticated
+  using (has_perm('access')) with check (has_perm('access'));
+grant select, insert, update, delete on role_permissions to authenticated;
 
 -- البروفايلات: أشوف بروفايلي، ومين عنده صلاحية access يشوف ويعدّل الكل
 create policy read_own_profile on profiles for select to authenticated
@@ -378,6 +381,7 @@ create table meeting_rooms (
   id text primary key,
   name text not null,
   email text,
+  branch_id text references branches(id),
   sort int not null default 0
 );
 insert into meeting_rooms (id, name, sort) values
