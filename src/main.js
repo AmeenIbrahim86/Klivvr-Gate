@@ -548,6 +548,8 @@ async function submitOrder(){
       paymentMethod: payMethod
     });
     lastOrderNo = orderNo; cart=[]; paying=false; where=""; whereRoom=""; whereType="office"; payMethod="instapay"; view="confirmed"; render();
+    // حدّث قائمة الأصناف فورًا عشان الكمية المتبقية تتحدّث من غير ما تحتاج تعمل reload للصفحة
+    api.list("menu").then(fresh=>{ M=fresh; if(view==="order")render(); }).catch(()=>{});
   }catch(e){ fail(e); }
 }
 function vConfirmed(){
