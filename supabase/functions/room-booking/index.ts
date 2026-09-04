@@ -221,6 +221,51 @@ Deno.serve(async (req) => {
       return json({ ok: true, eventId: evJson.id });
     }
 
+    // ══════════════════════════════════════════════════════════
+    //  action = "myBookings" — حجوزاتي الجاية في أي قاعة
+    // ══════════════════════════════════════════════════════════
+    if (action === "myBookings") {
+      const now = new Date();
+      const from = now.toISOString().slice(0, 19);
+      const to = new Date(now.getTime() + 30 * 864e5).toISOString().slice(0, 19);
+
+      const cvRes = await fetch(
+        `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(employeeEmail)}/calendarView` +
+        `?startDateTime=${from}&endDateTime=${to}&$select=id,subject,start,end,location&$orderby=start/dateTime&$top=100`,
+        { headers: { ...gh, Prefer: `outlook.timezone="${TZ}"` } },
+      );
+      const cvJson = await cvRes.json();
+      if (cvJson.error) return json({ error: "Graph calendarView failed", detail: cvJson.error }, 500);
+
+      const roomNames = new Set(roomsWithEmail.map((r: any) => r.name));
+      const bookings = (cvJson.value || [])
+        .filter((ev: any) => roomNames.has(ev.location?.displayName))
+        .map((ev: any) => ({
+          id: ev.id, subject: ev.subject, room: ev.location.displayName,
+          start: ev.start.dateTime, end: ev.end.dateTime,
+        }));
+
+      return json({ bookings });
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  action = "cancel" — إلغاء حجز قاعة عملته إنت
+    // ══════════════════════════════════════════════════════════
+    if (action === "cancel") {
+      const { eventId } = body;
+      if (!eventId) return json({ error: "eventId required" }, 400);
+
+      const delRes = await fetch(
+        `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(employeeEmail)}/events/${encodeURIComponent(eventId)}`,
+        { method: "DELETE", headers: gh },
+      );
+      if (!delRes.ok && delRes.status !== 404) {
+        const delJson = await delRes.json().catch(() => ({}));
+        return json({ error: "cancel_failed", message: "الإلغاء فشل", detail: delJson }, 500);
+      }
+      return json({ ok: true });
+    }
+
     return json({ error: "unknown_action" }, 400);
   } catch (e) {
     return json({ error: "unexpected", detail: String(e) }, 500);

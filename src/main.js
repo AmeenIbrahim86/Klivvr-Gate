@@ -42,6 +42,8 @@ const L = { ar: {
  roomEmailNote:"إيميل الـ resource mailbox الحقيقي بتاع كل قاعة في Microsoft — من غيره القاعة مش هتشتغل",roomEmailPH:"room@company.com",
  roomWeekendNote:"الغرف شغّالة من الأحد للخميس بس، من ٩ص لـ ٦م",roomTitleRequired:"لازم تكتب عنوان للاجتماع",
  roomAttendeesLabel:"ضيف زمايلك (اختياري)",roomAttendeeSearchPH:"دوّر بالاسم...",applyBooking:"تأكيد الحجز",
+ myRoomReservations:"حجوزات القاعات بتاعتي",roomNoBookingsYet:"لسه معملتش أي حجز",
+ roomCancelConfirm:"متأكد إنك عايز تلغي الحجز ده؟",roomCancelled:"اتلغى الحجز",roomCancelError:"الإلغاء فشل، جرّب تاني",
  branchIdInvalid:"كود الفرع لازم يكون حروف/أرقام إنجليزي بس، من غير مسافات",
  branchNamesRequired:"لازم اسم بالعربي والإنجليزي",branchDeleteConfirm:"متأكد؟ لو الفرع ده عليه أصناف أو طلبات مش هينمسح.",
  aboutEmpty:"لسه مفيش وصف — دوس ✎ تكتب واحد",aboutAR:"الوصف بالعربي",aboutEN:"الوصف بالإنجليزي",
@@ -104,6 +106,8 @@ const L = { ar: {
  roomEmailNote:"Each room's real Microsoft resource mailbox address — without it, the room won't work",roomEmailPH:"room@company.com",
  roomWeekendNote:"Rooms are only available Sunday to Thursday, 9 AM to 6 PM",roomTitleRequired:"Please enter a meeting title",
  roomAttendeesLabel:"Invite colleagues (optional)",roomAttendeeSearchPH:"Search by name...",applyBooking:"Confirm booking",
+ myRoomReservations:"My Room Reservations",roomNoBookingsYet:"You haven't booked any rooms yet",
+ roomCancelConfirm:"Cancel this booking?",roomCancelled:"Booking cancelled",roomCancelError:"Cancel failed, try again",
  branchIdInvalid:"Branch code must be lowercase letters/numbers only, no spaces",
  branchNamesRequired:"Both Arabic and English names are required",branchDeleteConfirm:"Delete this branch? It won't delete if it still has menu items or orders.",
  aboutEmpty:"No description yet — click ✎ to write one",aboutAR:"Description (Arabic)",aboutEN:"Description (English)",
@@ -242,8 +246,9 @@ const FIELDS = {
 let lang="en", authed=false, view="portal", tab="overview";
 let myProfile=null, SITES=[], C={news:[],links:[],policies:[],events:[]}, M=[], O=[], A={roles:[],users:[]}, ORG=[], GALLERY=[];
 let ABOUT={ar:"",en:""}, aboutEditing=false;
-let MY_ORDERS=null;
+let MY_ORDERS=null, userMenuOpen=false;
 let MEETING_ROOMS=[];
+let MY_ROOM_BOOKINGS=null;
 let roomDate="", roomAvail=null, roomBookingSlot=null, roomBookSubject="", roomBookDuration=30, roomAttendees=[], roomAttendeeQuery="";
 let branch=null, paying=false, lastOrderNo="", payMethod="instapay";
 let cart=[], openM=null, draft={}, cat="all", where="", whereType="office", whereRoom="", edit=null, eKind=null;
@@ -322,6 +327,7 @@ function render(){
     view==="org" ? vOrg() :
     view==="gallery" ? vGallery() :
     view==="myorders" ? vMyOrders() :
+    view==="myrooms" ? vMyRooms() :
     view==="rooms" ? vRooms() : vAdmin()
   );
 
@@ -365,11 +371,20 @@ function shell(inner){
     <nav class="topnav">${tabs.map(([k,v])=>`<button class="${view===k?"on":""}" onclick="go('${k}')">${v}</button>`).join("")}
       <span class="langsw"><button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
       <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span>
-      <button class="signout" onclick="doSignOut()" title="${t("signOut")}">${esc(nm(myProfile))} ⎋</button>
+      <div class="usermenu-wrap">
+        <button class="signout" onclick="toggleUserMenu()">${esc(nm(myProfile))} ▾</button>
+        ${userMenuOpen?`<div class="usermenu">
+          <button onclick="go('myorders')">🧾 ${t("myOrders")}</button>
+          <button onclick="go('myrooms')">🏢 ${t("myRoomReservations")}</button>
+          <div class="usermenu-div"></div>
+          <button onclick="doSignOut()">⎋ ${t("signOut")}</button>
+        </div>`:""}
+      </div>
     </nav></div>
     <div class="wrap">${inner}</div>`;
 }
-function go(v){view=v;edit=null;paying=false;if(v==="myorders")loadMyOrders();if(v==="rooms")openRooms();render();scrollTo({top:0,behavior:"instant"})}
+function toggleUserMenu(){ userMenuOpen=!userMenuOpen; render(); }
+function go(v){view=v;edit=null;paying=false;userMenuOpen=false;if(v==="myorders")loadMyOrders();if(v==="rooms")openRooms();if(v==="myrooms")loadMyRoomBookings();render();scrollTo({top:0,behavior:"instant"})}
 async function loadMyOrders(){
   try{ MY_ORDERS=await api.myOrders(); }catch(e){ console.error(e); MY_ORDERS=[]; }
   render();
@@ -434,7 +449,6 @@ function vPortal(){
     <button class="qtile feat" onclick="go('org')"><span class="qicon">🧭</span>${t("orgChart")}</button>
     <button class="qtile feat" onclick="go('gallery')"><span class="qicon">🖼️</span>${t("gallery")}</button>
     <button class="qtile feat" onclick="go('rooms')"><span class="qicon">🏢</span>${t("bookRoom")}</button>
-    <button class="qtile feat" onclick="go('myorders')"><span class="qicon">🧾</span>${t("myOrders")}</button>
     ${links.map(l=>{const d=lang==="ar"?l.descAR:l.descEN;
       return `<a class="qtile" href="${esc(l.url||"#")}"><span class="qicon">${iconHtml(l.icon)}</span>
         <span class="qtile-txt"><b>${esc(nm(l))}</b>${d?`<span>${esc(d)}</span>`:""}</span></a>`}).join("")}</div>
@@ -732,6 +746,33 @@ function vMyOrders(){
         <span class="pill ${STATUS_CLS[o.status]?"p":""}" style="${o.status==='rejected'?'background:var(--coral-soft);color:var(--coral-ink)':''}">${t(STATUS_LBL[o.status]||o.status)}</span>
       </div>`).join("")}</div>`
      :`<div class="card empty"><b>—</b>${t("noOrdersYet")}</div>`}`;
+}
+
+async function loadMyRoomBookings(){
+  MY_ROOM_BOOKINGS=null; render();
+  try{ MY_ROOM_BOOKINGS=await api.myRoomBookings(); }
+  catch(e){ MY_ROOM_BOOKINGS=[]; toast(e.message||t("roomLoadError")); }
+  render();
+}
+async function cancelMyRoomBooking(eventId){
+  if(!confirm(t("roomCancelConfirm"))) return;
+  try{
+    await api.cancelRoomBooking(eventId);
+    toast(t("roomCancelled"));
+    await loadMyRoomBookings();
+  }catch(e){ toast(e.message||t("roomCancelError")); }
+}
+function vMyRooms(){
+  if(MY_ROOM_BOOKINGS===null) return `<div class="eyebrow">${t("myRoomReservations")}</div><div class="card empty"><b>—</b>${t("loading")}</div>`;
+  return `<div class="eyebrow">${t("myRoomReservations")}</div>
+    ${MY_ROOM_BOOKINGS.length?`<div class="card">${MY_ROOM_BOOKINGS.map(b=>`<div class="item" style="flex-wrap:wrap">
+        <div class="body"><b>${esc(b.room)}</b>
+          <p>${esc(b.subject||"")}</p>
+          <p class="mono" style="font-size:11.5px;color:var(--muted)">${new Date(b.start).toLocaleString(lang==="ar"?"ar-EG":"en-US",{dateStyle:"medium",timeStyle:"short"})} – ${new Date(b.end).toLocaleTimeString(lang==="ar"?"ar-EG":"en-US",{timeStyle:"short"})}</p>
+        </div>
+        <button class="iact del" onclick="cancelMyRoomBooking('${esc(b.id)}')">🗑</button>
+      </div>`).join("")}</div>`
+     :`<div class="card empty"><b>—</b>${t("roomNoBookingsYet")}</div>`}`;
 }
 
 /* ═══════════════ حجز قاعات الاجتماعات ═══════════════ */
@@ -1151,7 +1192,7 @@ async function saveKioskPw(branchId){
 
 /* ═══════════════ expose handlers used by inline HTML onclick/onchange ═══════════════ */
 Object.assign(window, {
-  doSignIn, doSignOut, go, setLang, setBranch, changeBranch, setCat, setWhere, setWhereType, setWhereRoom,
+  doSignIn, doSignOut, go, setLang, setBranch, changeBranch, setCat, setWhere, setWhereType, setWhereRoom, toggleUserMenu,
   tog, setSug, setMilk, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder, setPayMethod,
   setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk,
   saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg, saveKioskPw,
@@ -1160,5 +1201,5 @@ Object.assign(window, {
   setBranchField, setBranchLive, saveBranch, deleteBranch, uploadBranchQr, saveNameAr, setEditFree, autoTranslateAll,
   startAboutEdit, cancelAboutEdit, saveAbout,
   setRoomDate, pickRoomSlot, cancelRoomSlot, setRoomSubject, confirmRoomBook, saveRoomEmail,
-  setRoomDuration, setAttendeeQuery, addAttendee, removeAttendee,
+  setRoomDuration, setAttendeeQuery, addAttendee, removeAttendee, cancelMyRoomBooking,
 });

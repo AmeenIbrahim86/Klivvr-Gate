@@ -324,6 +324,18 @@ export async function bookRoom({ roomId, date, startTime, endTime, subject, atte
   if (data?.error) throw new Error(data.message || data.error);
   return data;
 }
+export async function myRoomBookings() {
+  const { data, error } = await sb.functions.invoke('room-booking', { body: { action: 'myBookings' } });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.message || data.error);
+  return data.bookings;
+}
+export async function cancelRoomBooking(eventId) {
+  const { data, error } = await sb.functions.invoke('room-booking', { body: { action: 'cancel', eventId } });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.message || data.error);
+  return data;
+}
 
 /* ═══════════════ الصور (رفع حقيقي + معرض الصور) ═══════════════ */
 // بيرفع الملف فعليًا على Supabase Storage ويرجّع لينك عام للصورة
