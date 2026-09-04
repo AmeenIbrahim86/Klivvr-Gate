@@ -417,8 +417,8 @@ function vPortal(){
   <div class="qgrid"><button class="qtile feat" onclick="go('order')"><span class="qicon">☕</span>${t("order")}</button>
     <button class="qtile feat" onclick="go('org')"><span class="qicon">🧭</span>${t("orgChart")}</button>
     <button class="qtile feat" onclick="go('gallery')"><span class="qicon">🖼️</span>${t("gallery")}</button>
-    <button class="qtile feat" onclick="go('myorders')"><span class="qicon">🧾</span>${t("myOrders")}</button>
     <button class="qtile feat" onclick="go('rooms')"><span class="qicon">🏢</span>${t("bookRoom")}</button>
+    <button class="qtile feat" onclick="go('myorders')"><span class="qicon">🧾</span>${t("myOrders")}</button>
     ${links.map(l=>{const d=lang==="ar"?l.descAR:l.descEN;
       return `<a class="qtile" href="${esc(l.url||"#")}"><span class="qicon">${iconHtml(l.icon)}</span>
         <span class="qtile-txt"><b>${esc(nm(l))}</b>${d?`<span>${esc(d)}</span>`:""}</span></a>`}).join("")}</div>
