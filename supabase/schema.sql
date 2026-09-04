@@ -39,6 +39,7 @@ create table role_permissions (
 insert into role_permissions values
   ('admin','news'),('admin','links'),('admin','policies'),('admin','events'),
   ('admin','menu'),('admin','orders'),('admin','access'),('admin','gallery'),
+  ('admin','rooms'),('admin','suggestions'),('admin','dashboard_buffet'),('admin','dashboard_rooms'),
   ('hr','news'),('hr','policies'),('hr','events'),
   ('kitchen','orders'),('kitchen','menu');
 
