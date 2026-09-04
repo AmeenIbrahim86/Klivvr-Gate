@@ -44,6 +44,12 @@ const L = { ar: {
  roomAttendeesLabel:"ضيف زمايلك (اختياري)",roomAttendeeSearchPH:"دوّر بالاسم...",applyBooking:"تأكيد الحجز",
  myRoomReservations:"حجوزات القاعات بتاعتي",roomNoBookingsYet:"لسه معملتش أي حجز",
  roomCancelConfirm:"متأكد إنك عايز تلغي الحجز ده؟",roomCancelled:"اتلغى الحجز",roomCancelError:"الإلغاء فشل، جرّب تاني",
+ suggestBox:"صندوق الاقتراحات",suggestHint:"اكتب أي اقتراح أو ملاحظة — مفيش أي حاجة بتربطه بيك، حتى إحنا مش هنعرف مين بعته.",
+ suggestPH:"اكتب اقتراحك هنا...",suggestSubmit:"ابعت",suggestThanks:"وصل اقتراحك، شكرًا!",suggestAnother:"ابعت واحد تاني",
+ suggestEmptyError:"اكتب حاجة الأول",suggestNoneYet:"لسه مفيش اقتراحات",suggestDeleteConfirm:"متأكد إنك عايز تمسح الاقتراح ده؟",
+ dashboardBuffet:"لوحة البوفيه",dashboardRooms:"لوحة القاعات",
+ dashToday:"إحصائيات النهاردة",dashOrdersToday:"عدد الطلبات",dashRevenueToday:"الإيراد",dashLast7Days:"آخر ٧ أيام",
+ dashTodayMeetings:"اجتماعات النهاردة في كل القاعات",dashNoMeetingsToday:"مفيش اجتماعات النهاردة",
  branchIdInvalid:"كود الفرع لازم يكون حروف/أرقام إنجليزي بس، من غير مسافات",
  branchNamesRequired:"لازم اسم بالعربي والإنجليزي",branchDeleteConfirm:"متأكد؟ لو الفرع ده عليه أصناف أو طلبات مش هينمسح.",
  aboutEmpty:"لسه مفيش وصف — دوس ✎ تكتب واحد",aboutAR:"الوصف بالعربي",aboutEN:"الوصف بالإنجليزي",
@@ -108,6 +114,12 @@ const L = { ar: {
  roomAttendeesLabel:"Invite colleagues (optional)",roomAttendeeSearchPH:"Search by name...",applyBooking:"Confirm booking",
  myRoomReservations:"My Room Reservations",roomNoBookingsYet:"You haven't booked any rooms yet",
  roomCancelConfirm:"Cancel this booking?",roomCancelled:"Booking cancelled",roomCancelError:"Cancel failed, try again",
+ suggestBox:"Suggestion Box",suggestHint:"Write any suggestion or feedback — nothing links it to you, not even we can tell who sent it.",
+ suggestPH:"Write your suggestion here...",suggestSubmit:"Send",suggestThanks:"Your suggestion was sent, thank you!",suggestAnother:"Send another",
+ suggestEmptyError:"Write something first",suggestNoneYet:"No suggestions yet",suggestDeleteConfirm:"Delete this suggestion?",
+ dashboardBuffet:"Buffet Dashboard",dashboardRooms:"Rooms Dashboard",
+ dashToday:"Today's stats",dashOrdersToday:"Orders",dashRevenueToday:"Revenue",dashLast7Days:"Last 7 days",
+ dashTodayMeetings:"Today's meetings across all rooms",dashNoMeetingsToday:"No meetings today",
  branchIdInvalid:"Branch code must be lowercase letters/numbers only, no spaces",
  branchNamesRequired:"Both Arabic and English names are required",branchDeleteConfirm:"Delete this branch? It won't delete if it still has menu items or orders.",
  aboutEmpty:"No description yet — click ✎ to write one",aboutAR:"Description (Arabic)",aboutEN:"Description (English)",
@@ -139,7 +151,7 @@ const L = { ar: {
  noBranch:"You're not assigned to a branch yet — ask an admin to set one.",
 }};
 
-const SECTIONS = ["news","links","policies","events","menu","orders","access","gallery"];
+const SECTIONS = ["news","links","policies","events","menu","orders","access","gallery","rooms","suggestions","dashboard_buffet","dashboard_rooms"];
 const CATS = [
  {k:"all",ar:"الكل",en:"All"},
  {k:"free",ar:"مجاني",en:"Free"},
@@ -204,6 +216,8 @@ function transliterateToArabic(fullName){
 }
 const TABS = [["overview","overview","▦",null],["news","aNews","✦","news"],["links","aLinks","◫","links"],
  ["policies","aPolicies","▤","policies"],["events","aEvents","▣","events"],["menu","aMenu","☕","menu"],
+ ["rooms","meetingRooms","🏢","rooms"],["suggestions","suggestions","💡","suggestions"],
+ ["dashboardBuffet","dashboardBuffet","📊","dashboard_buffet"],["dashboardRooms","dashboardRooms","📈","dashboard_rooms"],
  ["access","aAccess","⚿","access"]];
 const ICON_PRESETS_LINKS = ["✉️","📅","📁","⚙️","🏢","📊","💰","🎯","📋","🔔","📞","🗂️","🧑‍💻","📦","🧾","🛠️"];
 const ICON_PRESETS_MENU = ["☕","🍵","🧋","🥤","🧃","🥛","🍫","🍪","🍩","🍰","🧁","🍭","🍿","🥐","🥪","🍟","🧀","🍎","🍌","🍇"];
@@ -249,6 +263,8 @@ let ABOUT={ar:"",en:""}, aboutEditing=false;
 let MY_ORDERS=null, userMenuOpen=false;
 let MEETING_ROOMS=[];
 let MY_ROOM_BOOKINGS=null;
+let suggestBody="", suggestSent=false, SUGGESTIONS=null;
+let ROOM_DASH=null;
 let roomDate="", roomAvail=null, roomBookingSlot=null, roomBookSubject="", roomBookDuration=30, roomAttendees=[], roomAttendeeQuery="";
 let branch=null, paying=false, lastOrderNo="", payMethod="instapay";
 let cart=[], openM=null, draft={}, cat="all", where="", whereType="office", whereRoom="", edit=null, eKind=null;
@@ -269,7 +285,7 @@ const inBranch=(x,b)=>!x.site||x.site==="all"||x.site===b;
 const mi=id=>M.find(m=>m.id===id)||{ar:"—",en:"—",price:0};
 const catLabel=k=>{const c=CATS.find(x=>x.k===k);return c?nm(c):k};
 const dots=n=>`<span class="dots">${[0,1,2].map(i=>`<i class="${i<n?"on":""}"></i>`).join("")}</span>`;
-const secLbl=s=>t(s==="news"?"aNews":s==="links"?"aLinks":s==="policies"?"aPolicies":s==="events"?"aEvents":s==="menu"?"aMenu":s==="orders"?"aOrders":s==="gallery"?"gallery":"aAccess");
+const secLbl=s=>t(s==="news"?"aNews":s==="links"?"aLinks":s==="policies"?"aPolicies":s==="events"?"aEvents":s==="menu"?"aMenu":s==="orders"?"aOrders":s==="gallery"?"gallery":s==="rooms"?"meetingRooms":s==="suggestions"?"suggestions":s==="dashboard_buffet"?"dashboardBuffet":s==="dashboard_rooms"?"dashboardRooms":"aAccess");
 
 function toast(m){const e=$("#toast");if(!e)return;e.textContent=m;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2200)}
 function fail(e){console.error(e);toast(t("errGeneric"))}
@@ -286,13 +302,13 @@ async function loadEverything(){
     api.listBranches(), api.loadRoles(), api.list("news"), api.list("links"),
     api.list("policies"), api.list("events"), api.list("menu"),
     api.listProfiles(), api.listOrders(), api.listOrgPeople(), api.listGallery(),
-    api.getSetting("about"), api.listRooms()
+    api.getSetting("about"), api.listRooms(), api.listSuggestions()
   ]);
   results.forEach((r,i)=>{ if(r.status==="rejected") console.error("load section", i, "failed:", r.reason); });
   const val=(i,fallback)=>results[i].status==="fulfilled"?results[i].value:fallback;
   SITES=val(0,[]); A={roles:val(1,[]),users:val(7,[])};
   C={news:val(2,[]),links:val(3,[]),policies:val(4,[]),events:val(5,[])};
-  M=val(6,[]); O=val(8,[]); ORG=val(9,[]); GALLERY=val(10,[]); ABOUT=val(11,{ar:"",en:""}); MEETING_ROOMS=val(12,[]);
+  M=val(6,[]); O=val(8,[]); ORG=val(9,[]); GALLERY=val(10,[]); ABOUT=val(11,{ar:"",en:""}); MEETING_ROOMS=val(12,[]); SUGGESTIONS=val(13,[]);
 }
 async function start(session){
   if(!session){ authed=false; myProfile=null; renderSignIn(); return; }
@@ -328,6 +344,7 @@ function render(){
     view==="gallery" ? vGallery() :
     view==="myorders" ? vMyOrders() :
     view==="myrooms" ? vMyRooms() :
+    view==="suggest" ? vSuggestBox() :
     view==="rooms" ? vRooms() : vAdmin()
   );
 
@@ -449,6 +466,7 @@ function vPortal(){
     <button class="qtile feat" onclick="go('org')"><span class="qicon">🧭</span>${t("orgChart")}</button>
     <button class="qtile feat" onclick="go('gallery')"><span class="qicon">🖼️</span>${t("gallery")}</button>
     <button class="qtile feat" onclick="go('rooms')"><span class="qicon">🏢</span>${t("bookRoom")}</button>
+    <button class="qtile feat" onclick="go('suggest')"><span class="qicon">💡</span>${t("suggestBox")}</button>
     ${links.map(l=>{const d=lang==="ar"?l.descAR:l.descEN;
       return `<a class="qtile" href="${esc(l.url||"#")}"><span class="qicon">${iconHtml(l.icon)}</span>
         <span class="qtile-txt"><b>${esc(nm(l))}</b>${d?`<span>${esc(d)}</span>`:""}</span></a>`}).join("")}</div>
@@ -775,6 +793,43 @@ function vMyRooms(){
      :`<div class="card empty"><b>—</b>${t("roomNoBookingsYet")}</div>`}`;
 }
 
+/* ═══════════════ صندوق الاقتراحات المجهول ═══════════════ */
+function setSuggestBody(v){ suggestBody=v; }
+function suggestWriteAnother(){ suggestSent=false; suggestBody=""; render(); }
+async function submitSuggestionForm(){
+  if(!suggestBody.trim()){ toast(t("suggestEmptyError")); return; }
+  try{
+    await api.submitSuggestion(suggestBody.trim());
+    suggestBody=""; suggestSent=true; render();
+  }catch(e){ fail(e); }
+}
+function vSuggestBox(){
+  return `<div class="eyebrow">${t("suggestBox")}</div>
+    <div class="card" style="padding:20px">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">${t("suggestHint")}</p>
+      ${suggestSent?`<p style="color:var(--indigo);font-weight:600;margin-bottom:10px">💡 ${t("suggestThanks")}</p>
+        <button class="btn ghost sm" onclick="suggestWriteAnother()">${t("suggestAnother")}</button>`
+       :`<textarea id="suggestInput" class="inp" style="min-height:120px" placeholder="${t("suggestPH")}" oninput="setSuggestBody(this.value)">${esc(suggestBody)}</textarea>
+        <button class="btn" style="width:100%;margin-top:10px" onclick="submitSuggestionForm()">${t("suggestSubmit")}</button>`}
+    </div>`;
+}
+async function delSuggestion(id){
+  if(!confirm(t("suggestDeleteConfirm"))) return;
+  try{
+    await api.deleteSuggestion(id);
+    SUGGESTIONS=SUGGESTIONS.filter(s=>s.id!==id);
+    toast(t("deleted")); render();
+  }catch(e){ fail(e); }
+}
+function aSuggestions(){
+  return `<div class="sec"><div class="sechd"><div><h3>${t("suggestBox")}</h3><p>${num(SUGGESTIONS.length)}</p></div></div>
+    ${SUGGESTIONS.length?SUGGESTIONS.map(s=>`<div class="item" style="align-items:flex-start">
+        <div class="body"><p style="white-space:pre-wrap">${esc(s.body)}</p>
+          <p class="mono" style="font-size:11px;color:var(--muted);margin-top:4px">${new Date(s.created_at).toLocaleString(lang==="ar"?"ar-EG":"en-US",{dateStyle:"medium",timeStyle:"short"})}</p></div>
+        <button class="iact del" onclick="delSuggestion('${esc(s.id)}')">🗑</button>
+      </div>`).join(""):`<div class="empty"><b>—</b>${t("suggestNoneYet")}</div>`}</div>`;
+}
+
 /* ═══════════════ حجز قاعات الاجتماعات ═══════════════ */
 function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function isWorkDay(iso){ const d=new Date(iso+"T00:00:00").getDay(); return d>=0&&d<=4; } // الأحد(٠)-الخميس(٤)
@@ -869,9 +924,14 @@ function vAdmin(){
       return `<button class="${tab===k?"on":""} ${allow?"":"locked"}" ${allow?`onclick="setTab('${k}')"`:"disabled"}>
         <span class="ic">${ic}</span>${t(l)}${allow?"":" 🔒"}</button>`}).join("")}</div>
     <div>${!ok?`<div class="card empty"><b>🔒 ${t("noPerm")}</b>${esc(nm(role()))}</div>`
-      :tab==="overview"?aOver():tab==="access"?aAccess():aList(tab)}</div></div>`;
+      :tab==="overview"?aOver():tab==="access"?aAccess():tab==="rooms"?aRooms():tab==="suggestions"?aSuggestions()
+      :tab==="dashboardBuffet"?aDashboardBuffet():tab==="dashboardRooms"?aDashboardRooms():aList(tab)}</div></div>`;
 }
-function setTab(k){tab=k;edit=null;render()}
+function setTab(k){tab=k;edit=null;if(k==="dashboardRooms"&&ROOM_DASH===null)loadRoomDash();render()}
+async function loadRoomDash(){
+  try{ ROOM_DASH=await api.todayRoomBookings(); }catch(e){ ROOM_DASH=[]; toast(e.message||t("roomLoadError")); }
+  render();
+}
 let branchEdit=null;
 function branchForm(){
   const d=branchEdit;
@@ -938,6 +998,52 @@ async function deleteBranch(id){
     toast(t("deleted")); render();
   }catch(e){ fail(e); }
 }
+function aDashboardBuffet(){
+  const now=Date.now(), day=864e5, todayMid=new Date(); todayMid.setHours(0,0,0,0);
+  const today=O.filter(o=>o.at>=todayMid.getTime());
+  const week=O.filter(o=>o.at>=now-7*day);
+  const rev=arr=>arr.filter(o=>o.status==="delivered").reduce((s,o)=>s+o.total,0);
+  const cash=arr=>arr.filter(o=>o.status==="delivered"&&o.pay==="cash").length;
+  const insta=arr=>arr.filter(o=>o.status==="delivered"&&o.pay==="instapay").length;
+  const rejected=arr=>arr.filter(o=>o.status==="rejected").length;
+  return `<div class="sec"><div class="sechd"><div><h3>${t("dashboardBuffet")}</h3><p>${t("dashToday")}</p></div></div>
+    <div class="dash-grid">
+      <div class="dash-card"><b>${num(today.length)}</b><span>${t("dashOrdersToday")}</span></div>
+      <div class="dash-card"><b>${num(rev(today))} ${t("cur")}</b><span>${t("dashRevenueToday")}</span></div>
+      <div class="dash-card"><b>${num(cash(today))}</b><span>💵 ${t("payCash")}</span></div>
+      <div class="dash-card"><b>${num(insta(today))}</b><span>📱 InstaPay</span></div>
+      <div class="dash-card"><b>${num(rejected(today))}</b><span>${t("statusRejected")}</span></div>
+    </div>
+    <div class="sechd" style="margin-top:22px"><div><h3>${t("dashLast7Days")}</h3></div></div>
+    <div class="dash-grid">
+      <div class="dash-card"><b>${num(week.length)}</b><span>${t("dashOrdersToday")}</span></div>
+      <div class="dash-card"><b>${num(rev(week))} ${t("cur")}</b><span>${t("dashRevenueToday")}</span></div>
+      ${SITES.filter(s=>s.live).map(s=>{
+        const branchWeek=week.filter(o=>o.site===s.id);
+        return `<div class="dash-card"><b>${num(branchWeek.length)}</b><span>${esc(nm(s))}</span></div>`;
+      }).join("")}
+    </div>`;
+}
+function aDashboardRooms(){
+  if(ROOM_DASH===null) return `<div class="card empty"><b>—</b>${t("loading")}</div>`;
+  const byRoom={};
+  for(const b of ROOM_DASH){ (byRoom[b.room]=byRoom[b.room]||[]).push(b); }
+  return `<div class="sec"><div class="sechd"><div><h3>${t("dashboardRooms")}</h3><p>${t("dashTodayMeetings")}</p></div></div>
+    ${!ROOM_DASH.length?`<div class="empty"><b>—</b>${t("dashNoMeetingsToday")}</div>`
+     :MEETING_ROOMS.filter(r=>byRoom[r.name]).map(r=>`<div class="item" style="align-items:flex-start;flex-wrap:wrap">
+        <div class="body" style="flex-basis:100%"><b>${esc(r.name)}</b>
+        ${byRoom[r.name].map(m=>`<p style="margin-top:4px">${new Date(m.start).toLocaleTimeString(lang==="ar"?"ar-EG":"en-US",{timeStyle:"short"})}–${new Date(m.end).toLocaleTimeString(lang==="ar"?"ar-EG":"en-US",{timeStyle:"short"})} · ${esc(m.subject||"")}</p>`).join("")}
+        </div></div>`).join("")}
+    </div>`;
+}
+function aRooms(){
+  return `<div class="sec"><div class="sechd"><div><h3>${t("meetingRooms")}</h3><p>${t("roomEmailNote")}</p></div></div>
+    ${MEETING_ROOMS.map(r=>`<div class="item">
+      <div class="body"><b>${esc(r.name)}</b></div>
+      <input class="inp" style="width:230px" placeholder="${t("roomEmailPH")}" value="${esc(r.email||'')}"
+        onblur="saveRoomEmail('${esc(r.id)}',this.value)">
+    </div>`).join("")}</div>`;
+}
 function aOver(){
   const live=O.filter(o=>o.st!=="done").length;
   const today=O.filter(o=>Date.now()-o.at<864e5).length;
@@ -961,12 +1067,6 @@ function aOver(){
           <button class="iact" onclick="startBranchEdit('${esc(s.id)}')">✎</button>
           <button class="iact del" onclick="deleteBranch('${esc(s.id)}')">🗑</button></div>`:""}</div>`;
     }).join("")}</div>
-  ${can("access")?`<div class="sec"><div class="sechd"><div><h3>${t("meetingRooms")}</h3><p>${t("roomEmailNote")}</p></div></div>
-    ${MEETING_ROOMS.map(r=>`<div class="item">
-      <div class="body"><b>${esc(r.name)}</b></div>
-      <input class="inp" style="width:230px" placeholder="${t("roomEmailPH")}" value="${esc(r.email||'')}"
-        onblur="saveRoomEmail('${esc(r.id)}',this.value)">
-    </div>`).join("")}</div>`:""}
   ${can("access")?`<div class="sec"><div class="sechd"><div><h3>${t("kioskTitle")}</h3><p>${t("kioskNote")}</p></div></div>
     ${LIVE().map(s=>`<div class="item" style="flex-wrap:wrap;align-items:flex-start">
         <div class="body" style="flex-basis:100%">
@@ -1202,4 +1302,5 @@ Object.assign(window, {
   startAboutEdit, cancelAboutEdit, saveAbout,
   setRoomDate, pickRoomSlot, cancelRoomSlot, setRoomSubject, confirmRoomBook, saveRoomEmail,
   setRoomDuration, setAttendeeQuery, addAttendee, removeAttendee, cancelMyRoomBooking,
+  setSuggestBody, suggestWriteAnother, submitSuggestionForm, delSuggestion,
 });

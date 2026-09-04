@@ -32,7 +32,8 @@ insert into roles values
 create table role_permissions (
   role_id text references roles(id) on delete cascade,
   section text not null check (section in
-    ('news','links','policies','events','menu','orders','access','gallery')),
+    ('news','links','policies','events','menu','orders','access','gallery',
+     'rooms','suggestions','dashboard_buffet','dashboard_rooms')),
   primary key (role_id, section)
 );
 insert into role_permissions values
@@ -387,8 +388,20 @@ insert into meeting_rooms (id, name, sort) values
 alter table meeting_rooms enable row level security;
 create policy read_meeting_rooms on meeting_rooms for select to authenticated using (true);
 create policy write_meeting_rooms on meeting_rooms for all to authenticated
-  using (has_perm('access')) with check (has_perm('access'));
+  using (has_perm('rooms') or has_perm('access')) with check (has_perm('rooms') or has_perm('access'));
 grant select, insert, update, delete on meeting_rooms to authenticated;
+
+-- صندوق اقتراحات مجهول — مفيش أي ربط بصاحب الاقتراح خالص
+create table suggestions (
+  id uuid primary key default gen_random_uuid(),
+  body text not null,
+  created_at timestamptz default now()
+);
+alter table suggestions enable row level security;
+create policy insert_suggestions on suggestions for insert to authenticated with check (true);
+create policy read_suggestions on suggestions for select to authenticated using (has_perm('suggestions') or has_perm('access'));
+create policy delete_suggestions on suggestions for delete to authenticated using (has_perm('suggestions') or has_perm('access'));
+grant select, insert, delete on suggestions to authenticated;
 
 -- مكان تخزين الملفات (الصور) — bucket عام للقراءة، مقيّد للرفع
 insert into storage.buckets (id, name, public)

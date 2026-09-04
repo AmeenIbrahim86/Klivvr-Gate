@@ -266,6 +266,37 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ══════════════════════════════════════════════════════════
+    //  action = "todayBookings" — كل اجتماعات النهاردة في كل القاعات
+    //  (للوحة بيانات القاعات — محتاج صلاحية dashboard_rooms أو access)
+    // ══════════════════════════════════════════════════════════
+    if (action === "todayBookings") {
+      const { data: profile } = await admin.from("profiles").select("role_id").eq("id", user.id).single();
+      const { data: perms } = await admin.from("role_permissions").select("section").eq("role_id", profile?.role_id || "");
+      const allowed = (perms || []).some((p: any) => p.section === "dashboard_rooms" || p.section === "access");
+      if (!allowed) return json({ error: "forbidden" }, 403);
+
+      const now = new Date();
+      const dayStart = now.toISOString().slice(0, 10) + "T00:00:00";
+      const dayEnd = now.toISOString().slice(0, 10) + "T23:59:59";
+
+      const perRoom = await Promise.all(roomsWithEmail.map(async (r: any) => {
+        try {
+          const res = await fetch(
+            `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(r.email)}/calendarView` +
+            `?startDateTime=${dayStart}&endDateTime=${dayEnd}&$select=subject,start,end`,
+            { headers: { ...gh, Prefer: `outlook.timezone="${TZ}"` } },
+          );
+          const j = await res.json();
+          return (j.value || []).map((ev: any) => ({
+            room: r.name, subject: ev.subject, start: ev.start.dateTime, end: ev.end.dateTime,
+          }));
+        } catch { return []; }
+      }));
+
+      return json({ bookings: perRoom.flat() });
+    }
+
     return json({ error: "unknown_action" }, 400);
   } catch (e) {
     return json({ error: "unexpected", detail: String(e) }, 500);

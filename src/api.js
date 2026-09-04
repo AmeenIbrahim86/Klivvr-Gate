@@ -228,13 +228,13 @@ export async function myOrders() {
 // لإحصائيات لوحة الإدارة بس — st بترجع new/prog/done عشان تتوافق مع اللي الواجهة متعوّدة عليه
 export async function listOrders(limit = 300) {
   const { data, error } = await sb.from('orders')
-    .select('order_no, branch_id, status, created_at')
+    .select('order_no, branch_id, status, created_at, total, payment_method')
     .order('created_at', { ascending: false }).limit(limit);
   if (error) throw error;
   return data.map(o => ({
-    no: o.order_no, site: o.branch_id,
+    no: o.order_no, site: o.branch_id, status: o.status,
     st: o.status === 'preparing' ? 'prog' : (o.status === 'new' ? 'new' : 'done'),
-    at: new Date(o.created_at).getTime()
+    at: new Date(o.created_at).getTime(), total: Number(o.total) || 0, pay: o.payment_method
   }));
 }
 
@@ -335,6 +335,27 @@ export async function cancelRoomBooking(eventId) {
   if (error) throw error;
   if (data?.error) throw new Error(data.message || data.error);
   return data;
+}
+export async function todayRoomBookings() {
+  const { data, error } = await sb.functions.invoke('room-booking', { body: { action: 'todayBookings' } });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.message || data.error);
+  return data.bookings;
+}
+
+/* ═══════════════ صندوق الاقتراحات المجهول ═══════════════ */
+export async function submitSuggestion(body) {
+  const { error } = await sb.from('suggestions').insert({ body });
+  if (error) throw error;
+}
+export async function listSuggestions() {
+  const { data, error } = await sb.from('suggestions').select('id, body, created_at').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+export async function deleteSuggestion(id) {
+  const { error } = await sb.from('suggestions').delete().eq('id', id);
+  if (error) throw error;
 }
 
 /* ═══════════════ الصور (رفع حقيقي + معرض الصور) ═══════════════ */
