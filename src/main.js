@@ -40,6 +40,8 @@ const L = { ar: {
  roomBookingFor:"حجز الساعة",roomSubjectPH:"عنوان الاجتماع (اختياري)",min:"د",
  roomCapNote:"أقصى حجز مسموح به ساعتين في اليوم لكل موظف.",roomDefaultSubject:"اجتماع",bookRoom:"احجز قاعة",date:"التاريخ",
  roomEmailNote:"إيميل الـ resource mailbox الحقيقي بتاع كل قاعة في Microsoft — من غيره القاعة مش هتشتغل",roomEmailPH:"room@company.com",
+ roomWeekendNote:"الغرف شغّالة من الأحد للخميس بس، من ٩ص لـ ٦م",roomTitleRequired:"لازم تكتب عنوان للاجتماع",
+ roomAttendeesLabel:"ضيف زمايلك (اختياري)",roomAttendeeSearchPH:"دوّر بالاسم...",applyBooking:"تأكيد الحجز",
  branchIdInvalid:"كود الفرع لازم يكون حروف/أرقام إنجليزي بس، من غير مسافات",
  branchNamesRequired:"لازم اسم بالعربي والإنجليزي",branchDeleteConfirm:"متأكد؟ لو الفرع ده عليه أصناف أو طلبات مش هينمسح.",
  aboutEmpty:"لسه مفيش وصف — دوس ✎ تكتب واحد",aboutAR:"الوصف بالعربي",aboutEN:"الوصف بالإنجليزي",
@@ -100,6 +102,8 @@ const L = { ar: {
  roomBookingFor:"Booking at",roomSubjectPH:"Meeting title (optional)",min:"m",
  roomCapNote:"Maximum 2 hours of bookings per employee per day.",roomDefaultSubject:"Meeting",bookRoom:"Book a room",date:"Date",
  roomEmailNote:"Each room's real Microsoft resource mailbox address — without it, the room won't work",roomEmailPH:"room@company.com",
+ roomWeekendNote:"Rooms are only available Sunday to Thursday, 9 AM to 6 PM",roomTitleRequired:"Please enter a meeting title",
+ roomAttendeesLabel:"Invite colleagues (optional)",roomAttendeeSearchPH:"Search by name...",applyBooking:"Confirm booking",
  branchIdInvalid:"Branch code must be lowercase letters/numbers only, no spaces",
  branchNamesRequired:"Both Arabic and English names are required",branchDeleteConfirm:"Delete this branch? It won't delete if it still has menu items or orders.",
  aboutEmpty:"No description yet — click ✎ to write one",aboutAR:"Description (Arabic)",aboutEN:"Description (English)",
@@ -240,7 +244,7 @@ let myProfile=null, SITES=[], C={news:[],links:[],policies:[],events:[]}, M=[], 
 let ABOUT={ar:"",en:""}, aboutEditing=false;
 let MY_ORDERS=null;
 let MEETING_ROOMS=[];
-let roomDate="", roomAvail=null, roomBookingSlot=null, roomBookSubject="";
+let roomDate="", roomAvail=null, roomBookingSlot=null, roomBookSubject="", roomBookDuration=30, roomAttendees=[], roomAttendeeQuery="";
 let branch=null, paying=false, lastOrderNo="", payMethod="instapay";
 let cart=[], openM=null, draft={}, cat="all", where="", whereType="office", whereRoom="", edit=null, eKind=null;
 
@@ -716,6 +720,7 @@ function vMyOrders(){
 
 /* ═══════════════ حجز قاعات الاجتماعات ═══════════════ */
 function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function isWorkDay(iso){ const d=new Date(iso+"T00:00:00").getDay(); return d>=0&&d<=4; } // الأحد(٠)-الخميس(٤)
 function roomSlotTimes(){
   const out=[]; for(let m=9*60; m<18*60; m+=30){ out.push(String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")); }
   return out;
@@ -725,33 +730,55 @@ function openRooms(){
   loadRoomAvailability();
 }
 async function loadRoomAvailability(){
-  roomAvail=null; roomBookingSlot=null; render();
+  roomBookingSlot=null;
+  if(!isWorkDay(roomDate)){ roomAvail=[]; render(); return; }
+  roomAvail=null; render();
   try{ roomAvail=await api.getRoomAvailability(roomDate); }
   catch(e){ roomAvail=[]; toast(e.message||t("roomLoadError")); }
   render();
 }
 function setRoomDate(v){ roomDate=v; loadRoomAvailability(); }
-function pickRoomSlot(roomId, roomName, time){ roomBookingSlot={roomId,roomName,time}; roomBookSubject=""; render(); }
+function pickRoomSlot(roomId, roomName, time){
+  roomBookingSlot={roomId,roomName,time};
+  roomBookSubject=""; roomBookDuration=30; roomAttendees=[]; roomAttendeeQuery="";
+  render();
+}
 function cancelRoomSlot(){ roomBookingSlot=null; render(); }
 function setRoomSubject(v){ roomBookSubject=v; }
+function setRoomDuration(v){ roomBookDuration=v; render(); }
+function setAttendeeQuery(v){ roomAttendeeQuery=v; render(); }
+function addAttendee(email,name){
+  if(!roomAttendees.some(a=>a.email===email)) roomAttendees.push({email,name});
+  roomAttendeeQuery=""; render();
+}
+function removeAttendee(email){ roomAttendees=roomAttendees.filter(a=>a.email!==email); render(); }
 function addMin(hhmm,mins){ const [h,m]=hhmm.split(":").map(Number); const t=h*60+m+mins; return String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0"); }
-async function confirmRoomBook(durationMin){
+async function confirmRoomBook(){
   const s=roomBookingSlot; if(!s) return;
-  const endTime=addMin(s.time,durationMin);
+  if(!roomBookSubject.trim()){ toast(t("roomTitleRequired")); return; }
+  const endTime=addMin(s.time,roomBookDuration);
   try{
-    await api.bookRoom({ roomId:s.roomId, date:roomDate, startTime:s.time, endTime, subject:roomBookSubject||t("roomDefaultSubject") });
+    await api.bookRoom({
+      roomId:s.roomId, date:roomDate, startTime:s.time, endTime, subject:roomBookSubject.trim(),
+      attendees: roomAttendees.map(a=>a.email)
+    });
     toast(t("roomBooked")); roomBookingSlot=null;
     await loadRoomAvailability();
   }catch(e){ toast(e.message||t("roomBookError")); }
 }
 function vRooms(){
-  const times=roomSlotTimes();
+  const workday=isWorkDay(roomDate);
+  const matches = (workday && roomBookingSlot && roomAttendeeQuery.trim().length>1)
+    ? ORG.filter(p=>p.email && p.name && p.name.toLowerCase().includes(roomAttendeeQuery.trim().toLowerCase())
+        && !roomAttendees.some(a=>a.email===p.email) && p.email!==myProfile.email).slice(0,6)
+    : [];
   return `<div class="eyebrow">${t("meetingRooms")}</div>
   <div class="card" style="padding:14px 16px;margin-bottom:14px">
     <div class="fld" style="max-width:220px"><label>${t("date")}</label>
       <input type="date" class="inp" value="${esc(roomDate)}" min="${todayISO()}" onchange="setRoomDate(this.value)"></div>
   </div>
-  ${roomAvail===null?`<div class="card empty"><b>—</b>${t("loading")}</div>`
+  ${!workday?`<div class="card empty"><b>—</b>${t("roomWeekendNote")}</div>`
+   :roomAvail===null?`<div class="card empty"><b>—</b>${t("loading")}</div>`
    :!roomAvail.length?`<div class="card empty"><b>—</b>${t("roomNoneConfigured")}</div>`
    :roomAvail.map(r=>`<div class="card room-card">
       <div class="room-head"><b>${esc(r.name)}</b></div>
@@ -761,12 +788,16 @@ function vRooms(){
         <p>${t("roomBookingFor")} <b class="mono">${roomBookingSlot.time}</b></p>
         <input class="inp" placeholder="${t("roomSubjectPH")}" value="${esc(roomBookSubject)}" oninput="setRoomSubject(this.value)">
         <div class="room-durations">
-          <button class="btn ghost sm" onclick="confirmRoomBook(30)">30 ${t("min")}</button>
-          <button class="btn ghost sm" onclick="confirmRoomBook(60)">60 ${t("min")}</button>
-          <button class="btn ghost sm" onclick="confirmRoomBook(90)">90 ${t("min")}</button>
-          <button class="btn ghost sm" onclick="confirmRoomBook(120)">120 ${t("min")}</button>
+          ${[30,60,90,120].map(d=>`<button class="btn ${roomBookDuration===d?"":"ghost"} sm" onclick="setRoomDuration(${d})">${d} ${t("min")}</button>`).join("")}
         </div>
-        <button class="b-cancel" style="margin-top:8px" onclick="cancelRoomSlot()">${t("cancel")}</button>
+        <div class="room-attendees">
+          <label>${t("roomAttendeesLabel")}</label>
+          ${roomAttendees.length?`<div class="attendee-chips">${roomAttendees.map(a=>`<span class="chip">${esc(a.name)}<button onclick="removeAttendee('${esc(a.email)}')">×</button></span>`).join("")}</div>`:""}
+          <input class="inp" placeholder="${t("roomAttendeeSearchPH")}" value="${esc(roomAttendeeQuery)}" oninput="setAttendeeQuery(this.value)">
+          ${matches.length?`<div class="attendee-matches">${matches.map(p=>`<button onclick="addAttendee('${esc(p.email)}','${esc(p.name)}')">${esc(p.name)}</button>`).join("")}</div>`:""}
+        </div>
+        <button class="btn" style="width:100%;margin-top:4px" onclick="confirmRoomBook()">${t("applyBooking")}</button>
+        <button class="b-cancel" onclick="cancelRoomSlot()">${t("cancel")}</button>
       </div>`:""}
     </div>`).join("")}
   <p class="report-hint" style="text-align:center">${t("roomCapNote")}</p>`;
@@ -1113,4 +1144,5 @@ Object.assign(window, {
   setBranchField, setBranchLive, saveBranch, deleteBranch, uploadBranchQr, saveNameAr, setEditFree, autoTranslateAll,
   startAboutEdit, cancelAboutEdit, saveAbout,
   setRoomDate, pickRoomSlot, cancelRoomSlot, setRoomSubject, confirmRoomBook, saveRoomEmail,
+  setRoomDuration, setAttendeeQuery, addAttendee, removeAttendee,
 });

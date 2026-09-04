@@ -29,6 +29,8 @@ const BUSINESS_START = 9;               // الساعة ٩ صباحًا
 const BUSINESS_END = 18;                // لحد الساعة ٦ مساءً
 const SLOT_MINUTES = 30;
 const DAILY_CAP_MINUTES = 120;          // أقصى حجز مسموح للموظف الواحد في اليوم
+const WORKING_WEEKDAYS = [0,1,2,3,4];   // الأحد(0) للخميس(4) — نفس أيام عمل القاعات في Microsoft
+function weekdayOf(dateStr: string){ const [y,m,d]=dateStr.split("-").map(Number); return new Date(Date.UTC(y,m-1,d)).getUTCDay(); }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -83,9 +85,19 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════════════
     //  action = "freebusy" — إمتى كل قاعة مشغولة في يوم معيّن
     // ══════════════════════════════════════════════════════════
+    // الشركة شغّالة الأحد للخميس بس (زي سياسة الغرف نفسها في Microsoft)
+    function isWorkDay(dateStr: string) {
+      const d = new Date(dateStr + "T00:00:00Z").getUTCDay(); // 0=Sun ... 6=Sat
+      return d >= 0 && d <= 4;
+    }
+
     if (action === "freebusy") {
       const date: string = body.date; // "YYYY-MM-DD"
       if (!date) return json({ error: "date required" }, 400);
+      if (!isWorkDay(date)) return json({ error: "weekend", message: "الغرف شغّالة من الأحد للخميس بس" }, 400);
+      if (!WORKING_WEEKDAYS.includes(weekdayOf(date))) {
+        return json({ error: "not_a_working_day", message: "القاعات شغّالة من الأحد للخميس بس" }, 400);
+      }
 
       const startTime = `${date}T${String(BUSINESS_START).padStart(2, "0")}:00:00`;
       const endTime = `${date}T${String(BUSINESS_END).padStart(2, "0")}:00:00`;
@@ -133,8 +145,14 @@ Deno.serve(async (req) => {
     //  action = "book" — احجز سلوت فعلي (بيتبعت في Outlook باسم الموظف)
     // ══════════════════════════════════════════════════════════
     if (action === "book") {
-      const { roomId, date, startTime: st, endTime: et, subject } = body;
+      const { roomId, date, startTime: st, endTime: et, subject, attendees } = body;
       if (!roomId || !date || !st || !et) return json({ error: "missing fields" }, 400);
+      if (!subject || !String(subject).trim()) return json({ error: "subject_required", message: "لازم تكتب عنوان للاجتماع" }, 400);
+      if (!isWorkDay(date)) return json({ error: "weekend", message: "الغرف شغّالة من الأحد للخميس بس" }, 400);
+      if (!subject || !subject.trim()) return json({ error: "subject_required", message: "عنوان الاجتماع مطلوب" }, 400);
+      if (!WORKING_WEEKDAYS.includes(weekdayOf(date))) {
+        return json({ error: "not_a_working_day", message: "القاعات شغّالة من الأحد للخميس بس" }, 400);
+      }
 
       const room = roomsWithEmail.find((r: any) => r.id === roomId);
       if (!room) return json({ error: "room_not_found" }, 404);
@@ -173,7 +191,11 @@ Deno.serve(async (req) => {
         }, 400);
       }
 
-      // ── اعمل الحجز الفعلي: دعوة في تقويم الموظف، والقاعة كـ resource ──
+      // ── اعمل الحجز الفعلي: دعوة في تقويم الموظف، والقاعة كـ resource، وأي حد تاني اتضاف كـ attendee عادي ──
+      const extraAttendees = Array.isArray(attendees)
+        ? attendees.filter((e: unknown) => typeof e === "string" && e.includes("@"))
+          .map((email: string) => ({ emailAddress: { address: email }, type: "required" }))
+        : [];
       const evRes = await fetch(
         `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(employeeEmail)}/events`,
         {
@@ -186,13 +208,14 @@ Deno.serve(async (req) => {
             location: { displayName: room.name },
             attendees: [
               { emailAddress: { address: room.email, name: room.name }, type: "resource" },
+              ...extraAttendees,
             ],
           }),
         },
       );
       const evJson = await evRes.json();
       if (evJson.error) {
-        return json({ error: "Graph event creation failed", detail: evJson.error }, 500);
+        return json({ error: "graph_event_failed", message: evJson.error.message || "Microsoft رفض الحجز", detail: evJson.error }, 500);
       }
 
       return json({ ok: true, eventId: evJson.id });

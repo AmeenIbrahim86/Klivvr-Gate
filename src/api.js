@@ -316,9 +316,9 @@ export async function getRoomAvailability(date) {
   if (data?.error) throw new Error(data.message || data.error);
   return data.rooms;
 }
-export async function bookRoom({ roomId, date, startTime, endTime, subject }) {
+export async function bookRoom({ roomId, date, startTime, endTime, subject, attendees }) {
   const { data, error } = await sb.functions.invoke('room-booking', {
-    body: { action: 'book', roomId, date, startTime, endTime, subject }
+    body: { action: 'book', roomId, date, startTime, endTime, subject, attendees: attendees || [] }
   });
   if (error) throw error;
   if (data?.error) throw new Error(data.message || data.error);
