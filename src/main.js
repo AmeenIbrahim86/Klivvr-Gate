@@ -35,6 +35,11 @@ const L = { ar: {
  confirmReject:"تأكيد الرفض",statusNew:"جديد",statusPreparing:"بيتحضّر",statusDelivered:"اتسلّم",statusRejected:"مرفوض",
  rejectedBecause:"سبب الرفض",noOrdersYet:"لسه معملتش أي طلب",
  autoTranslateAll:"ترجمة تلقائية للكل",autoTranslateNone:"كل الأسماء متعرّبة بالفعل",autoTranslateDone:"اتعرّبت الأسماء",
+ cancel:"إلغاء",meetingRooms:"حجز قاعات الاجتماعات",roomNoneConfigured:"لسه مفيش قاعات متظبّطة من الإدارة",
+ roomLoadError:"مقدرش أجيب الأوقات، جرّب تاني",roomBooked:"اتحجزت القاعة!",roomBookError:"الحجز فشل، جرّب تاني",
+ roomBookingFor:"حجز الساعة",roomSubjectPH:"عنوان الاجتماع (اختياري)",min:"د",
+ roomCapNote:"أقصى حجز مسموح به ساعتين في اليوم لكل موظف.",roomDefaultSubject:"اجتماع",bookRoom:"احجز قاعة",date:"التاريخ",
+ roomEmailNote:"إيميل الـ resource mailbox الحقيقي بتاع كل قاعة في Microsoft — من غيره القاعة مش هتشتغل",roomEmailPH:"room@company.com",
  branchIdInvalid:"كود الفرع لازم يكون حروف/أرقام إنجليزي بس، من غير مسافات",
  branchNamesRequired:"لازم اسم بالعربي والإنجليزي",branchDeleteConfirm:"متأكد؟ لو الفرع ده عليه أصناف أو طلبات مش هينمسح.",
  aboutEmpty:"لسه مفيش وصف — دوس ✎ تكتب واحد",aboutAR:"الوصف بالعربي",aboutEN:"الوصف بالإنجليزي",
@@ -90,6 +95,11 @@ const L = { ar: {
  confirmReject:"Confirm rejection",statusNew:"New",statusPreparing:"Preparing",statusDelivered:"Delivered",statusRejected:"Rejected",
  rejectedBecause:"Rejected because",noOrdersYet:"You haven't placed any orders yet",
  autoTranslateAll:"Auto-translate all",autoTranslateNone:"All names already have an Arabic version",autoTranslateDone:"Names translated",
+ cancel:"Cancel",meetingRooms:"Meeting Room Booking",roomNoneConfigured:"No rooms set up by admin yet",
+ roomLoadError:"Couldn't load availability, try again",roomBooked:"Room booked!",roomBookError:"Booking failed, try again",
+ roomBookingFor:"Booking at",roomSubjectPH:"Meeting title (optional)",min:"m",
+ roomCapNote:"Maximum 2 hours of bookings per employee per day.",roomDefaultSubject:"Meeting",bookRoom:"Book a room",date:"Date",
+ roomEmailNote:"Each room's real Microsoft resource mailbox address — without it, the room won't work",roomEmailPH:"room@company.com",
  branchIdInvalid:"Branch code must be lowercase letters/numbers only, no spaces",
  branchNamesRequired:"Both Arabic and English names are required",branchDeleteConfirm:"Delete this branch? It won't delete if it still has menu items or orders.",
  aboutEmpty:"No description yet — click ✎ to write one",aboutAR:"Description (Arabic)",aboutEN:"Description (English)",
@@ -132,8 +142,6 @@ const CATS = [
  {k:"drinks",ar:"مشروبات",en:"Beverages"},
  {k:"sandwiches",ar:"سندوتشات",en:"Sandwiches"}];
 const SUG = [{ar:"سادة",en:"None"},{ar:"خفيف",en:"Light"},{ar:"مظبوط",en:"Medium"},{ar:"زيادة",en:"Extra"}];
-const ROOMS = ["Dusk","Dawn","Skyline","Golden Hour","Whisper 1","Whisper 2","Whisper 3","Whisper 4",
-  "Whisper 5","Whisper 6","Board Room","New Dawn","Euphoria","Liberty"];
 
 // تحويل تلقائي تقريبي من الاسم بالإنجليزي للعربي — قاموس لأشهر الأسماء المصرية/العربية،
 // وتحويل صوتي بسيط لأي اسم مش في القاموس. مش مثالي ١٠٠٪، بس بيوفّر الكتابة اليدوية
@@ -231,6 +239,8 @@ let lang="en", authed=false, view="portal", tab="overview";
 let myProfile=null, SITES=[], C={news:[],links:[],policies:[],events:[]}, M=[], O=[], A={roles:[],users:[]}, ORG=[], GALLERY=[];
 let ABOUT={ar:"",en:""}, aboutEditing=false;
 let MY_ORDERS=null;
+let MEETING_ROOMS=[];
+let roomDate="", roomAvail=null, roomBookingSlot=null, roomBookSubject="";
 let branch=null, paying=false, lastOrderNo="", payMethod="instapay";
 let cart=[], openM=null, draft={}, cat="all", where="", whereType="office", whereRoom="", edit=null, eKind=null;
 
@@ -267,13 +277,13 @@ async function loadEverything(){
     api.listBranches(), api.loadRoles(), api.list("news"), api.list("links"),
     api.list("policies"), api.list("events"), api.list("menu"),
     api.listProfiles(), api.listOrders(), api.listOrgPeople(), api.listGallery(),
-    api.getSetting("about")
+    api.getSetting("about"), api.listRooms()
   ]);
   results.forEach((r,i)=>{ if(r.status==="rejected") console.error("load section", i, "failed:", r.reason); });
   const val=(i,fallback)=>results[i].status==="fulfilled"?results[i].value:fallback;
   SITES=val(0,[]); A={roles:val(1,[]),users:val(7,[])};
   C={news:val(2,[]),links:val(3,[]),policies:val(4,[]),events:val(5,[])};
-  M=val(6,[]); O=val(8,[]); ORG=val(9,[]); GALLERY=val(10,[]); ABOUT=val(11,{ar:"",en:""});
+  M=val(6,[]); O=val(8,[]); ORG=val(9,[]); GALLERY=val(10,[]); ABOUT=val(11,{ar:"",en:""}); MEETING_ROOMS=val(12,[]);
 }
 async function start(session){
   if(!session){ authed=false; myProfile=null; renderSignIn(); return; }
@@ -299,7 +309,8 @@ function render(){
     view==="order" ? vOrder() :
     view==="org" ? vOrg() :
     view==="gallery" ? vGallery() :
-    view==="myorders" ? vMyOrders() : vAdmin()
+    view==="myorders" ? vMyOrders() :
+    view==="rooms" ? vRooms() : vAdmin()
   );
 }
 function renderSignIn(){
@@ -338,7 +349,7 @@ function shell(inner){
     </nav></div>
     <div class="wrap">${inner}</div>`;
 }
-function go(v){view=v;edit=null;paying=false;if(v==="myorders")loadMyOrders();render();scrollTo({top:0,behavior:"instant"})}
+function go(v){view=v;edit=null;paying=false;if(v==="myorders")loadMyOrders();if(v==="rooms")openRooms();render();scrollTo({top:0,behavior:"instant"})}
 async function loadMyOrders(){
   try{ MY_ORDERS=await api.myOrders(); }catch(e){ console.error(e); MY_ORDERS=[]; }
   render();
@@ -403,6 +414,7 @@ function vPortal(){
     <button class="qtile feat" onclick="go('org')"><span class="qicon">🧭</span>${t("orgChart")}</button>
     <button class="qtile feat" onclick="go('gallery')"><span class="qicon">🖼️</span>${t("gallery")}</button>
     <button class="qtile feat" onclick="go('myorders')"><span class="qicon">🧾</span>${t("myOrders")}</button>
+    <button class="qtile feat" onclick="go('rooms')"><span class="qicon">🏢</span>${t("bookRoom")}</button>
     ${links.map(l=>{const d=lang==="ar"?l.descAR:l.descEN;
       return `<a class="qtile" href="${esc(l.url||"#")}"><span class="qicon">${iconHtml(l.icon)}</span>
         <span class="qtile-txt"><b>${esc(nm(l))}</b>${d?`<span>${esc(d)}</span>`:""}</span></a>`}).join("")}</div>
@@ -485,7 +497,7 @@ function vOrder(){
         ${whereType==="room"
           ?`<select class="inp" onchange="setWhereRoom(this.value)">
               <option value="">${t("wherePickRoom")}</option>
-              ${ROOMS.map(r=>`<option value="${esc(r)}" ${whereRoom===r?"selected":""}>${esc(r)}</option>`).join("")}
+              ${MEETING_ROOMS.map(r=>`<option value="${esc(r.name)}" ${whereRoom===r.name?"selected":""}>${esc(r.name)}</option>`).join("")}
             </select>`
           :`<input class="inp" placeholder="${t("wherePH")}" value="${esc(where)}" oninput="setWhere(this.value)">`}
        </div>
@@ -702,6 +714,64 @@ function vMyOrders(){
      :`<div class="card empty"><b>—</b>${t("noOrdersYet")}</div>`}`;
 }
 
+/* ═══════════════ حجز قاعات الاجتماعات ═══════════════ */
+function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function roomSlotTimes(){
+  const out=[]; for(let m=9*60; m<18*60; m+=30){ out.push(String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")); }
+  return out;
+}
+function openRooms(){
+  if(!roomDate) roomDate=todayISO();
+  loadRoomAvailability();
+}
+async function loadRoomAvailability(){
+  roomAvail=null; roomBookingSlot=null; render();
+  try{ roomAvail=await api.getRoomAvailability(roomDate); }
+  catch(e){ roomAvail=[]; toast(e.message||t("roomLoadError")); }
+  render();
+}
+function setRoomDate(v){ roomDate=v; loadRoomAvailability(); }
+function pickRoomSlot(roomId, roomName, time){ roomBookingSlot={roomId,roomName,time}; roomBookSubject=""; render(); }
+function cancelRoomSlot(){ roomBookingSlot=null; render(); }
+function setRoomSubject(v){ roomBookSubject=v; }
+function addMin(hhmm,mins){ const [h,m]=hhmm.split(":").map(Number); const t=h*60+m+mins; return String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0"); }
+async function confirmRoomBook(durationMin){
+  const s=roomBookingSlot; if(!s) return;
+  const endTime=addMin(s.time,durationMin);
+  try{
+    await api.bookRoom({ roomId:s.roomId, date:roomDate, startTime:s.time, endTime, subject:roomBookSubject||t("roomDefaultSubject") });
+    toast(t("roomBooked")); roomBookingSlot=null;
+    await loadRoomAvailability();
+  }catch(e){ toast(e.message||t("roomBookError")); }
+}
+function vRooms(){
+  const times=roomSlotTimes();
+  return `<div class="eyebrow">${t("meetingRooms")}</div>
+  <div class="card" style="padding:14px 16px;margin-bottom:14px">
+    <div class="fld" style="max-width:220px"><label>${t("date")}</label>
+      <input type="date" class="inp" value="${esc(roomDate)}" min="${todayISO()}" onchange="setRoomDate(this.value)"></div>
+  </div>
+  ${roomAvail===null?`<div class="card empty"><b>—</b>${t("loading")}</div>`
+   :!roomAvail.length?`<div class="card empty"><b>—</b>${t("roomNoneConfigured")}</div>`
+   :roomAvail.map(r=>`<div class="card room-card">
+      <div class="room-head"><b>${esc(r.name)}</b></div>
+      <div class="room-slots">${r.slots.map(sl=>`<button class="rslot ${sl.busy?"busy":""} ${roomBookingSlot&&roomBookingSlot.roomId===r.id&&roomBookingSlot.time===sl.time?"on":""}"
+          ${sl.busy?"disabled":`onclick="pickRoomSlot('${r.id}','${esc(r.name)}','${sl.time}')"`}>${sl.time}</button>`).join("")}</div>
+      ${roomBookingSlot&&roomBookingSlot.roomId===r.id?`<div class="room-book-form">
+        <p>${t("roomBookingFor")} <b class="mono">${roomBookingSlot.time}</b></p>
+        <input class="inp" placeholder="${t("roomSubjectPH")}" value="${esc(roomBookSubject)}" oninput="setRoomSubject(this.value)">
+        <div class="room-durations">
+          <button class="btn ghost sm" onclick="confirmRoomBook(30)">30 ${t("min")}</button>
+          <button class="btn ghost sm" onclick="confirmRoomBook(60)">60 ${t("min")}</button>
+          <button class="btn ghost sm" onclick="confirmRoomBook(90)">90 ${t("min")}</button>
+          <button class="btn ghost sm" onclick="confirmRoomBook(120)">120 ${t("min")}</button>
+        </div>
+        <button class="b-cancel" style="margin-top:8px" onclick="cancelRoomSlot()">${t("cancel")}</button>
+      </div>`:""}
+    </div>`).join("")}
+  <p class="report-hint" style="text-align:center">${t("roomCapNote")}</p>`;
+}
+
 /* ═══════════════ admin ═══════════════ */
 function vAdmin(){
   const cur=TABS.find(x=>x[0]===tab)||TABS[0],ok=!cur[3]||can(cur[3]);
@@ -803,6 +873,12 @@ function aOver(){
           <button class="iact" onclick="startBranchEdit('${esc(s.id)}')">✎</button>
           <button class="iact del" onclick="deleteBranch('${esc(s.id)}')">🗑</button></div>`:""}</div>`;
     }).join("")}</div>
+  ${can("access")?`<div class="sec"><div class="sechd"><div><h3>${t("meetingRooms")}</h3><p>${t("roomEmailNote")}</p></div></div>
+    ${MEETING_ROOMS.map(r=>`<div class="item">
+      <div class="body"><b>${esc(r.name)}</b></div>
+      <input class="inp" style="width:230px" placeholder="${t("roomEmailPH")}" value="${esc(r.email||'')}"
+        onblur="saveRoomEmail('${esc(r.id)}',this.value)">
+    </div>`).join("")}</div>`:""}
   ${can("access")?`<div class="sec"><div class="sechd"><div><h3>${t("kioskTitle")}</h3><p>${t("kioskNote")}</p></div></div>
     ${LIVE().map(s=>`<div class="item" style="flex-wrap:wrap;align-items:flex-start">
         <div class="body" style="flex-basis:100%">
@@ -964,6 +1040,15 @@ async function saveNameAr(id,v){
     toast(t("saved"));
   }catch(e){ fail(e); }
 }
+async function saveRoomEmail(id,v){
+  v=v.trim();
+  try{
+    await api.setRoomEmail(id, v);
+    const r=MEETING_ROOMS.find(x=>x.id===id);
+    if(r) r.email=v||null;
+    toast(t("saved"));
+  }catch(e){ fail(e); }
+}
 async function autoTranslateAll(){
   const todo=A.users.filter(u=>u.ar===u.en);
   if(!todo.length){ toast(t("autoTranslateNone")); return; }
@@ -1027,4 +1112,5 @@ Object.assign(window, {
   setEditIcon, uploadEditIcon, startBranchNew, startBranchEdit, cancelBranchEdit,
   setBranchField, setBranchLive, saveBranch, deleteBranch, uploadBranchQr, saveNameAr, setEditFree, autoTranslateAll,
   startAboutEdit, cancelAboutEdit, saveAbout,
+  setRoomDate, pickRoomSlot, cancelRoomSlot, setRoomSubject, confirmRoomBook, saveRoomEmail,
 });

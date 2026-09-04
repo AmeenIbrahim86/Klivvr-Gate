@@ -213,6 +213,18 @@ html[lang="en"] .pick b{font-family:"Space Grotesk"}
 .report-filters .inp{width:auto}
 .report-hint{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
 .report-summary{color:var(--indigo);font-size:13.5px;margin-bottom:12px}
+.room-card{padding:14px 16px;margin-bottom:10px}
+.room-head{margin-bottom:9px}
+.room-slots{display:flex;flex-wrap:wrap;gap:6px}
+.rslot{padding:6px 9px;border-radius:8px;font-family:"IBM Plex Mono";font-size:11.5px;
+  background:var(--peri-soft);color:var(--peri-ink);border:1px solid transparent;transition:.12s}
+.rslot:hover:not(:disabled){border-color:var(--peri-ink)}
+.rslot.busy{background:var(--line-soft);color:var(--muted);opacity:.6;cursor:not-allowed}
+.rslot.on{background:var(--indigo);color:#fff}
+.room-book-form{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:8px}
+.room-book-form p{font-size:12.5px;color:var(--muted)}
+.room-durations{display:flex;gap:6px;flex-wrap:wrap}
+.room-durations .btn{flex:1;min-width:70px}
 .report-table-wrap{background:var(--surface);border-radius:12px;overflow:auto;max-height:60vh}
 .report-table{width:100%;border-collapse:collapse;font-size:12.5px}
 .report-table th{position:sticky;top:0;background:var(--indigo);color:#fff;text-align:start;padding:9px 12px;font-weight:600}

@@ -300,6 +300,31 @@ export async function syncOrgFromEntra() {
   return data;
 }
 
+/* ═══════════════ حجز قاعات الاجتماعات ═══════════════ */
+export async function listRooms() {
+  const { data, error } = await sb.from('meeting_rooms').select('id, name, email, sort').order('sort');
+  if (error) throw error;
+  return data.map(r => ({ id: r.id, name: r.name, email: r.email }));
+}
+export async function setRoomEmail(id, email) {
+  const { error } = await sb.from('meeting_rooms').update({ email: email || null }).eq('id', id);
+  if (error) throw error;
+}
+export async function getRoomAvailability(date) {
+  const { data, error } = await sb.functions.invoke('room-booking', { body: { action: 'freebusy', date } });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.message || data.error);
+  return data.rooms;
+}
+export async function bookRoom({ roomId, date, startTime, endTime, subject }) {
+  const { data, error } = await sb.functions.invoke('room-booking', {
+    body: { action: 'book', roomId, date, startTime, endTime, subject }
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.message || data.error);
+  return data;
+}
+
 /* ═══════════════ الصور (رفع حقيقي + معرض الصور) ═══════════════ */
 // بيرفع الملف فعليًا على Supabase Storage ويرجّع لينك عام للصورة
 export async function uploadImage(file) {
