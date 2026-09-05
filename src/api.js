@@ -102,9 +102,9 @@ export async function loadRoles() {
 
 export async function listProfiles() {
   const { data, error } = await sb.from('profiles')
-    .select('id, full_name, full_name_ar, role_id, branch_id').order('created_at');
+    .select('id, full_name, full_name_ar, role_id, branch_id, is_local').order('created_at');
   if (error) throw error;
-  return data.map(p => ({ id: p.id, ar: p.full_name_ar || p.full_name, en: p.full_name, role: p.role_id, site: p.branch_id }));
+  return data.map(p => ({ id: p.id, ar: p.full_name_ar || p.full_name, en: p.full_name, role: p.role_id, site: p.branch_id, local: !!p.is_local }));
 }
 export async function setFullNameAr(userId, nameAr) {
   const { error } = await sb.from('profiles').update({ full_name_ar: nameAr || null }).eq('id', userId);
@@ -144,7 +144,23 @@ export async function deleteRole(id) {
 }
 export async function createLocalUser({ email, password, fullName, roleId, branchId }) {
   const { data, error } = await sb.functions.invoke('create-local-user', {
-    body: { email, password, fullName, roleId, branchId }
+    body: { action: 'create', email, password, fullName, roleId, branchId }
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.message || data.error);
+  return data;
+}
+export async function resetLocalUserPassword(userId, newPassword) {
+  const { data, error } = await sb.functions.invoke('create-local-user', {
+    body: { action: 'resetPassword', userId, newPassword }
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.message || data.error);
+  return data;
+}
+export async function deleteLocalUser(userId) {
+  const { data, error } = await sb.functions.invoke('create-local-user', {
+    body: { action: 'delete', userId }
   });
   if (error) throw error;
   if (data?.error) throw new Error(data.message || data.error);

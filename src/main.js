@@ -47,6 +47,9 @@ const L = { ar: {
  localLoginBtn:"دخول",localLoginMissing:"اكتب الإيميل والباسورد",localLoginWrong:"الإيميل أو الباسورد غلط",
  addLocalUser:"إضافة حساب محلي",localUserNote:"لموظفين الفروع اللي مالهمش إيميل شركة (زي فريق البوفيه)",
  localFullName:"الاسم",localCreate:"إنشاء الحساب",localUserCreated:"اتعمل الحساب",
+ localBadge:"محلي",localResetTitle:"غيّر الباسورد",localDeleteTitle:"امسح الحساب",
+ localResetPrompt:"اكتب الباسورد الجديد (٨ حروف على الأقل):",localWeakPassword:"الباسورد لازم يكون ٨ حروف على الأقل",
+ localResetDone:"اتغيّر الباسورد",localDeleteConfirm:"متأكد إنك عايز تمسح الحساب ده نهائيًا؟ مش هيرجع تاني.",
  roomWeekendNote:"الغرف شغّالة من الأحد للخميس بس، من ٩ص لـ ٦م",roomTitleRequired:"لازم تكتب عنوان للاجتماع",
  roomAttendeesLabel:"ضيف زمايلك (اختياري)",roomAttendeeSearchPH:"دوّر بالاسم...",applyBooking:"تأكيد الحجز",
  myRoomReservations:"حجوزات القاعات بتاعتي",roomNoBookingsYet:"لسه معملتش أي حجز",
@@ -124,6 +127,9 @@ const L = { ar: {
  localLoginBtn:"Sign in",localLoginMissing:"Enter both email and password",localLoginWrong:"Wrong email or password",
  addLocalUser:"Add local account",localUserNote:"For branch staff without a company email (e.g. buffet team)",
  localFullName:"Name",localCreate:"Create account",localUserCreated:"Account created",
+ localBadge:"Local",localResetTitle:"Reset password",localDeleteTitle:"Delete account",
+ localResetPrompt:"Enter the new password (at least 8 characters):",localWeakPassword:"Password must be at least 8 characters",
+ localResetDone:"Password changed",localDeleteConfirm:"Permanently delete this account? This cannot be undone.",
  roomWeekendNote:"Rooms are only available Sunday to Thursday, 9 AM to 6 PM",roomTitleRequired:"Please enter a meeting title",
  roomAttendeesLabel:"Invite colleagues (optional)",roomAttendeeSearchPH:"Search by name...",applyBooking:"Confirm booking",
  myRoomReservations:"My Room Reservations",roomNoBookingsYet:"You haven't booked any rooms yet",
@@ -1349,6 +1355,23 @@ async function submitLocalUser(){
     render();
   }catch(e){ fail(e); }
 }
+async function resetLocalPw(id){
+  const pw=prompt(t("localResetPrompt"));
+  if(!pw) return;
+  if(pw.length<8){ toast(t("localWeakPassword")); return; }
+  try{
+    await api.resetLocalUserPassword(id,pw);
+    toast(t("localResetDone"));
+  }catch(e){ fail(e); }
+}
+async function deleteLocalAcct(id){
+  if(!confirm(t("localDeleteConfirm"))) return;
+  try{
+    await api.deleteLocalUser(id);
+    A.users=A.users.filter(u=>u.id!==id);
+    toast(t("deleted")); render();
+  }catch(e){ fail(e); }
+}
 function localUserFormHtml(){
   const d=localUserForm;
   return `<div class="form"><p style="font-size:12px;color:var(--muted);margin-bottom:8px">${t("localUserNote")}</p>
@@ -1389,15 +1412,19 @@ function aAccess(){
       </div></div>
     ${localUserForm?localUserFormHtml():""}
     ${A.users.map(u=>{const cls=u.role==="admin"?"c":u.role==="hr"?"o":"";
-      return `<div class="item"><span class="av ${cls}">${esc((nm(u)||"?")[0])}</span>
-        <div class="body"><b>${esc(nm(u))}</b><p>${u.site?esc(nm(so(u.site))):"—"}</p></div>
+      return `<div class="item" style="flex-wrap:wrap"><span class="av ${cls}">${esc((nm(u)||"?")[0])}</span>
+        <div class="body"><b>${esc(nm(u))}</b>${u.local?` <span class="pill" style="font-size:10px">${t("localBadge")}</span>`:""}<p>${u.site?esc(nm(so(u.site))):"—"}</p></div>
         <input class="inp" style="width:130px" placeholder="${t("nameArHint")}" value="${esc(u.ar!==u.en?u.ar:'')}"
           onblur="saveNameAr('${u.id}',this.value)">
         <select class="inp" style="width:auto" onchange="setBranchAdm('${u.id}',this.value)">
           <option value="">—</option>
           ${SITES.map(s=>`<option value="${s.id}" ${u.site===s.id?"selected":""}>${esc(nm(s))}</option>`).join("")}</select>
         <select class="inp" style="width:auto" onchange="setRole('${u.id}',this.value)">
-          ${A.roles.map(x=>`<option value="${x.id}" ${x.id===u.role?"selected":""}>${esc(nm(x))}</option>`).join("")}</select></div>`}).join("")}</div>`;
+          ${A.roles.map(x=>`<option value="${x.id}" ${x.id===u.role?"selected":""}>${esc(nm(x))}</option>`).join("")}</select>
+        ${u.local?`<div class="acts">
+          <button class="iact" title="${t("localResetTitle")}" onclick="resetLocalPw('${u.id}')">🔑</button>
+          <button class="iact del" title="${t("localDeleteTitle")}" onclick="deleteLocalAcct('${u.id}')">🗑</button>
+        </div>`:""}</div>`}).join("")}</div>`;
 }
 async function saveNameAr(id,v){
   v=v.trim();
@@ -1477,6 +1504,6 @@ Object.assign(window, {
   setRoomDuration, setAttendeeQuery, addAttendee, removeAttendee, cancelMyRoomBooking,
   startRoomNew, startRoomEdit, cancelRoomEdit, setRoomField, saveRoomFull, deleteRoom,
   startRoleNew, startRoleEditRole, cancelRoleEdit, setRoleField, saveRoleFull, deleteRoleFull,
-  startLocalUser, cancelLocalUser, setLocalUserField, submitLocalUser,
+  startLocalUser, cancelLocalUser, setLocalUserField, submitLocalUser, resetLocalPw, deleteLocalAcct,
   setSuggestBody, suggestWriteAnother, submitSuggestionForm, delSuggestion,
 });

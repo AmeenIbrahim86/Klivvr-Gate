@@ -32,13 +32,35 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    // بس اللي معاه صلاحية access يقدر ينشئ حسابات محلية
+    // بس اللي معاه صلاحية access يقدر يدير الحسابات المحلية
     const { data: profile } = await admin.from("profiles").select("role_id").eq("id", user.id).single();
     const { data: perms } = await admin.from("role_permissions").select("section").eq("role_id", profile?.role_id || "");
     const allowed = (perms || []).some((p: any) => p.section === "access");
     if (!allowed) return json({ error: "forbidden" }, 403);
 
     const body = await req.json().catch(() => ({}));
+    const action = body.action || "create";
+
+    // ── تغيير باسورد حساب محلي موجود ──
+    if (action === "resetPassword") {
+      const { userId, newPassword } = body;
+      if (!userId || !newPassword) return json({ error: "missing_fields" }, 400);
+      if (String(newPassword).length < 8) return json({ error: "weak_password", message: "الباسورد لازم يكون ٨ حروف على الأقل" }, 400);
+      const { error } = await admin.auth.admin.updateUserById(userId, { password: newPassword });
+      if (error) return json({ error: "reset_failed", message: error.message }, 400);
+      return json({ ok: true });
+    }
+
+    // ── حذف حساب محلي بالكامل (auth.users + profiles سواء بسواء) ──
+    if (action === "delete") {
+      const { userId } = body;
+      if (!userId) return json({ error: "missing_fields" }, 400);
+      const { error } = await admin.auth.admin.deleteUser(userId);
+      if (error) return json({ error: "delete_failed", message: error.message }, 400);
+      return json({ ok: true });
+    }
+
+    // ── action = "create" (الافتراضي) ──
     const { email, password, fullName, roleId, branchId } = body;
     if (!email || !password || !fullName) return json({ error: "missing_fields", message: "لازم إيميل وباسورد واسم" }, 400);
     if (String(password).length < 8) return json({ error: "weak_password", message: "الباسورد لازم يكون ٨ حروف على الأقل" }, 400);
@@ -49,7 +71,7 @@ Deno.serve(async (req) => {
     if (createErr) return json({ error: "create_failed", message: createErr.message }, 400);
 
     const { error: profErr } = await admin.from("profiles").upsert({
-      id: created.user!.id, full_name: fullName, role_id: roleId || "viewer", branch_id: branchId || null,
+      id: created.user!.id, full_name: fullName, role_id: roleId || "viewer", branch_id: branchId || null, is_local: true,
     });
     if (profErr) return json({ error: "profile_failed", message: profErr.message }, 500);
 

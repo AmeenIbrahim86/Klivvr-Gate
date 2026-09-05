@@ -49,6 +49,7 @@ create table profiles (
   id        uuid primary key references auth.users(id) on delete cascade,
   full_name text,
   full_name_ar text,
+  is_local  boolean default false,
   role_id   text references roles(id) default 'viewer',
   branch_id text references branches(id),
   created_at timestamptz default now()
