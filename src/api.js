@@ -23,6 +23,8 @@ export const auth = {
     provider: 'azure',
     options: { scopes: 'email profile openid', redirectTo: window.location.origin }
   }),
+  // تسجيل دخول محلي بإيميل وباسورد (لحسابات فروع مالهاش إيميل شركة)
+  signInPassword: (email, password) => sb.auth.signInWithPassword({ email, password }),
   signOut: () => sb.auth.signOut(),
   session: () => sb.auth.getSession().then(r => r.data.session),
   onChange: (cb) => sb.auth.onAuthStateChange((_e, s) => cb(s)),
@@ -123,6 +125,30 @@ export async function setRolePermission(roleId, section, on) {
     : sb.from('role_permissions').delete().eq('role_id', roleId).eq('section', section);
   const { error } = await q;
   if (error) throw error;
+}
+// row.isNew=true → دور جديد (لازم id فريد يكتبه الأدمن، زي "management")
+export async function upsertRole(row) {
+  const dbRow = { name_ar: row.ar, name_en: row.en };
+  if (row.isNew) {
+    const { data, error } = await sb.from('roles').insert({ id: row.id, ...dbRow }).select().single();
+    if (error) throw error;
+    return { id: data.id, ar: data.name_ar, en: data.name_en, perms: [] };
+  }
+  const { data, error } = await sb.from('roles').update(dbRow).eq('id', row.id).select().single();
+  if (error) throw error;
+  return { id: data.id, ar: data.name_ar, en: data.name_en };
+}
+export async function deleteRole(id) {
+  const { error } = await sb.from('roles').delete().eq('id', id);
+  if (error) throw error;
+}
+export async function createLocalUser({ email, password, fullName, roleId, branchId }) {
+  const { data, error } = await sb.functions.invoke('create-local-user', {
+    body: { email, password, fullName, roleId, branchId }
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.message || data.error);
+  return data;
 }
 
 /* ═══════════════ محتوى البوابة + قائمة البوفيه ═══════════════ */

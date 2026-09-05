@@ -42,6 +42,11 @@ const L = { ar: {
  roomEmailNote:"إيميل الـ resource mailbox الحقيقي بتاع كل قاعة في Microsoft — من غيره القاعة مش هتشتغل",roomEmailPH:"room@company.com",
  roomId:"كود القاعة",roomEmailLabel:"الإيميل",addRoom:"إضافة قاعة",roomNameRequired:"لازم اسم للقاعة",
  roomDeleteConfirm:"متأكد إنك عايز تمسح القاعة دي؟",
+ roleId:"كود الدور",addRole:"إضافة دور",roleDeleteConfirm:"متأكد إنك عايز تمسح الدور ده؟ (مش هينمسح لو فيه ناس عليه)",
+ localLoginLink:"تسجيل دخول بإيميل وباسورد",localEmailPH:"الإيميل",localPasswordPH:"الباسورد",
+ localLoginBtn:"دخول",localLoginMissing:"اكتب الإيميل والباسورد",localLoginWrong:"الإيميل أو الباسورد غلط",
+ addLocalUser:"إضافة حساب محلي",localUserNote:"لموظفين الفروع اللي مالهمش إيميل شركة (زي فريق البوفيه)",
+ localFullName:"الاسم",localCreate:"إنشاء الحساب",localUserCreated:"اتعمل الحساب",
  roomWeekendNote:"الغرف شغّالة من الأحد للخميس بس، من ٩ص لـ ٦م",roomTitleRequired:"لازم تكتب عنوان للاجتماع",
  roomAttendeesLabel:"ضيف زمايلك (اختياري)",roomAttendeeSearchPH:"دوّر بالاسم...",applyBooking:"تأكيد الحجز",
  myRoomReservations:"حجوزات القاعات بتاعتي",roomNoBookingsYet:"لسه معملتش أي حجز",
@@ -114,6 +119,11 @@ const L = { ar: {
  roomEmailNote:"Each room's real Microsoft resource mailbox address — without it, the room won't work",roomEmailPH:"room@company.com",
  roomId:"Room code",roomEmailLabel:"Email",addRoom:"Add room",roomNameRequired:"Room name is required",
  roomDeleteConfirm:"Delete this room?",
+ roleId:"Role code",addRole:"Add role",roleDeleteConfirm:"Delete this role? (won't delete if people are assigned to it)",
+ localLoginLink:"Sign in with email and password",localEmailPH:"Email",localPasswordPH:"Password",
+ localLoginBtn:"Sign in",localLoginMissing:"Enter both email and password",localLoginWrong:"Wrong email or password",
+ addLocalUser:"Add local account",localUserNote:"For branch staff without a company email (e.g. buffet team)",
+ localFullName:"Name",localCreate:"Create account",localUserCreated:"Account created",
  roomWeekendNote:"Rooms are only available Sunday to Thursday, 9 AM to 6 PM",roomTitleRequired:"Please enter a meeting title",
  roomAttendeesLabel:"Invite colleagues (optional)",roomAttendeeSearchPH:"Search by name...",applyBooking:"Confirm booking",
  myRoomReservations:"My Room Reservations",roomNoBookingsYet:"You haven't booked any rooms yet",
@@ -326,6 +336,19 @@ api.auth.session().then(start);
 
 function doSignIn(){ api.auth.signInMicrosoft(); }
 function doSignOut(){ api.auth.signOut(); }
+let showLocalLogin=false, localEmail="", localPassword="", localLoginErr="", localLoginBusy=false;
+function toggleLocalLogin(){ showLocalLogin=!showLocalLogin; localLoginErr=""; renderSignIn(); }
+function setLocalEmail(v){ localEmail=v; }
+function setLocalPassword(v){ localPassword=v; }
+async function doSignInLocal(){
+  if(!localEmail.trim()||!localPassword){ localLoginErr=t("localLoginMissing"); renderSignIn(); return; }
+  localLoginBusy=true; localLoginErr=""; renderSignIn();
+  try{
+    const { error } = await api.auth.signInPassword(localEmail.trim(), localPassword);
+    if(error){ localLoginErr=t("localLoginWrong"); localLoginBusy=false; renderSignIn(); }
+    // لو نجح، onChange listener هيلتقط الجلسة الجديدة ويكمّل هو
+  }catch(e){ localLoginErr=t("localLoginWrong"); localLoginBusy=false; renderSignIn(); }
+}
 
 /* ═══════════════ render ═══════════════ */
 function render(){
@@ -368,6 +391,14 @@ function renderSignIn(){
     <h1>${t("sitename")}</h1>
     <p>${t("signInSub")}</p>
     <button class="btn" style="width:100%;margin-top:20px" onclick="doSignIn()">${t("signInBtn")}</button>
+    ${showLocalLogin?`<div class="local-login">
+        <input id="localEmailInput" class="inp" type="email" placeholder="${t("localEmailPH")}" value="${esc(localEmail)}" oninput="setLocalEmail(this.value)">
+        <input class="inp" type="password" placeholder="${t("localPasswordPH")}" value="${esc(localPassword)}" oninput="setLocalPassword(this.value)"
+          onkeydown="if(event.key==='Enter')doSignInLocal()">
+        ${localLoginErr?`<p class="local-login-err">${esc(localLoginErr)}</p>`:""}
+        <button class="btn ghost" style="width:100%" ${localLoginBusy?"disabled":""} onclick="doSignInLocal()">${localLoginBusy?t("loading"):t("localLoginBtn")}</button>
+      </div>`
+     :`<button class="local-login-toggle" onclick="toggleLocalLogin()">${t("localLoginLink")}</button>`}
     <span class="signin-lang">
       <button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
       <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span>
@@ -1253,9 +1284,87 @@ async function togAvail(id){
   try{ const saved=await api.upsert("menu",{...m,avail:!m.avail}); Object.assign(m,saved); render(); }
   catch(e){ fail(e); }
 }
+let roleEdit=null;
+function roleForm(){
+  const d=roleEdit;
+  return `<div class="form"><div class="fgrid">
+    <div class="fld"><label>${t("roleId")} <span class="mono" style="opacity:.45">id</span></label>
+      <input class="inp" ${d.isNew?"":"disabled"} value="${esc(d.id)}" placeholder="management" oninput="setRoleField('id',this.value)"></div>
+    <div class="fld"><label>${t("titleAR")}</label><input class="inp" value="${esc(d.ar)}" oninput="setRoleField('ar',this.value)"></div>
+    <div class="fld"><label>${t("titleEN")}</label><input class="inp" value="${esc(d.en)}" oninput="setRoleField('en',this.value)"></div>
+  </div>
+  <div class="formacts"><button class="btn sm" onclick="saveRoleFull()">${t("save")}</button>
+    <button class="btn ghost sm" onclick="cancelRoleEdit()">${t("cancel")}</button></div></div>`;
+}
+function startRoleNew(){ roleEdit={id:"",ar:"",en:"",isNew:true}; render(); }
+function startRoleEditRole(id){
+  const r=A.roles.find(x=>x.id===id); if(!r) return;
+  roleEdit={id:r.id,ar:r.ar,en:r.en,isNew:false}; render();
+}
+function cancelRoleEdit(){ roleEdit=null; render(); }
+function setRoleField(k,v){ if(roleEdit) roleEdit[k]=v; }
+async function saveRoleFull(){
+  const d=roleEdit; if(!d) return;
+  if(d.isNew && !/^[a-z0-9-]{2,30}$/.test(d.id.trim())){ toast(t("branchIdInvalid")); return; }
+  if(!d.ar.trim()||!d.en.trim()){ toast(t("branchNamesRequired")); return; }
+  try{
+    const saved=await api.upsertRole({...d,id:d.id.trim()});
+    const i=A.roles.findIndex(x=>x.id===saved.id);
+    if(i>-1){ A.roles[i].ar=saved.ar; A.roles[i].en=saved.en; } else { A.roles.push({...saved,perms:saved.perms||[]}); }
+    roleEdit=null; toast(t("saved")); render();
+  }catch(e){ fail(e); }
+}
+async function deleteRoleFull(id){
+  if(id==="admin") return;
+  if(!confirm(t("roleDeleteConfirm"))) return;
+  try{
+    await api.deleteRole(id);
+    A.roles=A.roles.filter(x=>x.id!==id);
+    toast(t("deleted")); render();
+  }catch(e){ fail(e); }
+}
+let localUserForm=null;
+function startLocalUser(){ localUserForm={email:"",password:"",fullName:"",roleId:"viewer",branchId:""}; render(); }
+function cancelLocalUser(){ localUserForm=null; render(); }
+function setLocalUserField(k,v){ if(localUserForm) localUserForm[k]=v; }
+async function submitLocalUser(){
+  const d=localUserForm; if(!d) return;
+  if(!d.email.trim()||!d.password||!d.fullName.trim()){ toast(t("localLoginMissing")); return; }
+  try{
+    await api.createLocalUser({email:d.email.trim(),password:d.password,fullName:d.fullName.trim(),roleId:d.roleId,branchId:d.branchId||null});
+    toast(t("localUserCreated"));
+    localUserForm=null;
+    A.users=await api.listProfiles();
+    render();
+  }catch(e){ fail(e); }
+}
+function localUserFormHtml(){
+  const d=localUserForm;
+  return `<div class="form"><p style="font-size:12px;color:var(--muted);margin-bottom:8px">${t("localUserNote")}</p>
+    <div class="fgrid">
+      <div class="fld"><label>${t("localFullName")}</label><input class="inp" value="${esc(d.fullName)}" oninput="setLocalUserField('fullName',this.value)"></div>
+      <div class="fld"><label>${t("localEmailPH")}</label><input class="inp" type="email" value="${esc(d.email)}" oninput="setLocalUserField('email',this.value)"></div>
+      <div class="fld"><label>${t("localPasswordPH")}</label><input class="inp" type="password" value="${esc(d.password)}" oninput="setLocalUserField('password',this.value)"></div>
+      <div class="fld"><label>${t("role")}</label><select class="inp" onchange="setLocalUserField('roleId',this.value)">
+        ${A.roles.map(r=>`<option value="${r.id}" ${r.id===d.roleId?"selected":""}>${esc(nm(r))}</option>`).join("")}</select></div>
+      <div class="fld"><label>${t("branch")}</label><select class="inp" onchange="setLocalUserField('branchId',this.value)">
+        <option value="">—</option>${SITES.map(s=>`<option value="${s.id}" ${s.id===d.branchId?"selected":""}>${esc(nm(s))}</option>`).join("")}</select></div>
+    </div>
+    <div class="formacts"><button class="btn sm" onclick="submitLocalUser()">${t("localCreate")}</button>
+      <button class="btn ghost sm" onclick="cancelLocalUser()">${t("cancel")}</button></div></div>`;
+}
 function aAccess(){
-  return `<div class="sec"><div class="sechd"><div><h3>${t("aAccess")}</h3><p>${t("role")} × ${t("canEdit")}</p></div></div>
-    <div class="note">${t("permNote")}</div>
+  return `<div class="sec"><div class="sechd"><div><h3>${t("aAccess")}</h3><p>${t("role")} × ${t("canEdit")}</p></div>
+      <button class="btn sm" onclick="startRoleNew()">+ ${t("addRole")}</button></div>
+    ${roleEdit?roleForm():""}
+    ${A.roles.filter(r=>r.id!=="admin").map(r=>`<div class="item">
+      <div class="body"><b>${esc(nm(r))}</b></div>
+      <div class="acts">
+        <button class="iact" onclick="startRoleEditRole('${esc(r.id)}')">✎</button>
+        <button class="iact del" onclick="deleteRoleFull('${esc(r.id)}')">🗑</button>
+      </div>
+    </div>`).join("")}
+    <div class="note" style="margin-top:12px">${t("permNote")}</div>
     <div class="mscroll"><table class="matrix"><thead><tr><th>${t("role")}</th>
       ${SECTIONS.map(s=>`<th>${secLbl(s)}</th>`).join("")}</tr></thead><tbody>
       ${A.roles.map(r=>`<tr><td>${esc(nm(r))}</td>${SECTIONS.map(s=>{
@@ -1263,7 +1372,11 @@ function aAccess(){
         return `<td><button class="chk ${on?"on":""} ${ro?"ro":""}" ${ro?"disabled":`onclick="togPerm('${r.id}','${s}')"`}>✓</button></td>`}).join("")}</tr>`).join("")}
       </tbody></table></div></div>
   <div class="sec"><div class="sechd"><div><h3>${t("people")}</h3><p>${num(A.users.length)}</p></div>
-      <button class="btn ghost sm" onclick="autoTranslateAll()">${t("autoTranslateAll")}</button></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost sm" onclick="autoTranslateAll()">${t("autoTranslateAll")}</button>
+        <button class="btn sm" onclick="startLocalUser()">+ ${t("addLocalUser")}</button>
+      </div></div>
+    ${localUserForm?localUserFormHtml():""}
     ${A.users.map(u=>{const cls=u.role==="admin"?"c":u.role==="hr"?"o":"";
       return `<div class="item"><span class="av ${cls}">${esc((nm(u)||"?")[0])}</span>
         <div class="body"><b>${esc(nm(u))}</b><p>${u.site?esc(nm(so(u.site))):"—"}</p></div>
@@ -1341,6 +1454,7 @@ async function saveKioskPw(branchId){
 /* ═══════════════ expose handlers used by inline HTML onclick/onchange ═══════════════ */
 Object.assign(window, {
   doSignIn, doSignOut, go, setLang, setBranch, changeBranch, setCat, setWhere, setWhereType, setWhereRoom, toggleUserMenu,
+  toggleLocalLogin, setLocalEmail, setLocalPassword, doSignInLocal,
   tog, setSug, setMilk, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder, setPayMethod,
   setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk,
   saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg, saveKioskPw,
@@ -1351,5 +1465,7 @@ Object.assign(window, {
   setRoomDate, pickRoomSlot, cancelRoomSlot, setRoomSubject, confirmRoomBook,
   setRoomDuration, setAttendeeQuery, addAttendee, removeAttendee, cancelMyRoomBooking,
   startRoomNew, startRoomEdit, cancelRoomEdit, setRoomField, saveRoomFull, deleteRoom,
+  startRoleNew, startRoleEditRole, cancelRoleEdit, setRoleField, saveRoleFull, deleteRoleFull,
+  startLocalUser, cancelLocalUser, setLocalUserField, submitLocalUser,
   setSuggestBody, suggestWriteAnother, submitSuggestionForm, delSuggestion,
 });

@@ -312,6 +312,9 @@ create policy write_branches on branches for all to authenticated
   using (has_perm('access')) with check (has_perm('access'));
 grant select, insert, update, delete on branches to authenticated;
 create policy read_roles    on roles    for select to authenticated using (true);
+create policy write_roles on roles for all to authenticated
+  using (has_perm('access')) with check (has_perm('access'));
+grant select, insert, update, delete on roles to authenticated;
 create policy read_perms    on role_permissions for select to authenticated using (true);
 create policy write_perms on role_permissions for all to authenticated
   using (has_perm('access')) with check (has_perm('access'));
