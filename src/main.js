@@ -970,11 +970,10 @@ function vRooms(){
 /* ═══════════════ admin ═══════════════ */
 function vAdmin(){
   const cur=TABS.find(x=>x[0]===tab)||TABS[0],ok=!cur[3]||can(cur[3]);
+  const visible=TABS.filter(([,,,p])=>!p||can(p));
   return `<div class="eyebrow">${t("admin")} · ${esc(nm(myProfile))} — ${esc(nm(role()))}</div>
-  <div class="adm"><div class="admnav">${TABS.map(([k,l,ic,p])=>{
-      const allow=!p||can(p);
-      return `<button class="${tab===k?"on":""} ${allow?"":"locked"}" ${allow?`onclick="setTab('${k}')"`:"disabled"}>
-        <span class="ic">${ic}</span>${t(l)}${allow?"":" 🔒"}</button>`}).join("")}</div>
+  <div class="adm"><div class="admnav">${visible.map(([k,l,ic])=>
+      `<button class="${tab===k?"on":""}" onclick="setTab('${k}')"><span class="ic">${ic}</span>${t(l)}</button>`).join("")}</div>
     <div>${!ok?`<div class="card empty"><b>🔒 ${t("noPerm")}</b>${esc(nm(role()))}</div>`
       :tab==="overview"?aOver():tab==="access"?aAccess():tab==="rooms"?aRooms():tab==="suggestions"?aSuggestions()
       :tab==="dashboardBuffet"?aDashboardBuffet():tab==="dashboardRooms"?aDashboardRooms():aList(tab)}</div></div>`;
