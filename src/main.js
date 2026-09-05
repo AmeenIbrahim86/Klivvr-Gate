@@ -54,7 +54,7 @@ const L = { ar: {
  suggestBox:"صندوق الاقتراحات",suggestHint:"اكتب أي اقتراح أو ملاحظة — مفيش أي حاجة بتربطه بيك، حتى إحنا مش هنعرف مين بعته.",
  suggestPH:"اكتب اقتراحك هنا...",suggestSubmit:"ابعت",suggestThanks:"وصل اقتراحك، شكرًا!",suggestAnother:"ابعت واحد تاني",
  suggestEmptyError:"اكتب حاجة الأول",suggestNoneYet:"لسه مفيش اقتراحات",suggestDeleteConfirm:"متأكد إنك عايز تمسح الاقتراح ده؟",
- dashboardBuffet:"لوحة البوفيه",dashboardRooms:"لوحة القاعات",
+ dashboardBuffet:"لوحة البوفيه",dashboardRooms:"لوحة القاعات",homePage:"الصفحة الرئيسية",
  dashToday:"إحصائيات النهاردة",dashOrdersToday:"عدد الطلبات",dashRevenueToday:"الإيراد",dashLast7Days:"آخر ٧ أيام",
  dashTodayMeetings:"اجتماعات النهاردة في كل القاعات",dashNoMeetingsToday:"مفيش اجتماعات النهاردة",aOrders:"الطلبات",
  branchIdInvalid:"كود الفرع لازم يكون حروف/أرقام إنجليزي بس، من غير مسافات",
@@ -131,7 +131,7 @@ const L = { ar: {
  suggestBox:"Suggestion Box",suggestHint:"Write any suggestion or feedback — nothing links it to you, not even we can tell who sent it.",
  suggestPH:"Write your suggestion here...",suggestSubmit:"Send",suggestThanks:"Your suggestion was sent, thank you!",suggestAnother:"Send another",
  suggestEmptyError:"Write something first",suggestNoneYet:"No suggestions yet",suggestDeleteConfirm:"Delete this suggestion?",
- dashboardBuffet:"Buffet Dashboard",dashboardRooms:"Rooms Dashboard",
+ dashboardBuffet:"Buffet Dashboard",dashboardRooms:"Rooms Dashboard",homePage:"Home Page",
  dashToday:"Today's stats",dashOrdersToday:"Orders",dashRevenueToday:"Revenue",dashLast7Days:"Last 7 days",
  dashTodayMeetings:"Today's meetings across all rooms",dashNoMeetingsToday:"No meetings today",aOrders:"Orders",
  branchIdInvalid:"Branch code must be lowercase letters/numbers only, no spaces",
@@ -165,7 +165,7 @@ const L = { ar: {
  noBranch:"You're not assigned to a branch yet — ask an admin to set one.",
 }};
 
-const SECTIONS = ["news","links","policies","events","menu","orders","access","gallery","rooms","suggestions","dashboard_buffet","dashboard_rooms"];
+const SECTIONS = ["portal","news","links","policies","events","menu","orders","access","gallery","rooms","suggestions","dashboard_buffet","dashboard_rooms"];
 const CATS = [
  {k:"all",ar:"الكل",en:"All"},
  {k:"free",ar:"مجاني",en:"Free"},
@@ -299,7 +299,7 @@ const inBranch=(x,b)=>!x.site||x.site==="all"||x.site===b;
 const mi=id=>M.find(m=>m.id===id)||{ar:"—",en:"—",price:0};
 const catLabel=k=>{const c=CATS.find(x=>x.k===k);return c?nm(c):k};
 const dots=n=>`<span class="dots">${[0,1,2].map(i=>`<i class="${i<n?"on":""}"></i>`).join("")}</span>`;
-const secLbl=s=>t(s==="news"?"aNews":s==="links"?"aLinks":s==="policies"?"aPolicies":s==="events"?"aEvents":s==="menu"?"aMenu":s==="orders"?"aOrders":s==="gallery"?"gallery":s==="rooms"?"meetingRooms":s==="suggestions"?"suggestions":s==="dashboard_buffet"?"dashboardBuffet":s==="dashboard_rooms"?"dashboardRooms":"aAccess");
+const secLbl=s=>t(s==="portal"?"homePage":s==="news"?"aNews":s==="links"?"aLinks":s==="policies"?"aPolicies":s==="events"?"aEvents":s==="menu"?"aMenu":s==="orders"?"aOrders":s==="gallery"?"gallery":s==="rooms"?"meetingRooms":s==="suggestions"?"suggestions":s==="dashboard_buffet"?"dashboardBuffet":s==="dashboard_rooms"?"dashboardRooms":"aAccess");
 
 function toast(m){const e=$("#toast");if(!e)return;e.textContent=m;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2200)}
 function fail(e){console.error(e);toast(t("errGeneric"))}
@@ -328,7 +328,13 @@ async function start(session){
   if(!session){ authed=false; myProfile=null; renderSignIn(); return; }
   if(authed) return; // already booted for this session
   renderLoading();
-  try{ await loadEverything(); authed=true; render(); }
+  try{
+    await loadEverything();
+    authed=true;
+    // لو الدور مالوش صلاحية "الصفحة الرئيسية"، وديه على أقرب حاجة تخصه بدلها
+    if(!can("portal")) view = role().perms.length ? "admin" : "order";
+    render();
+  }
   catch(e){ renderError(e); }
 }
 api.auth.onChange(session=>start(session));
@@ -436,7 +442,12 @@ function shell(inner){
     <div class="wrap">${inner}</div>`;
 }
 function toggleUserMenu(){ userMenuOpen=!userMenuOpen; render(); }
-function go(v){view=v;edit=null;paying=false;userMenuOpen=false;if(v==="myorders")loadMyOrders();if(v==="rooms")openRooms();if(v==="myrooms")loadMyRoomBookings();render();scrollTo({top:0,behavior:"instant"})}
+function go(v){
+  if(v==="portal"&&!can("portal")) v=role().perms.length?"admin":"order";
+  view=v;edit=null;paying=false;userMenuOpen=false;
+  if(v==="myorders")loadMyOrders();if(v==="rooms")openRooms();if(v==="myrooms")loadMyRoomBookings();
+  render();scrollTo({top:0,behavior:"instant"});
+}
 async function loadMyOrders(){
   try{ MY_ORDERS=await api.myOrders(); }catch(e){ console.error(e); MY_ORDERS=[]; }
   render();

@@ -32,15 +32,16 @@ insert into roles values
 create table role_permissions (
   role_id text references roles(id) on delete cascade,
   section text not null check (section in
-    ('news','links','policies','events','menu','orders','access','gallery',
+    ('portal','news','links','policies','events','menu','orders','access','gallery',
      'rooms','suggestions','dashboard_buffet','dashboard_rooms')),
   primary key (role_id, section)
 );
 insert into role_permissions values
-  ('admin','news'),('admin','links'),('admin','policies'),('admin','events'),
+  ('admin','portal'),('admin','news'),('admin','links'),('admin','policies'),('admin','events'),
   ('admin','menu'),('admin','orders'),('admin','access'),('admin','gallery'),
   ('admin','rooms'),('admin','suggestions'),('admin','dashboard_buffet'),('admin','dashboard_rooms'),
-  ('hr','news'),('hr','policies'),('hr','events'),
+  ('hr','portal'),('hr','news'),('hr','policies'),('hr','events'),
+  ('viewer','portal'),
   ('kitchen','orders'),('kitchen','menu');
 
 -- ─── 3. بروفايل المستخدم (مربوط بـ auth.users) ───
