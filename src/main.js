@@ -601,7 +601,7 @@ function vOrder(){
         ${whereType==="room"
           ?`<select class="inp" onchange="setWhereRoom(this.value)">
               <option value="">${t("wherePickRoom")}</option>
-              ${MEETING_ROOMS.map(r=>`<option value="${esc(r.name)}" ${whereRoom===r.name?"selected":""}>${esc(r.name)}</option>`).join("")}
+              ${MEETING_ROOMS.filter(r=>!r.site||r.site===branch).map(r=>`<option value="${esc(r.name)}" ${whereRoom===r.name?"selected":""}>${esc(r.name)}</option>`).join("")}
             </select>`
           :`<input class="inp" placeholder="${t("wherePH")}" value="${esc(where)}" oninput="setWhere(this.value)">`}
        </div>
