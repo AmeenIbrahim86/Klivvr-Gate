@@ -63,6 +63,17 @@ export async function setSetting(key, valueAr, valueEn) {
   if (error) throw error;
 }
 
+export async function getBranding() {
+  const { data, error } = await sb.from('app_settings').select('value_json').eq('key', 'branding').maybeSingle();
+  if (error) throw error;
+  return data?.value_json || null;
+}
+export async function setBranding(branding) {
+  const { error } = await sb.from('app_settings')
+    .upsert({ key: 'branding', value_json: branding, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
+
 export async function listBranches() {
   const { data, error } = await sb.from('branches')
     .select('id, name_ar, name_en, is_live, payment_qr_url, sort').order('sort');

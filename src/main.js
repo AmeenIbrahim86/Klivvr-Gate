@@ -11,7 +11,7 @@ import * as api from './api.js';
 /* ═══════════════ copy ═══════════════ */
 const L = { ar: {
  portal:"البوابة",order:"اطلب من البوفيه",admin:"الإدارة",
- sitename:"بوابة كليفر",mark:"ب",
+ sitename:"بوابة الشركة",mark:"ب",
  news:"أخبار الشركة",links:"لينكات سريعة",docs:"السياسات الداخلية",events:"الأحداث القادمة",
  viewall:"عرض الكل",calendar:"التقويم",
  bandT:"محتاج شاي أو قهوة؟",bandB:"اطلب من مكتبك، وطلبك يظهر على شاشة البوفيه في ثواني.",bandC:"اطلب دلوقتي ←",
@@ -53,6 +53,8 @@ const L = { ar: {
  localBadge:"محلي",localResetTitle:"غيّر الباسورد",localDeleteTitle:"امسح الحساب",
  localEditNameTitle:"غيّر الاسم",localEditEmailTitle:"غيّر الإيميل",
  localEditNamePrompt:"اكتب الاسم الجديد:",localEditEmailPrompt:"اكتب الإيميل الجديد:",
+ branding:"الهوية البصرية",brandingNote:"اسم الشركة، اللوجو، والألوان — يتغيّروا فورًا من غير أي تعديل في الكود",
+ siteNameAr:"اسم الموقع بالعربي",siteNameEn:"اسم الموقع بالإنجليزي",primaryColor:"اللون الأساسي",accentColor:"لون التمييز",brandLogo:"اللوجو",
  localResetPrompt:"اكتب الباسورد الجديد (٨ حروف على الأقل):",localWeakPassword:"الباسورد لازم يكون ٨ حروف على الأقل",
  localResetDone:"اتغيّر الباسورد",localDeleteConfirm:"متأكد إنك عايز تمسح الحساب ده نهائيًا؟ مش هيرجع تاني.",
  bulkSelectAll:"اختار الكل",bulkSelected:"متحدد",bulkPickBranch:"اختار فرع...",bulkPickRole:"اختار Role...",
@@ -98,7 +100,7 @@ const L = { ar: {
  noBranch:"مش متعيّن على فرع دلوقتي — كلّم الأدمن يحطك في فرع.",
 },en:{
  portal:"Portal",order:"Order from buffet",admin:"Admin",
- sitename:"Klivvr Gate",mark:"P",
+ sitename:"Company Gate",mark:"P",
  news:"Company news",links:"Quick links",docs:"Internal policies",events:"Upcoming events",
  viewall:"View all",calendar:"Calendar",
  bandT:"Need a tea or a coffee?",bandB:"Order from your desk. It lands on the buffet screen in seconds.",bandC:"Order now →",
@@ -140,6 +142,8 @@ const L = { ar: {
  localBadge:"Local",localResetTitle:"Reset password",localDeleteTitle:"Delete account",
  localEditNameTitle:"Edit name",localEditEmailTitle:"Edit email",
  localEditNamePrompt:"Enter the new name:",localEditEmailPrompt:"Enter the new email:",
+ branding:"Branding",brandingNote:"Company name, logo, and colors — apply instantly, no code changes needed",
+ siteNameAr:"Site name (Arabic)",siteNameEn:"Site name (English)",primaryColor:"Primary color",accentColor:"Accent color",brandLogo:"Logo",
  localResetPrompt:"Enter the new password (at least 8 characters):",localWeakPassword:"Password must be at least 8 characters",
  localResetDone:"Password changed",localDeleteConfirm:"Permanently delete this account? This cannot be undone.",
  bulkSelectAll:"Select all",bulkSelected:"selected",bulkPickBranch:"Pick a branch...",bulkPickRole:"Pick a role...",
@@ -252,7 +256,7 @@ const TABS = [["overview","overview","▦",null],["news","aNews","✦","news"],[
  ["policies","aPolicies","▤","policies"],["events","aEvents","▣","events"],["menu","aMenu","☕","menu"],
  ["rooms","meetingRooms","🏢","rooms"],["suggestions","suggestions","💡","suggestions"],
  ["dashboardBuffet","dashboardBuffet","📊","dashboard_buffet"],["dashboardRooms","dashboardRooms","📈","dashboard_rooms"],
- ["access","aAccess","⚿","access"]];
+ ["access","aAccess","⚿","access"],["branding","branding","🎨","access"]];
 const ICON_PRESETS_LINKS = ["✉️","📅","📁","⚙️","🏢","📊","💰","🎯","📋","🔔","📞","🗂️","🧑‍💻","📦","🧾","🛠️"];
 const ICON_PRESETS_MENU = ["☕","🍵","🧋","🥤","🧃","🥛","🍫","🍪","🍩","🍰","🧁","🍭","🍿","🥐","🥪","🍟","🧀","🍎","🍌","🍇"];
 const isUrl=s=>/^https?:\/\//.test(s||"");
@@ -294,6 +298,36 @@ const FIELDS = {
 let lang="en", authed=false, view="portal", tab="overview";
 let myProfile=null, SITES=[], C={news:[],links:[],policies:[],events:[]}, M=[], O=[], A={roles:[],users:[]}, ORG=[], GALLERY=[];
 let ABOUT={ar:"",en:""}, aboutEditing=false;
+let BRANDING=null, brandingEdit=null;
+
+/* ═══════════════ Branding — تطبيق اسم/لوجو/ألوان الشركة لحظيًا ═══════════════ */
+function hexToRgb(hex){
+  hex=(hex||"#000000").replace("#","");
+  if(hex.length===3) hex=hex.split("").map(c=>c+c).join("");
+  const n=parseInt(hex,16)||0;
+  return [n>>16&255,n>>8&255,n&255];
+}
+function rgbToHex(rgb){ return "#"+rgb.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join(""); }
+function mixHex(h1,h2,amt){ const a=hexToRgb(h1),b=hexToRgb(h2); return rgbToHex(a.map((v,i)=>v+(b[i]-v)*amt)); }
+const lightenHex=(h,amt)=>mixHex(h,"#ffffff",amt);
+const darkenHex=(h,amt)=>mixHex(h,"#000000",amt);
+function applyBranding(b){
+  if(!b) return;
+  const root=document.documentElement.style;
+  if(b.primaryColor){
+    root.setProperty("--indigo", b.primaryColor);
+    root.setProperty("--indigo-2", lightenHex(b.primaryColor,0.3));
+    root.setProperty("--indigo-soft", lightenHex(b.primaryColor,0.9));
+  }
+  if(b.accentColor){
+    root.setProperty("--coral-1", lightenHex(b.accentColor,0.18));
+    root.setProperty("--coral-2", b.accentColor);
+    root.setProperty("--coral-ink", darkenHex(b.accentColor,0.25));
+    root.setProperty("--coral-soft", lightenHex(b.accentColor,0.9));
+  }
+}
+const logoUrl=()=>(BRANDING&&BRANDING.logoUrl)||"/klivvr-icon.png";
+const hasCustomWordmark=()=>false; // مفيش wordmark عام — لو الشركة عايزة واحد تديه لينك في الأدمن بعدين
 let MY_ORDERS=null, userMenuOpen=false;
 let MEETING_ROOMS=[];
 let MY_ROOM_BOOKINGS=null;
@@ -304,7 +338,13 @@ let roomBranch=null;
 let branch=null, paying=false, lastOrderNo="", payMethod="instapay";
 let cart=[], openM=null, draft={}, cat="all", where="", whereType="office", whereRoom="", edit=null, eKind=null;
 
-const t=k=>L[lang][k]??k;
+const t=k=>{
+  if(k==="sitename"&&BRANDING){
+    const v=lang==="ar"?BRANDING.siteNameAr:BRANDING.siteNameEn;
+    if(v) return v;
+  }
+  return L[lang][k]??k;
+};
 const nm=o=>o?(o[lang]??o.ar??o.en??""):"";
 const num=n=>Number(n).toLocaleString(lang==="ar"?"ar-EG":"en-US");
 const money=n=>num(n)+" "+t("cur");
@@ -337,16 +377,24 @@ async function loadEverything(){
     api.listBranches(), api.loadRoles(), api.list("news"), api.list("links"),
     api.list("policies"), api.list("events"), api.list("menu"),
     api.listProfiles(), api.listOrders(), api.listOrgPeople(), api.listGallery(),
-    api.getSetting("about"), api.listRooms(), api.listSuggestions()
+    api.getSetting("about"), api.listRooms(), api.listSuggestions(), api.getBranding()
   ]);
   results.forEach((r,i)=>{ if(r.status==="rejected") console.error("load section", i, "failed:", r.reason); });
   const val=(i,fallback)=>results[i].status==="fulfilled"?results[i].value:fallback;
   SITES=val(0,[]); A={roles:val(1,[]),users:val(7,[])};
   C={news:val(2,[]),links:val(3,[]),policies:val(4,[]),events:val(5,[])};
   M=val(6,[]); O=val(8,[]); ORG=val(9,[]); GALLERY=val(10,[]); ABOUT=val(11,{ar:"",en:""}); MEETING_ROOMS=val(12,[]); SUGGESTIONS=val(13,[]);
+  BRANDING=val(14,null); applyBranding(BRANDING);
 }
 async function start(session){
-  if(!session){ authed=false; myProfile=null; renderSignIn(); return; }
+  if(!session){
+    authed=false; myProfile=null;
+    if(BRANDING===null){
+      try{ BRANDING=await api.getBranding(); applyBranding(BRANDING); }catch(e){}
+    }
+    renderSignIn();
+    return;
+  }
   if(authed) return; // already booted for this session
   renderLoading();
   try{
@@ -414,7 +462,7 @@ function renderSignIn(){
   document.documentElement.lang=lang;
   document.documentElement.dir=lang==="ar"?"rtl":"ltr";
   $("#app").innerHTML = `<div class="signin"><div class="signin-card">
-    <img src="/klivvr-icon.png" alt="Klivvr" style="width:52px;height:52px;border-radius:15px;margin:0 auto 16px;display:block">
+    <img src="${logoUrl()}" alt="" style="width:52px;height:52px;border-radius:15px;margin:0 auto 16px;display:block">
     <h1>${t("sitename")}</h1>
     <p>${t("signInSub")}</p>
     <button class="btn" style="width:100%;margin-top:20px" onclick="doSignIn()">${t("signInBtn")}</button>
@@ -429,7 +477,6 @@ function renderSignIn(){
     <span class="signin-lang">
       <button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
       <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span>
-    <img src="/klivvr-wordmark.svg" alt="klivvr" class="signin-wordmark">
   </div></div>`;
 }
 function renderLoading(){
@@ -447,7 +494,7 @@ function shell(inner){
   if(can("order_buffet"))tabs.push(["order",t("order")]);
   if(role().perms.length)tabs.push(["admin",t("admin")]);
   return `<div class="topbar">
-    <button class="brand" onclick="go('portal')"><img src="/klivvr-icon.png" alt="Klivvr" class="logomark"><b>${t("sitename")}</b></button>
+    <button class="brand" onclick="go('portal')"><img src="${logoUrl()}" alt="" class="logomark"><b>${t("sitename")}</b></button>
     <nav class="topnav">${tabs.map(([k,v])=>`<button class="${view===k?"on":""}" onclick="go('${k}')">${v}</button>`).join("")}
       <span class="langsw"><button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
       <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span>
@@ -1028,9 +1075,18 @@ function vAdmin(){
       `<button class="${tab===k?"on":""}" onclick="setTab('${k}')"><span class="ic">${ic}</span>${t(l)}</button>`).join("")}</div>
     <div>${!ok?`<div class="card empty"><b>🔒 ${t("noPerm")}</b>${esc(nm(role()))}</div>`
       :tab==="overview"?aOver():tab==="access"?aAccess():tab==="rooms"?aRooms():tab==="suggestions"?aSuggestions()
-      :tab==="dashboardBuffet"?aDashboardBuffet():tab==="dashboardRooms"?aDashboardRooms():aList(tab)}</div></div>`;
+      :tab==="dashboardBuffet"?aDashboardBuffet():tab==="dashboardRooms"?aDashboardRooms():tab==="branding"?aBranding():aList(tab)}</div></div>`;
 }
-function setTab(k){tab=k;edit=null;if(k==="dashboardRooms"&&ROOM_DASH===null)loadRoomDash();render()}
+function setTab(k){
+  tab=k;edit=null;
+  if(k==="dashboardRooms"&&ROOM_DASH===null)loadRoomDash();
+  if(k==="branding"&&!brandingEdit) brandingEdit={
+    siteNameAr: (BRANDING&&BRANDING.siteNameAr)||"", siteNameEn: (BRANDING&&BRANDING.siteNameEn)||"",
+    logoUrl: (BRANDING&&BRANDING.logoUrl)||"", primaryColor: (BRANDING&&BRANDING.primaryColor)||"#202042",
+    accentColor: (BRANDING&&BRANDING.accentColor)||"#F58A5C"
+  };
+  render();
+}
 async function loadRoomDash(){
   try{ ROOM_DASH=await api.todayRoomBookings(); }catch(e){ ROOM_DASH=[]; toast(e.message||t("roomLoadError")); }
   render();
@@ -1185,6 +1241,31 @@ async function deleteRoom(id){
     toast(t("deleted")); render();
   }catch(e){ fail(e); }
 }
+function setBrandingField(k,v){
+  if(!brandingEdit) return;
+  brandingEdit[k]=v;
+  if(k==="primaryColor"||k==="accentColor") applyBranding(brandingEdit);
+}
+function cancelBrandingEdit(){ brandingEdit=null; applyBranding(BRANDING); render(); }
+async function uploadBrandingLogo(input){
+  const file=input.files&&input.files[0];
+  if(!file||!brandingEdit) return;
+  toast(t("imageUploading"));
+  try{
+    const url=await api.uploadImage(file);
+    brandingEdit.logoUrl=url;
+    toast(t("imageUploaded")); render();
+  }catch(e){ fail(e); }
+}
+async function saveBranding(){
+  if(!brandingEdit) return;
+  try{
+    await api.setBranding(brandingEdit);
+    BRANDING={...brandingEdit};
+    applyBranding(BRANDING);
+    toast(t("saved")); render();
+  }catch(e){ fail(e); }
+}
 function aRooms(){
   return `<div class="sec"><div class="sechd"><div><h3>${t("meetingRooms")}</h3><p>${t("roomEmailNote")}</p></div>
       <button class="btn sm" onclick="startRoomNew()">+ ${t("addRoom")}</button></div>
@@ -1199,6 +1280,29 @@ function aRooms(){
         </div>
       </div>`;
     }).join("")}</div>`;
+}
+function aBranding(){
+  const d=brandingEdit||{};
+  return `<div class="sec"><div class="sechd"><div><h3>${t("branding")}</h3><p>${t("brandingNote")}</p></div></div>
+    <div class="form"><div class="fgrid">
+      <div class="fld"><label>${t("siteNameAr")}</label><input class="inp" value="${esc(d.siteNameAr)}" oninput="setBrandingField('siteNameAr',this.value)"></div>
+      <div class="fld"><label>${t("siteNameEn")}</label><input class="inp" value="${esc(d.siteNameEn)}" oninput="setBrandingField('siteNameEn',this.value)"></div>
+      <div class="fld"><label>${t("primaryColor")}</label>
+        <div class="color-fld"><input type="color" value="${esc(d.primaryColor)}" oninput="setBrandingField('primaryColor',this.value)">
+        <input class="inp mono" value="${esc(d.primaryColor)}" oninput="setBrandingField('primaryColor',this.value)"></div></div>
+      <div class="fld"><label>${t("accentColor")}</label>
+        <div class="color-fld"><input type="color" value="${esc(d.accentColor)}" oninput="setBrandingField('accentColor',this.value)">
+        <input class="inp mono" value="${esc(d.accentColor)}" oninput="setBrandingField('accentColor',this.value)"></div></div>
+      <div class="fld full"><label>${t("brandLogo")}</label>
+        <div class="img-edit">
+          ${d.logoUrl?`<img src="${esc(d.logoUrl)}" class="img-edit-preview">`:""}
+          <label class="btn ghost sm gal-picklabel">${t("uploadPhoto")}
+            <input type="file" accept="image/*" style="display:none" onchange="uploadBrandingLogo(this)"></label>
+        </div>
+      </div>
+    </div>
+    <div class="formacts"><button class="btn sm" onclick="saveBranding()">${t("save")}</button>
+      <button class="btn ghost sm" onclick="cancelBrandingEdit()">${t("cancel")}</button></div></div></div>`;
 }
 function aOver(){
   const live=O.filter(o=>o.st!=="done").length;
@@ -1635,6 +1739,7 @@ Object.assign(window, {
   startRoomNew, startRoomEdit, cancelRoomEdit, setRoomField, saveRoomFull, deleteRoom,
   startRoleNew, startRoleEditRole, cancelRoleEdit, setRoleField, saveRoleFull, deleteRoleFull,
   startLocalUser, cancelLocalUser, setLocalUserField, submitLocalUser, resetLocalPw, deleteLocalAcct, editLocalName, editLocalEmail,
+  setBrandingField, cancelBrandingEdit, uploadBrandingLogo, saveBranding,
   toggleUserSelect, toggleSelectAll, setBulkBranch, setBulkRole, applyBulk,
   setSuggestBody, suggestWriteAnother, submitSuggestionForm, delSuggestion,
 });

@@ -231,8 +231,22 @@ create table app_settings (
 );
 insert into app_settings (key, value_ar, value_en) values (
   'about',
-  'بوابة كليفر هي المكان الواحد لكل حاجة محتاجها في الشركة — الأخبار، السياسات، طلب البوفيه، ودليل الموظفين.',
-  'Klivvr Gate is the one place for everything at the company — news, policies, ordering from the buffet, and the staff directory.'
+  'البوابة هي المكان الواحد لكل حاجة محتاجها في الشركة — الأخبار، السياسات، طلب البوفيه، ودليل الموظفين.',
+  'This portal is the one place for everything at the company — news, policies, ordering from the buffet, and the staff directory.'
+);
+
+-- Branding — اسم الشركة، اللوجو، والألوان. غيّرها من الإدارة → Branding
+-- بعد أول تنصيب، مش محتاج تلمس الكود خالص عشان تخصّص البوابة لأي شركة
+alter table app_settings add column if not exists value_json jsonb;
+insert into app_settings (key, value_json) values (
+  'branding',
+  jsonb_build_object(
+    'siteNameAr', 'بوابة الشركة',
+    'siteNameEn', 'Company Gate',
+    'logoUrl', null,
+    'primaryColor', '#202042',
+    'accentColor', '#F58A5C'
+  )
 );
 
 -- ─── 8. معرض الصور ───
@@ -380,11 +394,14 @@ create policy write_gallery on gallery for all to authenticated
 grant select, insert, update, delete on gallery to authenticated;
 
 -- إعداد "عن البوابة": أي موظف يقرأ، الكتابة بصلاحية news أو access
+-- إعداد الـ Branding (اللوجو والألوان): بصلاحية access بس (أكتر حساسية من نص "عن البوابة")
 create policy read_settings on app_settings for select to authenticated using (true);
+create policy read_branding_anon on app_settings for select to anon using (key = 'branding');
 create policy write_settings on app_settings for all to authenticated
-  using (has_perm('news') or has_perm('access'))
-  with check (has_perm('news') or has_perm('access'));
+  using (case when key = 'branding' then has_perm('access') else (has_perm('news') or has_perm('access')) end)
+  with check (case when key = 'branding' then has_perm('access') else (has_perm('news') or has_perm('access')) end);
 grant select, insert, update, delete on app_settings to authenticated;
+grant select on app_settings to anon;
 
 -- قاعات الاجتماعات: أي موظف يقرا (يحجز)، الكتابة (ربط الإيميل الحقيقي) بصلاحية access بس
 create table meeting_rooms (
