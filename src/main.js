@@ -603,9 +603,10 @@ function vOrder(){
             <button class="sugar ${!d.mint?"on":""}" onclick="setMint('${m.id}',false)">🌿<em>${t("noMint")}</em></button>
             <button class="sugar ${d.mint?"on":""}" onclick="setMint('${m.id}',true)">🌿<em>${t("withMint")}</em></button>
           </div>`:""}
-          ${m.options&&m.options.length?`<div class="optlbl">${t("chooseOption")}</div><div class="sugars">
-            ${m.options.map((op,i)=>`<button class="sugar ${(d.opt||0)===i?"on":""}" onclick="setOpt('${m.id}',${i})">${esc(nm(op))}</button>`).join("")}
-          </div>`:""}
+          ${m.options&&m.options.length?`<div class="optlbl">${t("chooseOption")}</div>
+            <select class="inp" onchange="setOpt('${m.id}',this.value)">
+              ${m.options.map((op,i)=>`<option value="${i}" ${(d.opt||0)===i?"selected":""}>${esc(nm(op))}</option>`).join("")}
+            </select>`:""}
           <div class="optlbl">${t("qty")}</div>
           <div class="qtyrow"><div class="stepper">
             <button onclick="stp('${m.id}',-1)">−</button><span class="v">${num(d.q)}</span><button onclick="stp('${m.id}',1)">+</button></div>
@@ -652,7 +653,7 @@ function tog(id){openM=openM===id?null:id;if(openM&&!draft[id])draft[id]={q:1,s:
 function setSug(id,s){draft[id].s=s;render()}
 function setMilk(id,v){draft[id].milk=v;render()}
 function setMint(id,v){draft[id].mint=v;render()}
-function setOpt(id,i){draft[id].opt=i;render()}
+function setOpt(id,i){draft[id].opt=Number(i);render()}
 function stp(id,d){draft[id].q=Math.max(1,Math.min(30,draft[id].q+d));render()}
 function setNote(id,v){draft[id].note=v}
 function addCart(id){const m=mi(id),d=draft[id];
@@ -1604,7 +1605,7 @@ async function saveKioskPw(branchId){
 Object.assign(window, {
   doSignIn, doSignOut, go, setLang, setBranch, changeBranch, setCat, setWhere, setWhereType, setWhereRoom, toggleUserMenu,
   toggleLocalLogin, setLocalEmail, setLocalPassword, doSignInLocal,
-  tog, setSug, setMilk, setMint, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder, setPayMethod,
+  tog, setSug, setMilk, setMint, setOpt, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder, setPayMethod,
   setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk, setEditMint, addEditOption, removeEditOption,
   saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg, saveKioskPw,
   toggleOrgNode, orgSearch, uploadGalleryPhoto, delGalleryPhoto, uploadEditImage, removeEditImage,
