@@ -181,11 +181,13 @@ function toggleClosedDay(key){ closedOpenDay = closedOpenDay===key?null:key; ren
 window.toggleClosedDay=toggleClosedDay;
 
 function itemLineHtml(l){
+  const opt = lang==="ar" ? (l.option_ar||l.option_en) : (l.option_en||l.option_ar);
   return `<div class="tl"><span class="qn">${num(l.qty)}×</span>
     <span><b>${esc(lang==="ar"?l.name_ar:l.name_en)}</b>
     ${l.sugar!=null?`<span class="sug">${dots(l.sugar)}<em>${esc(nm(SUG[l.sugar]))}</em></span>`:""}
     ${l.milk?`<span class="sug">🥛<em>${t("withMilk")}</em></span>`:""}
     ${l.mint?`<span class="sug">🌿<em>${t("withMint")}</em></span>`:""}
+    ${opt?`<span class="sug">🏷️<em>${esc(opt)}</em></span>`:""}
     ${l.note?`<div class="note">✎ ${esc(l.note)}</div>`:""}</span></div>`;
 }
 function renderClosed(){
