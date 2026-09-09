@@ -300,6 +300,7 @@ let MY_ROOM_BOOKINGS=null;
 let suggestBody="", suggestSent=false, SUGGESTIONS=null;
 let ROOM_DASH=null;
 let roomDate="", roomAvail=null, roomBookingSlot=null, roomBookSubject="", roomBookDuration=30, roomAttendees=[], roomAttendeeQuery="";
+let roomBranch=null;
 let branch=null, paying=false, lastOrderNo="", payMethod="instapay";
 let cart=[], openM=null, draft={}, cat="all", where="", whereType="office", whereRoom="", edit=null, eKind=null;
 
@@ -925,8 +926,11 @@ function roomSlotTimes(){
 }
 function openRooms(){
   if(!roomDate) roomDate=todayISO();
-  loadRoomAvailability();
+  if(roomBranch===null && myProfile.site) roomBranch=myProfile.site;
+  if(roomBranch) loadRoomAvailability();
 }
+function pickRoomBranch(b){ roomBranch=b; loadRoomAvailability(); }
+function changeRoomBranch(){ roomBranch=""; roomAvail=null; render(); }
 async function loadRoomAvailability(){
   roomBookingSlot=null;
   if(!isWorkDay(roomDate)){ roomAvail=[]; render(); return; }
@@ -965,20 +969,35 @@ async function confirmRoomBook(){
   }catch(e){ toast(e.message||t("roomBookError")); }
 }
 function vRooms(){
+  if(!roomBranch){
+    return `<div class="eyebrow">${t("meetingRooms")}</div>
+    <div class="pickwrap"><h2>${t("whichBranch")}</h2><p>${t("whichBranchB")}</p>
+      <div class="pickgrid">${SITES.filter(s=>s.live).map(s=>{
+        const cnt=MEETING_ROOMS.filter(r=>!r.site||r.site===s.id).length;
+        return `<button class="pick" onclick="pickRoomBranch('${s.id}')">
+          <span class="pdot"></span><b>${esc(nm(s))}</b>
+          <span class="psub">${num(cnt)} ${t("meetingRooms")}</span>
+        </button>`;
+      }).join("")}</div></div>`;
+  }
+  const roomsHere = MEETING_ROOMS.filter(r=>!r.site||r.site===roomBranch);
+  const shownAvail = roomAvail ? roomAvail.filter(r=>roomsHere.some(rh=>rh.id===r.id)) : roomAvail;
   const workday=isWorkDay(roomDate);
   const matches = (workday && roomBookingSlot && roomAttendeeQuery.trim().length>1)
     ? ORG.filter(p=>p.email && p.name && p.name.toLowerCase().includes(roomAttendeeQuery.trim().toLowerCase())
         && !roomAttendees.some(a=>a.email===p.email) && p.email!==myProfile.email).slice(0,6)
     : [];
   return `<div class="eyebrow">${t("meetingRooms")}</div>
+  <div class="atbr"><span>${t("youAt")} <b>${esc(nm(so(roomBranch)))}</b></span>
+    <button onclick="changeRoomBranch()">${t("change")}</button></div>
   <div class="card" style="padding:14px 16px;margin-bottom:14px">
     <div class="fld" style="max-width:220px"><label>${t("date")}</label>
       <input type="date" class="inp" value="${esc(roomDate)}" min="${todayISO()}" onchange="setRoomDate(this.value)"></div>
   </div>
   ${!workday?`<div class="card empty"><b>—</b>${t("roomWeekendNote")}</div>`
-   :roomAvail===null?`<div class="card empty"><b>—</b>${t("loading")}</div>`
-   :!roomAvail.length?`<div class="card empty"><b>—</b>${t("roomNoneConfigured")}</div>`
-   :roomAvail.map(r=>`<div class="card room-card">
+   :shownAvail===null?`<div class="card empty"><b>—</b>${t("loading")}</div>`
+   :!shownAvail.length?`<div class="card empty"><b>—</b>${t("roomNoneConfigured")}</div>`
+   :shownAvail.map(r=>`<div class="card room-card">
       <div class="room-head"><b>${esc(r.name)}</b></div>
       <div class="room-slots">${r.slots.map(sl=>`<button class="rslot ${sl.busy?"busy":""} ${roomBookingSlot&&roomBookingSlot.roomId===r.id&&roomBookingSlot.time===sl.time?"on":""}"
           ${sl.busy?"disabled":`onclick="pickRoomSlot('${r.id}','${esc(r.name)}','${sl.time}')"`}>${sl.time}</button>`).join("")}</div>
@@ -1612,7 +1631,7 @@ Object.assign(window, {
   setEditIcon, uploadEditIcon, startBranchNew, startBranchEdit, cancelBranchEdit,
   setBranchField, setBranchLive, saveBranch, deleteBranch, uploadBranchQr, saveNameAr, setEditFree, autoTranslateAll,
   startAboutEdit, cancelAboutEdit, saveAbout,
-  setRoomDate, pickRoomSlot, cancelRoomSlot, setRoomSubject, confirmRoomBook,
+  setRoomDate, pickRoomSlot, cancelRoomSlot, setRoomSubject, confirmRoomBook, pickRoomBranch, changeRoomBranch,
   setRoomDuration, setAttendeeQuery, addAttendee, removeAttendee, cancelMyRoomBooking,
   startRoomNew, startRoomEdit, cancelRoomEdit, setRoomField, saveRoomFull, deleteRoom,
   startRoleNew, startRoleEditRole, cancelRoleEdit, setRoleField, saveRoleFull, deleteRoleFull,
