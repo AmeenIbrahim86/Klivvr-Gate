@@ -1,6 +1,6 @@
-# Klivvr Gate
+## Gate
 
-Internal company portal + buffet ordering system for three branches: **One Katameya**, **Ops Hub — Mohandeseen**, and **Ops Hub — Mossadak**. Bilingual (Arabic/English) with full RTL support.
+Internal company portal + buffet ordering system for three branches. Bilingual (Arabic/English) with full RTL support.
 
 | | |
 |---|---|
