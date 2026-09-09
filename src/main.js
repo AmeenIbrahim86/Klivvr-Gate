@@ -18,6 +18,7 @@ const L = { ar: {
  all:"الكل",
  sugar:"السكر",qty:"الكمية",notePH:"ملاحظة (اختياري)",addTo:"ضيف للطلب",
  milk:"اللبن",withMilk:"بلبن",noMilk:"من غير لبن",hasMilk:"له اختيار لبن",
+ mint:"النعناع",withMint:"بنعناع",noMint:"من غير نعناع",hasMint:"له اختيار نعناع",
  yourOrder:"طلبك",emptyCart:"لسه مضفتش حاجة",emptyCartB:"اختار من القائمة على الجنب",send:"ادفع الآن",cur:"ج.م",
  payTitle:"الدفع",payHint:"امسح الكود بتطبيق InstaPay وحوّل قيمة الطلب، وبعدين دوس تأكيد.",payConfirm:"تأكيد الطلب",payBack:"رجوع للسلة",
  payInstaPay:"InstaPay",payCash:"كاش",payCashHint:"هتدفع كاش لفريق البوفيه وقت الاستلام. دوس تأكيد عشان يبعت الطلب.",
@@ -102,6 +103,7 @@ const L = { ar: {
  all:"All",
  sugar:"Sugar",qty:"Quantity",notePH:"Note (optional)",addTo:"Add to order",
  milk:"Milk",withMilk:"With milk",noMilk:"No milk",hasMilk:"Has milk option",
+ mint:"Mint",withMint:"With mint",noMint:"No mint",hasMint:"Has mint option",
  yourOrder:"Your order",emptyCart:"Nothing added yet",emptyCartB:"Pick something from the menu",send:"Pay now",cur:"EGP",
  payTitle:"Payment",payHint:"Scan the code in the InstaPay app and transfer the order total, then confirm.",payConfirm:"Confirm order",payBack:"Back to cart",
  payInstaPay:"InstaPay",payCash:"Cash",payCashHint:"You'll pay cash to the buffet team on pickup. Confirm to send the order.",
@@ -580,7 +582,7 @@ function vOrder(){
   <div class="ordwrap"><div>
     <div class="cats">${CATS.map(c=>
       `<button class="${cat===c.k?"on":""}" onclick="setCat('${c.k}')">${esc(nm(c))}</button>`).join("")}</div>
-    <div class="mgrid">${list.map(m=>{const o=openM===m.id,d=draft[m.id]||{q:1,s:2,milk:false,note:""};
+    <div class="mgrid">${list.map(m=>{const o=openM===m.id,d=draft[m.id]||{q:1,s:2,milk:false,mint:false,note:""};
       return `<div class="mitem ${o?"open":""}">
         <button class="mrow" onclick="tog('${m.id}')">
           ${swatchHtml(m,38)}
@@ -593,6 +595,10 @@ function vOrder(){
             <button class="sugar ${!d.milk?"on":""}" onclick="setMilk('${m.id}',false)">🥛<em>${t("noMilk")}</em></button>
             <button class="sugar ${d.milk?"on":""}" onclick="setMilk('${m.id}',true)">🥛<em>${t("withMilk")}</em></button>
           </div>`:""}
+          ${m.mint?`<div class="optlbl">${t("mint")}</div><div class="sugars">
+            <button class="sugar ${!d.mint?"on":""}" onclick="setMint('${m.id}',false)">🌿<em>${t("noMint")}</em></button>
+            <button class="sugar ${d.mint?"on":""}" onclick="setMint('${m.id}',true)">🌿<em>${t("withMint")}</em></button>
+          </div>`:""}
           <div class="optlbl">${t("qty")}</div>
           <div class="qtyrow"><div class="stepper">
             <button onclick="stp('${m.id}',-1)">−</button><span class="v">${num(d.q)}</span><button onclick="stp('${m.id}',1)">+</button></div>
@@ -603,7 +609,7 @@ function vOrder(){
    <div class="card cart"><div class="ph"><h3>${t("yourOrder")}</h3></div>
      ${cart.length?cart.map((c,i)=>{const m=mi(c.m);return `<div class="cline">
         <span class="q">${num(c.q)}×</span>
-        <span style="flex:1">${esc(nm(m))}${c.s!=null?` <span style="color:var(--muted);font-size:11.5px">· ${esc(nm(SUG[c.s]))}</span>`:""}${c.milk?` <span style="color:var(--muted);font-size:11.5px">· ${t("withMilk")}</span>`:""}
+        <span style="flex:1">${esc(nm(m))}${c.s!=null?` <span style="color:var(--muted);font-size:11.5px">· ${esc(nm(SUG[c.s]))}</span>`:""}${c.milk?` <span style="color:var(--muted);font-size:11.5px">· ${t("withMilk")}</span>`:""}${c.mint?` <span style="color:var(--muted);font-size:11.5px">· ${t("withMint")}</span>`:""}
           ${c.note?`<div style="font-size:11px;color:var(--coral-ink)">${esc(c.note)}</div>`:""}</span>
         <span class="mono" style="font-size:12px;color:var(--muted)">${m.free?t("free"):num(m.price*c.q)}</span>
         <button class="x" onclick="rmCart(${i})">×</button></div>`}).join("")
@@ -635,14 +641,15 @@ function vPickBranch(){
         <span class="psub">${s.live?num(M.filter(m=>inBranch(m,s.id)&&m.avail).length)+" "+t("itemsAvail"):t("soon")}</span>
       </button>`).join("")}</div></div>`;
 }
-function tog(id){openM=openM===id?null:id;if(openM&&!draft[id])draft[id]={q:1,s:2,milk:false,note:""};render()}
+function tog(id){openM=openM===id?null:id;if(openM&&!draft[id])draft[id]={q:1,s:2,milk:false,mint:false,note:""};render()}
 function setSug(id,s){draft[id].s=s;render()}
 function setMilk(id,v){draft[id].milk=v;render()}
+function setMint(id,v){draft[id].mint=v;render()}
 function stp(id,d){draft[id].q=Math.max(1,Math.min(30,draft[id].q+d));render()}
 function setNote(id,v){draft[id].note=v}
 function addCart(id){const m=mi(id),d=draft[id];
-  cart.push({m:id,q:d.q,s:m.sugar?d.s:null,milk:m.milk?!!d.milk:null,note:(d.note||"").trim()});
-  draft[id]={q:1,s:2,milk:false,note:""};openM=null;render()}
+  cart.push({m:id,q:d.q,s:m.sugar?d.s:null,milk:m.milk?!!d.milk:null,mint:m.mint?!!d.mint:null,note:(d.note||"").trim()});
+  draft[id]={q:1,s:2,milk:false,mint:false,note:""};openM=null;render()}
 function rmCart(i){cart.splice(i,1);render()}
 function startPay(){
   if(!cart.length)return;
@@ -675,7 +682,7 @@ async function submitOrder(){
       requesterNameAr: myProfile.ar, requesterNameEn: myProfile.en,
       location: (whereType==="room" ? whereRoom : where) || "—",
       lines: cart.map(c=>{ const m=mi(c.m); return {
-        menuItemId: c.m, nameAr: m.ar, nameEn: m.en, qty: c.q, sugar: c.s, milk: c.milk, note: c.note, price: effPrice(m)
+        menuItemId: c.m, nameAr: m.ar, nameEn: m.en, qty: c.q, sugar: c.s, milk: c.milk, mint: c.mint, note: c.note, price: effPrice(m)
       };}),
       paymentMethod: payMethod
     });
@@ -1254,6 +1261,8 @@ function form(k){
         <option value="1" ${d.sugar?"selected":""}>✓</option><option value="0" ${d.sugar?"":"selected"}>✕</option></select></div>
       <div class="fld"><label>${t("hasMilk")}</label><select class="inp" onchange="setEditMilk(this.value)">
         <option value="1" ${d.milk?"selected":""}>✓</option><option value="0" ${d.milk?"":"selected"}>✕</option></select></div>
+      <div class="fld"><label>${t("hasMint")}</label><select class="inp" onchange="setEditMint(this.value)">
+        <option value="1" ${d.mint?"selected":""}>✓</option><option value="0" ${d.mint?"":"selected"}>✕</option></select></div>
       <div class="fld"><label>${t("isFree")}</label><select class="inp" onchange="setEditFree(this.value)">
         <option value="1" ${d.free?"selected":""}>✓</option><option value="0" ${d.free?"":"selected"}>✕</option></select></div>`:""}
     </div>
@@ -1263,7 +1272,7 @@ function form(k){
 function startEdit(k,id){
   const arr=k==="menu"?M:C[k];
   edit = id ? structuredClone(arr.find(x=>x.id===id))
-    : (k==="menu" ? {site:"all",cat:"snacks",price:10,sugar:false,milk:false,free:false,avail:true,col:"#B5651D"} : {});
+    : (k==="menu" ? {site:"all",cat:"snacks",price:10,sugar:false,milk:false,mint:false,free:false,avail:true,col:"#B5651D"} : {});
   eKind=k; render();
 }
 function cancelEdit(){edit=null;render()}
@@ -1272,6 +1281,7 @@ function setEditSite(v){edit.site=v}
 function setEditCat(v){edit.cat=v}
 function setEditSugar(v){edit.sugar=(v==="1")}
 function setEditMilk(v){edit.milk=(v==="1")}
+function setEditMint(v){edit.mint=(v==="1")}
 function setEditFree(v){edit.free=(v==="1")}
 async function uploadEditImage(input){
   const file = input.files && input.files[0];
@@ -1567,8 +1577,8 @@ async function saveKioskPw(branchId){
 Object.assign(window, {
   doSignIn, doSignOut, go, setLang, setBranch, changeBranch, setCat, setWhere, setWhereType, setWhereRoom, toggleUserMenu,
   toggleLocalLogin, setLocalEmail, setLocalPassword, doSignInLocal,
-  tog, setSug, setMilk, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder, setPayMethod,
-  setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk,
+  tog, setSug, setMilk, setMint, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder, setPayMethod,
+  setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk, setEditMint,
   saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg, saveKioskPw,
   toggleOrgNode, orgSearch, uploadGalleryPhoto, delGalleryPhoto, uploadEditImage, removeEditImage,
   setEditIcon, uploadEditIcon, startBranchNew, startBranchEdit, cancelBranchEdit,

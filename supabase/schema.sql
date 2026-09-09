@@ -137,6 +137,7 @@ create table menu_items (
   price numeric(10,2) not null default 0,
   has_sugar boolean default false,
   has_milk boolean default false,
+  has_mint boolean default false,
   icon text,
   is_free boolean default false,
   stock_qty int,
@@ -268,6 +269,7 @@ create table order_items (
   qty int not null default 1,
   sugar_level int check (sugar_level between 0 and 3),
   milk boolean,
+  mint boolean,
   note text,
   line_total numeric(10,2) default 0
 );
@@ -468,7 +470,7 @@ begin
            o.location, o.status, o.created_at,
            coalesce(jsonb_agg(jsonb_build_object(
              'name_ar', i.name_ar, 'name_en', i.name_en,
-             'qty', i.qty, 'sugar', i.sugar_level, 'milk', i.milk, 'note', i.note
+             'qty', i.qty, 'sugar', i.sugar_level, 'milk', i.milk, 'mint', i.mint, 'note', i.note
            )) filter (where i.id is not null), '[]'::jsonb),
            o.rejection_reason, o.payment_method
       from orders o

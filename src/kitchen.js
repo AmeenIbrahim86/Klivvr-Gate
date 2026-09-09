@@ -13,7 +13,7 @@ const L = { ar: {
  title:"شاشة البوفيه", noLogin:"بدون تسجيل دخول",
  kNew:"جديد", kProg:"بيتحضّر",
  kStart:"ابدأ التحضير", kDelivered:"اتسلّم ✓", kReject:"رفض",
- kEmpty:"مفيش طلبات مفتوحة", kEmptyB:"الطلبات الجديدة هتظهر هنا لوحدها", withMilk:"بلبن", cashDue:"كاش لسه",
+ kEmpty:"مفيش طلبات مفتوحة", kEmptyB:"الطلبات الجديدة هتظهر هنا لوحدها", withMilk:"بلبن", withMint:"بنعناع", cashDue:"كاش لسه",
  noBranch:"اللينك ده ناقصه الفرع", noBranchB:"كلّم الأدمن يديك لينك الشاشة الصح لفرعك.",
  enterPw:"باسورد الشاشة", enterPwB:"اكتب باسورد شاشة الفرع ده.",
  pwPH:"الباسورد", unlock:"دخول", wrongPw:"الباسورد غلط، جرّب تاني.",
@@ -27,7 +27,7 @@ const L = { ar: {
  title:"Buffet screen", noLogin:"No sign-in needed",
  kNew:"NEW", kProg:"PREPARING",
  kStart:"Start preparing", kDelivered:"Delivered ✓", kReject:"Reject",
- kEmpty:"No open orders", kEmptyB:"New orders appear here on their own", withMilk:"With milk", cashDue:"Cash due",
+ kEmpty:"No open orders", kEmptyB:"New orders appear here on their own", withMilk:"With milk", withMint:"With mint", cashDue:"Cash due",
  noBranch:"This link is missing a branch", noBranchB:"Ask an admin for your branch's screen link.",
  enterPw:"Screen password", enterPwB:"Enter this branch's screen password.",
  pwPH:"Password", unlock:"Unlock", wrongPw:"Wrong password, try again.",
@@ -237,6 +237,7 @@ function render(){
          <span><b>${esc(lang==="ar"?l.name_ar:l.name_en)}</b>
          ${l.sugar!=null?`<span class="sug">${dots(l.sugar)}<em>${esc(nm(SUG[l.sugar]))}</em></span>`:""}
          ${l.milk?`<span class="sug">🥛<em>${t("withMilk")}</em></span>`:""}
+         ${l.mint?`<span class="sug">🌿<em>${t("withMint")}</em></span>`:""}
          ${l.note?`<div class="note">✎ ${esc(l.note)}</div>`:""}</span></div>`).join("")}
        <div class="tft">${o.status==="new"
          ?(rejectingOrder===o.order_no
