@@ -302,6 +302,11 @@ export async function kitchenBoard(branch, password) {
   if (error) throw error;
   return data;
 }
+export async function kitchenClosedBoard(branch, password) {
+  const { data, error } = await sb.rpc('kitchen_closed_board', { _branch: branch, _password: password });
+  if (error) throw error;
+  return data;
+}
 export async function kitchenSetStatus(branch, password, orderNo, status, reason) {
   const { error } = await sb.rpc('kitchen_set_status', {
     _branch: branch, _password: password, _order_no: orderNo, _status: status, _reason: reason || null

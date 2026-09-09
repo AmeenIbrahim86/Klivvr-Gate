@@ -7,7 +7,7 @@
  * الباسورد بيتفضّل في الجهاز نفسه (sessionStorage) عشان الشاشة متطلبش
  * الباسورد تاني كل ما الصفحة تتحدّث لوحدها.
  */
-import { branchFromUrl, kitchenLogin, kitchenBoard, kitchenSetStatus, kitchenReport, watchOrders } from './api.js';
+import { branchFromUrl, kitchenLogin, kitchenBoard, kitchenClosedBoard, kitchenSetStatus, kitchenReport, watchOrders } from './api.js';
 
 const L = { ar: {
  title:"شاشة البوفيه", noLogin:"بدون تسجيل دخول",
@@ -23,6 +23,8 @@ const L = { ar: {
  pickRangeHint:"اختار المدة ودوس عرض.", noOrdersInRange:"مفيش طلبات في المدة دي.",
  totalOrders:"عدد الطلبات", totalRevenue:"الإجمالي", order:"الطلب", name:"الاسم", total:"القيمة",
  payment:"طريقة الدفع", status:"الحالة", date:"التاريخ", payCash:"كاش", loading:"بيحمّل…",
+ closedOrders:"الطلبات المقفولة", closedOrdersHint:"آخر ٥٠ طلب اتسلّم أو اترفض", noClosedOrders:"لسه مفيش طلبات مقفولة",
+ closedDelivered:"اتسلّم", closedRejected:"مرفوض", rejectedBecause:"سبب الرفض",
 },en:{
  title:"Buffet screen", noLogin:"No sign-in needed",
  kNew:"NEW", kProg:"PREPARING",
@@ -37,6 +39,8 @@ const L = { ar: {
  pickRangeHint:"Pick a date range and click show.", noOrdersInRange:"No orders in this range.",
  totalOrders:"Total orders", totalRevenue:"Total", order:"Order", name:"Name", total:"Total",
  payment:"Payment", status:"Status", date:"Date", payCash:"Cash", loading:"Loading…",
+ closedOrders:"Closed Orders", closedOrdersHint:"Last 50 delivered or rejected orders", noClosedOrders:"No closed orders yet",
+ closedDelivered:"Delivered", closedRejected:"Rejected", rejectedBecause:"Rejected because",
 }};
 
 const branch = branchFromUrl();
@@ -44,6 +48,7 @@ const pwKey = "kitchen_pw_" + (branch || "x");
 let lang="en", rows=[], unlocked=false, password="", loginErr="", checking=false;
 let rejectingOrder=null, rejectCustom="";
 let reportsOpen=false, reportFrom="", reportTo="", reportRows=null, reportLoading=false;
+let closedOpen=false, closedRows=null, closedLoading=false;
 const t=k=>L[lang][k]??k;
 const num=n=>Number(n).toLocaleString(lang==="ar"?"ar-EG":"en-US");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -109,7 +114,7 @@ window.pickRejectReason=pickRejectReason; window.setRejectCustom=setRejectCustom
 window.confirmRejectCustom=confirmRejectCustom;
 
 function openReports(){
-  reportsOpen=true;
+  reportsOpen=true; closedOpen=false;
   const today=new Date().toISOString().slice(0,10);
   if(!reportFrom) reportFrom=today;
   if(!reportTo) reportTo=today;
@@ -150,6 +155,50 @@ function exportCsv(){
 window.openReports=openReports; window.closeReports=closeReports;
 window.setReportFrom=setReportFrom; window.setReportTo=setReportTo;
 window.runReport=runReport; window.exportCsv=exportCsv;
+
+function openClosed(){
+  closedOpen=true; reportsOpen=false; render();
+  if(closedRows===null) loadClosed();
+}
+function closeClosed(){ closedOpen=false; render(); }
+async function loadClosed(){
+  closedLoading=true; render();
+  try{ closedRows=await kitchenClosedBoard(branch, password); }
+  catch(e){ console.error(e); closedRows=[]; }
+  closedLoading=false; render();
+}
+window.openClosed=openClosed; window.closeClosed=closeClosed;
+
+function itemLineHtml(l){
+  return `<div class="tl"><span class="qn">${num(l.qty)}×</span>
+    <span><b>${esc(lang==="ar"?l.name_ar:l.name_en)}</b>
+    ${l.sugar!=null?`<span class="sug">${dots(l.sugar)}<em>${esc(nm(SUG[l.sugar]))}</em></span>`:""}
+    ${l.milk?`<span class="sug">🥛<em>${t("withMilk")}</em></span>`:""}
+    ${l.mint?`<span class="sug">🌿<em>${t("withMint")}</em></span>`:""}
+    ${l.note?`<div class="note">✎ ${esc(l.note)}</div>`:""}</span></div>`;
+}
+function renderClosed(){
+  return `<div class="kwrap"><div class="khead">
+     <div><h2>${t("closedOrders")}</h2>
+       <button class="reports-link" onclick="closeClosed()">← ${t("backToBoard")}</button></div>
+     <span class="langsw">
+       <button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
+       <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span>
+   </div>
+   <div class="report-panel">
+     <p class="report-hint" style="text-align:start;padding:0 0 14px">${t("closedOrdersHint")}</p>
+     ${closedLoading?`<p class="report-hint">${t("loading")}</p>`
+      :!closedRows||!closedRows.length?`<p class="report-hint">${t("noClosedOrders")}</p>`
+      :`<div class="kboard">${closedRows.map(o=>`<div class="ticket ${o.status==="rejected"?"late":""}">
+          <div class="thd"><div class="t1"><span class="tno">${esc(o.order_no)}</span>
+            <span class="timer">${o.status==="delivered"?"✓ "+t("closedDelivered"):"✕ "+t("closedRejected")}</span></div>
+            <h4>${esc((lang==="ar"?o.requester_first_ar:o.requester_first_en)||o.requester_first_en||o.requester_first_ar||"")}</h4>
+            <div class="where">${esc(o.location||"")} · <span class="mono">${esc(new Date(o.created_at).toLocaleString(lang==="ar"?"ar-EG":"en-US",{dateStyle:"medium",timeStyle:"short"}))}</span></div></div>
+          ${(o.items||[]).map(itemLineHtml).join("")}
+          ${o.status==="rejected"&&o.rejection_reason?`<div class="tft" style="display:block"><p style="color:var(--coral-ink);font-size:12px;margin:0">${t("rejectedBecause")}: ${esc(o.rejection_reason)}</p></div>`:""}
+        </div>`).join("")}</div>`}
+   </div></div>`;
+}
 
 function renderReports(){
   const rev = reportRows ? reportRows.reduce((s,r)=>s+Number(r.total||0),0) : 0;
@@ -210,6 +259,7 @@ function render(){
   }
 
   if(reportsOpen){ $("#app").innerHTML = renderReports(); return; }
+  if(closedOpen){ $("#app").innerHTML = renderClosed(); return; }
 
   const d=new Date(), clk=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
   const newCount = rows.filter(r=>r.status==="new").length;
@@ -219,6 +269,7 @@ function render(){
      <div><h2>${t("title")}</h2>
        <div class="sub">AUTO-REFRESH · 30s <span class="nologin">${t("noLogin")}</span>
        <button class="reports-link" onclick="openReports()">📊 ${t("reports")}</button>
+       <button class="reports-link" onclick="openClosed()">📋 ${t("closedOrders")}</button>
        <span class="langsw" style="margin-inline-start:8px">
          <button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
          <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span></div></div>
@@ -233,12 +284,7 @@ function render(){
          <span class="timer">${String(mins).padStart(2,"0")}:00${late?" ⚠":""}</span></div>
          <h4>${esc((lang==="ar"?o.requester_first_ar:o.requester_first_en)||o.requester_first_en||o.requester_first_ar||"")}</h4>
          <div class="where">${esc(o.location||"")}${o.payment_method==="cash"?` <span class="cash-badge">💵 ${t("cashDue")}</span>`:""}</div></div>
-       ${(o.items||[]).map(l=>`<div class="tl"><span class="qn">${num(l.qty)}×</span>
-         <span><b>${esc(lang==="ar"?l.name_ar:l.name_en)}</b>
-         ${l.sugar!=null?`<span class="sug">${dots(l.sugar)}<em>${esc(nm(SUG[l.sugar]))}</em></span>`:""}
-         ${l.milk?`<span class="sug">🥛<em>${t("withMilk")}</em></span>`:""}
-         ${l.mint?`<span class="sug">🌿<em>${t("withMint")}</em></span>`:""}
-         ${l.note?`<div class="note">✎ ${esc(l.note)}</div>`:""}</span></div>`).join("")}
+       ${(o.items||[]).map(itemLineHtml).join("")}
        <div class="tft">${o.status==="new"
          ?(rejectingOrder===o.order_no
            ?`<div class="reject-picker">

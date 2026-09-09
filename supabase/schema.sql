@@ -546,6 +546,38 @@ begin
 end $$;
 grant execute on function public.kitchen_report(text,text,timestamptz,timestamptz) to anon;
 
+-- آخر الطلبات المقفولة (اتسلّمت أو اترفضت) بكل تفاصيلها — عشان مراجعتها
+-- من شاشة البوفيه نفسها، نفس شكل التذكرة العادي
+create or replace function public.kitchen_closed_board(_branch text, _password text)
+returns table (
+  order_no text, requester_first_ar text, requester_first_en text, location text, status text,
+  created_at timestamptz, items jsonb, rejection_reason text, payment_method text
+) language plpgsql security definer set search_path = public as $$
+begin
+  if not kitchen_login(_branch, _password) then
+    raise exception 'wrong password';
+  end if;
+
+  return query
+    select o.order_no,
+           array_to_string((string_to_array(trim(coalesce(o.requester_name_ar, o.requester_name)), ' '))[1:2], ' '),
+           array_to_string((string_to_array(trim(coalesce(o.requester_name_en, o.requester_name)), ' '))[1:2], ' '),
+           o.location, o.status, o.created_at,
+           coalesce(jsonb_agg(jsonb_build_object(
+             'name_ar', i.name_ar, 'name_en', i.name_en,
+             'qty', i.qty, 'sugar', i.sugar_level, 'milk', i.milk, 'mint', i.mint, 'note', i.note
+           )) filter (where i.id is not null), '[]'::jsonb),
+           o.rejection_reason, o.payment_method
+      from orders o
+      left join order_items i on i.order_id = o.id
+     where o.branch_id = _branch
+       and o.status in ('delivered','rejected')
+     group by o.id
+     order by o.created_at desc
+     limit 50;
+end $$;
+grant execute on function public.kitchen_closed_board(text,text) to anon;
+
 -- أي دالة جديدة تتعمل بعد كده (حتى لو بـ DROP ثم CREATE) تاخد صلاحية anon
 -- تلقائي — نفس فئة المشكلة اللي اتصلحت قبل كده مرتين، ده بيمنعها تتكرر تاني
 alter default privileges in schema public grant execute on functions to anon;
