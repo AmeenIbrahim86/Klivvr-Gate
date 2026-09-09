@@ -80,7 +80,7 @@ const L = { ar: {
  stockQty:"الكمية المتاحة",stockHint:"اسيبها فاضية = بلا حد (متاح دايمًا)",stockLeft:"متبقي",
  place:"المكان",day:"اليوم",month:"الشهر",cat:"التصنيف",price:"السعر",hasSugar:"له اختيارات سكر",avail:"متاح",color:"اللون",
  branch:"الفرع",allBranches:"كل الفروع",branches:"الفروع",role:"الدور",people:"الناس",
- whichBranch:"انت في أنهي فرع؟",whichBranchB:"عشان الطلب يروح لبوفيه الفرع الصح.",
+ whichBranch:"انت في أنهي فرع؟",whichBranchB:"عشان الطلب يروح لبوفيه الفرع الصح.",whichBranchRooms:"عشان نوريك قاعات فرعك بس.",
  youAt:"انت في",change:"غيّر",itemsAvail:"صنف متاح",
  branchNote:"البوفيه بس اللي بيتقسم فروع — باقي البوابة واحدة للشركة كلها.",
  kioskTitle:"شاشات البوفيه",kioskNote:"اللينك عادي ومش سري — الحماية بالباسورد بس.",
@@ -167,7 +167,7 @@ const L = { ar: {
  stockQty:"Stock quantity",stockHint:"Leave empty = unlimited (always available)",stockLeft:"left",
  place:"Place",day:"Day",month:"Month",cat:"Category",price:"Price",hasSugar:"Has sugar options",avail:"Available",color:"Colour",
  branch:"Branch",allBranches:"All branches",branches:"Branches",role:"Role",people:"People",
- whichBranch:"Which branch are you at?",whichBranchB:"So the order reaches the right buffet.",
+ whichBranch:"Which branch are you at?",whichBranchB:"So the order reaches the right buffet.",whichBranchRooms:"So we show you just your branch's rooms.",
  youAt:"You're at",change:"Change",itemsAvail:"items available",
  branchNote:"Only the buffet is split by branch — the rest of the portal is company-wide.",
  kioskTitle:"Buffet screens",kioskNote:"The link itself isn't secret — the password is what protects it.",
@@ -971,9 +971,8 @@ async function confirmRoomBook(){
 function vRooms(){
   if(!roomBranch){
     return `<div class="eyebrow">${t("meetingRooms")}</div>
-    <div class="pickwrap"><h2>${t("whichBranch")}</h2><p>${t("whichBranchB")}</p>
-      <div class="pickgrid">${SITES.filter(s=>s.live).map(s=>{
-        const cnt=MEETING_ROOMS.filter(r=>!r.site||r.site===s.id).length;
+    <div class="pickwrap"><h2>${t("whichBranch")}</h2><p>${t("whichBranchRooms")}</p>
+      <div class="pickgrid">${SITES.map(s=>({s,cnt:MEETING_ROOMS.filter(r=>!r.site||r.site===s.id).length})).filter(x=>x.cnt>0).map(({s,cnt})=>{
         return `<button class="pick" onclick="pickRoomBranch('${s.id}')">
           <span class="pdot"></span><b>${esc(nm(s))}</b>
           <span class="psub">${num(cnt)} ${t("meetingRooms")}</span>
