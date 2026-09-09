@@ -60,6 +60,21 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ── تعديل اسم و/أو إيميل حساب محلي موجود ──
+    if (action === "updateProfile") {
+      const { userId, fullName, email } = body;
+      if (!userId) return json({ error: "missing_fields" }, 400);
+      if (email) {
+        const { error } = await admin.auth.admin.updateUserById(userId, { email, email_confirm: true });
+        if (error) return json({ error: "email_update_failed", message: error.message }, 400);
+      }
+      if (fullName) {
+        const { error } = await admin.from("profiles").update({ full_name: fullName }).eq("id", userId);
+        if (error) return json({ error: "name_update_failed", message: error.message }, 500);
+      }
+      return json({ ok: true });
+    }
+
     // ── action = "create" (الافتراضي) ──
     const { email, password, fullName, roleId, branchId } = body;
     if (!email || !password || !fullName) return json({ error: "missing_fields", message: "لازم إيميل وباسورد واسم" }, 400);

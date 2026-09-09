@@ -48,8 +48,12 @@ const L = { ar: {
  addLocalUser:"إضافة حساب محلي",localUserNote:"لموظفين الفروع اللي مالهمش إيميل شركة (زي فريق البوفيه)",
  localFullName:"الاسم",localCreate:"إنشاء الحساب",localUserCreated:"اتعمل الحساب",
  localBadge:"محلي",localResetTitle:"غيّر الباسورد",localDeleteTitle:"امسح الحساب",
+ localEditNameTitle:"غيّر الاسم",localEditEmailTitle:"غيّر الإيميل",
+ localEditNamePrompt:"اكتب الاسم الجديد:",localEditEmailPrompt:"اكتب الإيميل الجديد:",
  localResetPrompt:"اكتب الباسورد الجديد (٨ حروف على الأقل):",localWeakPassword:"الباسورد لازم يكون ٨ حروف على الأقل",
  localResetDone:"اتغيّر الباسورد",localDeleteConfirm:"متأكد إنك عايز تمسح الحساب ده نهائيًا؟ مش هيرجع تاني.",
+ bulkSelectAll:"اختار الكل",bulkSelected:"متحدد",bulkPickBranch:"اختار فرع...",bulkPickRole:"اختار Role...",
+ bulkApply:"طبّق",bulkNothingToApply:"اختار فرع أو Role الأول",
  roomWeekendNote:"الغرف شغّالة من الأحد للخميس بس، من ٩ص لـ ٦م",roomTitleRequired:"لازم تكتب عنوان للاجتماع",
  roomAttendeesLabel:"ضيف زمايلك (اختياري)",roomAttendeeSearchPH:"دوّر بالاسم...",applyBooking:"تأكيد الحجز",
  myRoomReservations:"حجوزات القاعات بتاعتي",roomNoBookingsYet:"لسه معملتش أي حجز",
@@ -128,8 +132,12 @@ const L = { ar: {
  addLocalUser:"Add local account",localUserNote:"For branch staff without a company email (e.g. buffet team)",
  localFullName:"Name",localCreate:"Create account",localUserCreated:"Account created",
  localBadge:"Local",localResetTitle:"Reset password",localDeleteTitle:"Delete account",
+ localEditNameTitle:"Edit name",localEditEmailTitle:"Edit email",
+ localEditNamePrompt:"Enter the new name:",localEditEmailPrompt:"Enter the new email:",
  localResetPrompt:"Enter the new password (at least 8 characters):",localWeakPassword:"Password must be at least 8 characters",
  localResetDone:"Password changed",localDeleteConfirm:"Permanently delete this account? This cannot be undone.",
+ bulkSelectAll:"Select all",bulkSelected:"selected",bulkPickBranch:"Pick a branch...",bulkPickRole:"Pick a role...",
+ bulkApply:"Apply",bulkNothingToApply:"Pick a branch or role first",
  roomWeekendNote:"Rooms are only available Sunday to Thursday, 9 AM to 6 PM",roomTitleRequired:"Please enter a meeting title",
  roomAttendeesLabel:"Invite colleagues (optional)",roomAttendeeSearchPH:"Search by name...",applyBooking:"Confirm booking",
  myRoomReservations:"My Room Reservations",roomNoBookingsYet:"You haven't booked any rooms yet",
@@ -1348,6 +1356,7 @@ async function deleteRoleFull(id){
   }catch(e){ fail(e); }
 }
 let localUserForm=null;
+let selectedUsers=new Set(), bulkBranch="", bulkRole="";
 function startLocalUser(){ localUserForm={email:"",password:"",fullName:"",roleId:"viewer",branchId:""}; render(); }
 function cancelLocalUser(){ localUserForm=null; render(); }
 function setLocalUserField(k,v){ if(localUserForm) localUserForm[k]=v; }
@@ -1369,6 +1378,24 @@ async function resetLocalPw(id){
   try{
     await api.resetLocalUserPassword(id,pw);
     toast(t("localResetDone"));
+  }catch(e){ fail(e); }
+}
+async function editLocalName(id){
+  const v=prompt(t("localEditNamePrompt"));
+  if(!v||!v.trim()) return;
+  try{
+    await api.updateLocalUser(id,{fullName:v.trim()});
+    const u=A.users.find(x=>x.id===id);
+    if(u){ const wasSame=u.ar===u.en; u.en=v.trim(); if(wasSame)u.ar=v.trim(); }
+    toast(t("saved")); render();
+  }catch(e){ fail(e); }
+}
+async function editLocalEmail(id){
+  const v=prompt(t("localEditEmailPrompt"));
+  if(!v||!v.trim()) return;
+  try{
+    await api.updateLocalUser(id,{email:v.trim()});
+    toast(t("saved"));
   }catch(e){ fail(e); }
 }
 async function deleteLocalAcct(id){
@@ -1418,8 +1445,21 @@ function aAccess(){
         <button class="btn sm" onclick="startLocalUser()">+ ${t("addLocalUser")}</button>
       </div></div>
     ${localUserForm?localUserFormHtml():""}
-    ${A.users.map(u=>{const cls=u.role==="admin"?"c":u.role==="hr"?"o":"";
-      return `<div class="item" style="flex-wrap:wrap"><span class="av ${cls}">${esc((nm(u)||"?")[0])}</span>
+    <div class="bulkbar">
+      <label class="bulkall"><input type="checkbox" ${selectedUsers.size&&selectedUsers.size===A.users.length?"checked":""} onchange="toggleSelectAll()"> ${t("bulkSelectAll")}</label>
+      ${selectedUsers.size?`<span class="bulkcount">${num(selectedUsers.size)} ${t("bulkSelected")}</span>
+        <select class="inp" style="width:auto" onchange="setBulkBranch(this.value)">
+          <option value="">${t("bulkPickBranch")}</option>
+          ${SITES.map(s=>`<option value="${s.id}">${esc(nm(s))}</option>`).join("")}</select>
+        <select class="inp" style="width:auto" onchange="setBulkRole(this.value)">
+          <option value="">${t("bulkPickRole")}</option>
+          ${A.roles.map(x=>`<option value="${x.id}">${esc(nm(x))}</option>`).join("")}</select>
+        <button class="btn sm" onclick="applyBulk()">${t("bulkApply")}</button>`:""}
+    </div>
+    ${[...A.users].sort((a,b)=>nm(a).localeCompare(nm(b))).map(u=>{const cls=u.role==="admin"?"c":u.role==="hr"?"o":"";
+      return `<div class="item" style="flex-wrap:wrap">
+        <input type="checkbox" class="bulkchk" ${selectedUsers.has(u.id)?"checked":""} onchange="toggleUserSelect('${u.id}')">
+        <span class="av ${cls}">${esc((nm(u)||"?")[0])}</span>
         <div class="body"><b>${esc(nm(u))}</b>${u.local?` <span class="pill" style="font-size:10px">${t("localBadge")}</span>`:""}<p>${u.site?esc(nm(so(u.site))):"—"}</p></div>
         <input class="inp" style="width:130px" placeholder="${t("nameArHint")}" value="${esc(u.ar!==u.en?u.ar:'')}"
           onblur="saveNameAr('${u.id}',this.value)">
@@ -1429,6 +1469,8 @@ function aAccess(){
         <select class="inp" style="width:auto" onchange="setRole('${u.id}',this.value)">
           ${A.roles.map(x=>`<option value="${x.id}" ${x.id===u.role?"selected":""}>${esc(nm(x))}</option>`).join("")}</select>
         ${u.local?`<div class="acts">
+          <button class="iact" title="${t("localEditNameTitle")}" onclick="editLocalName('${u.id}')">✎</button>
+          <button class="iact" title="${t("localEditEmailTitle")}" onclick="editLocalEmail('${u.id}')">✉️</button>
           <button class="iact" title="${t("localResetTitle")}" onclick="resetLocalPw('${u.id}')">🔑</button>
           <button class="iact del" title="${t("localDeleteTitle")}" onclick="deleteLocalAcct('${u.id}')">🗑</button>
         </div>`:""}</div>`}).join("")}</div>`;
@@ -1467,6 +1509,31 @@ async function togPerm(rid,s){
       if(tab!=="overview"&&!can(TABS.find(x=>x[0]===tab)?.[3]||""))tab="overview";
     }
     render();
+  }catch(e){ fail(e); }
+}
+function toggleUserSelect(id){ selectedUsers.has(id)?selectedUsers.delete(id):selectedUsers.add(id); render(); }
+function toggleSelectAll(){
+  if(selectedUsers.size===A.users.length) selectedUsers.clear();
+  else A.users.forEach(u=>selectedUsers.add(u.id));
+  render();
+}
+function setBulkBranch(v){ bulkBranch=v; }
+function setBulkRole(v){ bulkRole=v; }
+async function applyBulk(){
+  if(!selectedUsers.size) return;
+  if(!bulkBranch&&!bulkRole){ toast(t("bulkNothingToApply")); return; }
+  try{
+    const ids=[...selectedUsers];
+    await Promise.all(ids.map(async id=>{
+      if(bulkBranch) await api.setUserBranch(id, bulkBranch);
+      if(bulkRole) await api.setUserRole(id, bulkRole);
+    }));
+    ids.forEach(id=>{
+      const u=A.users.find(x=>x.id===id);
+      if(u){ if(bulkBranch)u.site=bulkBranch; if(bulkRole)u.role=bulkRole; }
+    });
+    selectedUsers.clear(); bulkBranch=""; bulkRole="";
+    toast(t("saved")); render();
   }catch(e){ fail(e); }
 }
 async function setRole(id,rid){
@@ -1511,6 +1578,7 @@ Object.assign(window, {
   setRoomDuration, setAttendeeQuery, addAttendee, removeAttendee, cancelMyRoomBooking,
   startRoomNew, startRoomEdit, cancelRoomEdit, setRoomField, saveRoomFull, deleteRoom,
   startRoleNew, startRoleEditRole, cancelRoleEdit, setRoleField, saveRoleFull, deleteRoleFull,
-  startLocalUser, cancelLocalUser, setLocalUserField, submitLocalUser, resetLocalPw, deleteLocalAcct,
+  startLocalUser, cancelLocalUser, setLocalUserField, submitLocalUser, resetLocalPw, deleteLocalAcct, editLocalName, editLocalEmail,
+  toggleUserSelect, toggleSelectAll, setBulkBranch, setBulkRole, applyBulk,
   setSuggestBody, suggestWriteAnother, submitSuggestionForm, delSuggestion,
 });

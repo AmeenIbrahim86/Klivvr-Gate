@@ -166,6 +166,14 @@ export async function deleteLocalUser(userId) {
   if (data?.error) throw new Error(data.message || data.error);
   return data;
 }
+export async function updateLocalUser(userId, { fullName, email }) {
+  const { data, error } = await sb.functions.invoke('create-local-user', {
+    body: { action: 'updateProfile', userId, fullName, email }
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.message || data.error);
+  return data;
+}
 
 /* ═══════════════ محتوى البوابة + قائمة البوفيه ═══════════════ */
 const TABLES = { news: 'news', links: 'quick_links', policies: 'policies', events: 'events', menu: 'menu_items' };
