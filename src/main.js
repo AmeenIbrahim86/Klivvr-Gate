@@ -233,14 +233,25 @@ const NAME_DICT = {
   nasr:"نصر",farouk:"فاروق",farouq:"فاروق",anwar:"أنور",zaghloul:"زغلول",badawy:"بدوي",shawky:"شوقي",
   menna:"منة",seifallah:"سيف الله",seif:"سيف",elhawary:"الهواري",hawary:"الهواري",shehata:"شحاتة",
   baroudy:"بارودي",marina:"مارينا",tantawy:"طنطاوي",wagih:"وجيه",bayoumy:"بيومي",bayoumi:"بيومي",
-  haggag:"حجاج",sheiha:"شيحة",shaker:"شاكر",nashar:"النشار"
+  haggag:"حجاج",sheiha:"شيحة",shaker:"شاكر",nashar:"النشار",mohsen:"محسن",zeinab:"زينب",
+  youmna:"يمنى",bassiouny:"بسيوني",bassiouni:"بسيوني",
+  el:"ال",al:"ال",aly:"علي",reda:"رضا",hamed:"حامد",hossam:"حسام",nasser:"ناصر",
+  ismael:"إسماعيل",ismail:"إسماعيل",engy:"إنجي",abdelhalim:"عبدالحليم",ramzy:"رمزي",
+  batoul:"بتول",merna:"ميرنا",farghally:"فرغلي",behairy:"البحيري",hady:"هادي",
+  gamil:"جميل",saieed:"سعيد",abdelnaby:"عبدالنبي",elsaaty:"الساعاتي",elazazy:"العزازي",
+  ghareeb:"غريب",elbehairy:"البحيري",elhady:"الهادي",atef:"عاطف",moaz:"معاذ",
+  aboelseoud:"ابوالسعود",rashad:"رشاد"
 };
 function translitWord(w){
   const key=w.toLowerCase().replace(/[^a-z]/g,"");
   if(NAME_DICT[key]) return NAME_DICT[key];
   // تحويل صوتي تقريبي لأي كلمة مش في القاموس
-  let s=w.toLowerCase();
+  let s=w.toLowerCase().replace(/[^a-z]/g,""); // شيل أي حروف مش إنجليزي (زي الشرطة في El-Aghoury) الأول
   const endsInA=/a$/.test(s); // أغلب الأسماء اللي في القاموس وخلاصتها "a" بتتكتب بألف مقصورة (ى) مش عادية
+  // بادئة "الـ" التعريف بتتكتب "el" أو "al" غالبًا في أول اسم العيلة (زي ElHawary, AlBaroudy)
+  // وبترجمتها حرف بحرف بتغلط (بتبقى "يل" مش "ال")، فنتعامل معاها لوحدها الأول
+  let prefix="";
+  if(/^(el|al)[a-z]{2,}/.test(s)){ prefix="ال"; s=s.slice(2); }
   const multi=[["kh","خ"],["gh","غ"],["sh","ش"],["th","ث"],["dh","ذ"],["ch","تش"],["ph","ف"],
     ["ee","ي"],["oo","و"],["aa","ا"],["ou","و"],["ei","ي"],["ai","اي"],["ny","ني"]];
   for(const[a,b]of multi) s=s.split(a).join("§"+b+"§");
@@ -255,7 +266,7 @@ function translitWord(w){
     out += map[ch] ?? "";
   }
   if(endsInA && out.endsWith("ا")) out=out.slice(0,-1)+"ى";
-  return out||w;
+  return (prefix+out)||w;
 }
 function transliterateToArabic(fullName){
   return (fullName||"").trim().split(/\s+/).map(translitWord).join(" ");
