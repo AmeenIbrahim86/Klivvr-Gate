@@ -225,18 +225,22 @@ const NAME_DICT = {
   nada:"ندى",nadia:"نادية",reem:"ريم",rim:"ريم",asmaa:"أسماء",asma:"أسماء",eman:"إيمان",iman:"إيمان",
   shaimaa:"شيماء",shorouk:"شروق",samar:"سمر",marwa:"مروة",radwa:"رضوى",esraa:"إسراء",israa:"إسراء",
   ibrahim2:"إبراهيم",fahmy:"فهمي",naguib:"نجيب",farag:"فرج",zaki:"زكي",farghaly:"فرغلي",elgarhy:"الجارحي",
-  abdo2:"عبده",arous:"عروس",albaroudy:"الباروودي",sherif2:"شريف",hadhod:"هدهد",awad:"عوض",hassan2:"حسن",
+  abdo2:"عبده",arous:"عروس",albaroudy:"البارودي",sherif2:"شريف",hadhod:"هدهد",awad:"عوض",hassan2:"حسن",
   gouda:"جودة",elshamy:"الشامي",sallam:"سلام",gomaa:"جمعة",fouad2:"فؤاد",ghali:"غالي",wahba:"وهبة",
   aboul:"أبو",abou:"أبو",abu:"أبو",elsayed:"السيد",sayed:"سيد",sayyed:"سيد",hafez:"حافظ",soliman:"سليمان",
   suleiman:"سليمان",attia:"عطية",kandil:"قنديل",sabry:"صبري",lotfy:"لطفي",fikry:"فكري",labib:"لبيب",
   hegazy:"حجازي",hegazi:"حجازي",youssry:"يسري",amer:"عامر",gaber:"جابر",gabr:"جبر",naeem:"نعيم",
-  nasr:"نصر",farouk:"فاروق",farouq:"فاروق",anwar:"أنور",zaghloul:"زغلول",badawy:"بدوي",shawky:"شوقي"
+  nasr:"نصر",farouk:"فاروق",farouq:"فاروق",anwar:"أنور",zaghloul:"زغلول",badawy:"بدوي",shawky:"شوقي",
+  menna:"منة",seifallah:"سيف الله",seif:"سيف",elhawary:"الهواري",hawary:"الهواري",shehata:"شحاتة",
+  baroudy:"بارودي",marina:"مارينا",tantawy:"طنطاوي",wagih:"وجيه",bayoumy:"بيومي",bayoumi:"بيومي",
+  haggag:"حجاج",sheiha:"شيحة",shaker:"شاكر",nashar:"النشار"
 };
 function translitWord(w){
   const key=w.toLowerCase().replace(/[^a-z]/g,"");
   if(NAME_DICT[key]) return NAME_DICT[key];
   // تحويل صوتي تقريبي لأي كلمة مش في القاموس
   let s=w.toLowerCase();
+  const endsInA=/a$/.test(s); // أغلب الأسماء اللي في القاموس وخلاصتها "a" بتتكتب بألف مقصورة (ى) مش عادية
   const multi=[["kh","خ"],["gh","غ"],["sh","ش"],["th","ث"],["dh","ذ"],["ch","تش"],["ph","ف"],
     ["ee","ي"],["oo","و"],["aa","ا"],["ou","و"],["ei","ي"],["ai","اي"],["ny","ني"]];
   for(const[a,b]of multi) s=s.split(a).join("§"+b+"§");
@@ -245,8 +249,12 @@ function translitWord(w){
   let out="";
   for(const ch of s){
     if(ch==="§"){continue}
+    // الحرف ده عربي جاهز جالنا من تعويض ثنائي الحروف (زي "ei"→"ي") — نضيفه زي ما هو
+    // من غير ما نحاول نترجمه تاني، لأن خريطة map دي مفاتيحها حروف إنجليزي بس
+    if(/[\u0600-\u06FF]/.test(ch)){ out+=ch; continue; }
     out += map[ch] ?? "";
   }
+  if(endsInA && out.endsWith("ا")) out=out.slice(0,-1)+"ى";
   return out||w;
 }
 function transliterateToArabic(fullName){
