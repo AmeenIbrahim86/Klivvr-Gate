@@ -24,7 +24,7 @@ const L = { ar: {
  totalOrders:"عدد الطلبات", totalRevenue:"الإجمالي", order:"الطلب", name:"الاسم", total:"القيمة",
  payment:"طريقة الدفع", status:"الحالة", date:"التاريخ", payCash:"كاش", loading:"بيحمّل…",
  closedOrders:"الطلبات المقفولة", closedOrdersHint:"آخر ٥٠ طلب اتسلّم أو اترفض", noClosedOrders:"لسه مفيش طلبات مقفولة",
- closedDelivered:"اتسلّم", closedRejected:"مرفوض", rejectedBecause:"سبب الرفض",
+ closedDelivered:"اتسلّم", closedRejected:"مرفوض", rejectedBecause:"سبب الرفض", today:"النهاردة",
 },en:{
  title:"Buffet screen", noLogin:"No sign-in needed",
  kNew:"NEW", kProg:"PREPARING",
@@ -40,7 +40,7 @@ const L = { ar: {
  totalOrders:"Total orders", totalRevenue:"Total", order:"Order", name:"Name", total:"Total",
  payment:"Payment", status:"Status", date:"Date", payCash:"Cash", loading:"Loading…",
  closedOrders:"Closed Orders", closedOrdersHint:"Last 50 delivered or rejected orders", noClosedOrders:"No closed orders yet",
- closedDelivered:"Delivered", closedRejected:"Rejected", rejectedBecause:"Rejected because",
+ closedDelivered:"Delivered", closedRejected:"Rejected", rejectedBecause:"Rejected because", today:"Today",
 }};
 
 const branch = branchFromUrl();
@@ -48,7 +48,7 @@ const pwKey = "kitchen_pw_" + (branch || "x");
 let lang="en", rows=[], unlocked=false, password="", loginErr="", checking=false;
 let rejectingOrder=null, rejectCustom="";
 let reportsOpen=false, reportFrom="", reportTo="", reportRows=null, reportLoading=false;
-let closedOpen=false, closedRows=null, closedLoading=false;
+let closedOpen=false, closedRows=null, closedLoading=false, closedOpenDay=null;
 const t=k=>L[lang][k]??k;
 const num=n=>Number(n).toLocaleString(lang==="ar"?"ar-EG":"en-US");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -157,7 +157,9 @@ window.setReportFrom=setReportFrom; window.setReportTo=setReportTo;
 window.runReport=runReport; window.exportCsv=exportCsv;
 
 function openClosed(){
-  closedOpen=true; reportsOpen=false; render();
+  closedOpen=true; reportsOpen=false;
+  if(!closedOpenDay) closedOpenDay=dayKey(new Date());
+  render();
   if(closedRows===null) loadClosed();
 }
 function closeClosed(){ closedOpen=false; render(); }
@@ -169,6 +171,15 @@ async function loadClosed(){
 }
 window.openClosed=openClosed; window.closeClosed=closeClosed;
 
+function dayKey(d){ const dt=new Date(d); return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0"); }
+function dayLabel(key){
+  if(key===dayKey(new Date())) return t("today");
+  const [y,m,d]=key.split("-").map(Number);
+  return new Date(y,m-1,d).toLocaleDateString(lang==="ar"?"ar-EG":"en-US",{weekday:"short",month:"short",day:"numeric"});
+}
+function toggleClosedDay(key){ closedOpenDay = closedOpenDay===key?null:key; render(); }
+window.toggleClosedDay=toggleClosedDay;
+
 function itemLineHtml(l){
   return `<div class="tl"><span class="qn">${num(l.qty)}×</span>
     <span><b>${esc(lang==="ar"?l.name_ar:l.name_en)}</b>
@@ -178,6 +189,28 @@ function itemLineHtml(l){
     ${l.note?`<div class="note">✎ ${esc(l.note)}</div>`:""}</span></div>`;
 }
 function renderClosed(){
+  let groupsHtml="";
+  if(!closedLoading && closedRows && closedRows.length){
+    const groups={};
+    for(const o of closedRows){ const k=dayKey(o.created_at); (groups[k]=groups[k]||[]).push(o); }
+    const keys=Object.keys(groups).sort().reverse();
+    groupsHtml = keys.map(k=>{
+      const open=closedOpenDay===k;
+      return `<div class="day-group">
+        <button class="day-head" onclick="toggleClosedDay('${k}')">
+          <span>${open?"▾":"▸"} ${dayLabel(k)}</span><span class="mono">${num(groups[k].length)}</span>
+        </button>
+        ${open?`<div class="kboard">${groups[k].map(o=>`<div class="ticket ${o.status==="rejected"?"late":""}">
+            <div class="thd"><div class="t1"><span class="tno">${esc(o.order_no)}</span>
+              <span class="timer">${o.status==="delivered"?"✓ "+t("closedDelivered"):"✕ "+t("closedRejected")}</span></div>
+              <h4>${esc((lang==="ar"?o.requester_first_ar:o.requester_first_en)||o.requester_first_en||o.requester_first_ar||"")}</h4>
+              <div class="where">${esc(o.location||"")} · <span class="mono">${esc(new Date(o.created_at).toLocaleTimeString(lang==="ar"?"ar-EG":"en-US",{timeStyle:"short"}))}</span></div></div>
+            ${(o.items||[]).map(itemLineHtml).join("")}
+            ${o.status==="rejected"&&o.rejection_reason?`<div class="tft" style="display:block"><p style="color:var(--coral-ink);font-size:12px;margin:0">${t("rejectedBecause")}: ${esc(o.rejection_reason)}</p></div>`:""}
+          </div>`).join("")}</div>`:""}
+      </div>`;
+    }).join("");
+  }
   return `<div class="kwrap"><div class="khead">
      <div><h2>${t("closedOrders")}</h2>
        <button class="reports-link" onclick="closeClosed()">← ${t("backToBoard")}</button></div>
@@ -189,14 +222,7 @@ function renderClosed(){
      <p class="report-hint" style="text-align:start;padding:0 0 14px">${t("closedOrdersHint")}</p>
      ${closedLoading?`<p class="report-hint">${t("loading")}</p>`
       :!closedRows||!closedRows.length?`<p class="report-hint">${t("noClosedOrders")}</p>`
-      :`<div class="kboard">${closedRows.map(o=>`<div class="ticket ${o.status==="rejected"?"late":""}">
-          <div class="thd"><div class="t1"><span class="tno">${esc(o.order_no)}</span>
-            <span class="timer">${o.status==="delivered"?"✓ "+t("closedDelivered"):"✕ "+t("closedRejected")}</span></div>
-            <h4>${esc((lang==="ar"?o.requester_first_ar:o.requester_first_en)||o.requester_first_en||o.requester_first_ar||"")}</h4>
-            <div class="where">${esc(o.location||"")} · <span class="mono">${esc(new Date(o.created_at).toLocaleString(lang==="ar"?"ar-EG":"en-US",{dateStyle:"medium",timeStyle:"short"}))}</span></div></div>
-          ${(o.items||[]).map(itemLineHtml).join("")}
-          ${o.status==="rejected"&&o.rejection_reason?`<div class="tft" style="display:block"><p style="color:var(--coral-ink);font-size:12px;margin:0">${t("rejectedBecause")}: ${esc(o.rejection_reason)}</p></div>`:""}
-        </div>`).join("")}</div>`}
+      :groupsHtml}
    </div></div>`;
 }
 
