@@ -42,6 +42,7 @@ const L = { ar: {
  roomLoadError:"مقدرش أجيب الأوقات، جرّب تاني",roomBooked:"اتحجزت القاعة!",roomBookError:"الحجز فشل، جرّب تاني",
  roomBookingFor:"حجز الساعة",roomSubjectPH:"عنوان الاجتماع (اختياري)",min:"د",
  roomCapNote:"أقصى حجز مسموح به ساعتين في اليوم لكل موظف.",roomDefaultSubject:"اجتماع",bookRoom:"احجز قاعة",date:"التاريخ",
+ roomDurationBlocked:"المدة دي هتوصل لسلوت محجوز",
  roomEmailNote:"إيميل الـ resource mailbox الحقيقي بتاع كل قاعة في Microsoft — من غيره القاعة مش هتشتغل",roomEmailPH:"room@company.com",
  roomId:"كود القاعة",roomEmailLabel:"الإيميل",addRoom:"إضافة قاعة",roomNameRequired:"لازم اسم للقاعة",
  roomDeleteConfirm:"متأكد إنك عايز تمسح القاعة دي؟",
@@ -131,6 +132,7 @@ const L = { ar: {
  roomLoadError:"Couldn't load availability, try again",roomBooked:"Room booked!",roomBookError:"Booking failed, try again",
  roomBookingFor:"Booking at",roomSubjectPH:"Meeting title (optional)",min:"m",
  roomCapNote:"Maximum 2 hours of bookings per employee per day.",roomDefaultSubject:"Meeting",bookRoom:"Book a room",date:"Date",
+ roomDurationBlocked:"This duration would reach a booked slot",
  roomEmailNote:"Each room's real Microsoft resource mailbox address — without it, the room won't work",roomEmailPH:"room@company.com",
  roomId:"Room code",roomEmailLabel:"Email",addRoom:"Add room",roomNameRequired:"Room name is required",
  roomDeleteConfirm:"Delete this room?",
@@ -1066,11 +1068,19 @@ function vRooms(){
       <div class="room-head"><b>${esc(r.name)}</b></div>
       <div class="room-slots">${r.slots.map(sl=>`<button class="rslot ${sl.busy?"busy":""} ${roomBookingSlot&&roomBookingSlot.roomId===r.id&&roomBookingSlot.time===sl.time?"on":""}"
           ${sl.busy?"disabled":`onclick="pickRoomSlot('${r.id}','${esc(r.name)}','${sl.time}')"`}>${sl.time}</button>`).join("")}</div>
-      ${roomBookingSlot&&roomBookingSlot.roomId===r.id?`<div class="room-book-form">
+      ${roomBookingSlot&&roomBookingSlot.roomId===r.id?(()=>{
+        const idx=r.slots.findIndex(s=>s.time===roomBookingSlot.time);
+        let maxMin=0;
+        if(idx>-1){ for(let i=idx;i<r.slots.length;i++){ if(r.slots[i].busy) break; maxMin+=30; } }
+        if(roomBookDuration>maxMin) roomBookDuration=Math.min(30,maxMin)||30;
+        return `<div class="room-book-form">
         <p>${t("roomBookingFor")} <b class="mono">${roomBookingSlot.time}</b></p>
         <input class="inp" placeholder="${t("roomSubjectPH")}" value="${esc(roomBookSubject)}" oninput="setRoomSubject(this.value)">
         <div class="room-durations">
-          ${[30,60,90,120].map(d=>`<button class="btn ${roomBookDuration===d?"":"ghost"} sm" onclick="setRoomDuration(${d})">${d} ${t("min")}</button>`).join("")}
+          ${[30,60,90,120].map(d=>{
+            const fits=d<=maxMin;
+            return `<button class="btn ${roomBookDuration===d?"":"ghost"} sm" ${fits?`onclick="setRoomDuration(${d})"`:"disabled"} title="${fits?"":t("roomDurationBlocked")}">${d} ${t("min")}</button>`;
+          }).join("")}
         </div>
         <div class="room-attendees">
           <label>${t("roomAttendeesLabel")}</label>
@@ -1080,7 +1090,8 @@ function vRooms(){
         </div>
         <button class="btn" style="width:100%;margin-top:4px" onclick="confirmRoomBook()">${t("applyBooking")}</button>
         <button class="b-cancel" onclick="cancelRoomSlot()">${t("cancel")}</button>
-      </div>`:""}
+      </div>`;
+      })():""}
     </div>`).join("")}
   <p class="report-hint" style="text-align:center">${t("roomCapNote")}</p>`;
 }
