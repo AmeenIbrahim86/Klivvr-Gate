@@ -28,7 +28,7 @@ const TZ = "Egypt Standard Time";       // اسم التايم زون اللي G
 const BUSINESS_START = 9;               // الساعة ٩ صباحًا
 const BUSINESS_END = 18;                // لحد الساعة ٦ مساءً
 const SLOT_MINUTES = 30;
-const DAILY_CAP_MINUTES = 120;          // أقصى حجز مسموح للموظف الواحد في اليوم
+const DAILY_CAP_MINUTES = 120;          // أقصى مدة للحجز الواحد نفسه (مش إجمالي اليوم كله)
 const WORKING_WEEKDAYS = [0,1,2,3,4];   // الأحد(0) للخميس(4) — نفس أيام عمل القاعات في Microsoft
 function weekdayOf(dateStr: string){ const [y,m,d]=dateStr.split("-").map(Number); return new Date(Date.UTC(y,m-1,d)).getUTCDay(); }
 
@@ -165,29 +165,12 @@ Deno.serve(async (req) => {
         return json({ error: "outside_business_hours", message: `الحجز لازم يكون بين ${BUSINESS_START}:00 و ${BUSINESS_END}:00` }, 400);
       }
 
-      // ── اتأكد إن الموظف مخطاش حد الساعتين في اليوم ده (في أي قاعة) ──
-      const dayStart = `${date}T00:00:00`;
-      const dayEnd = `${date}T23:59:59`;
-      const cvRes = await fetch(
-        `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(employeeEmail)}/calendarView` +
-        `?startDateTime=${dayStart}&endDateTime=${dayEnd}&$select=subject,start,end,location`,
-        { headers: { ...gh, Prefer: `outlook.timezone="${TZ}"` } },
-      );
-      const cvJson = await cvRes.json();
-      if (cvJson.error) return json({ error: "Graph calendarView failed", detail: cvJson.error }, 500);
-
-      const roomNames = new Set(roomsWithEmail.map((r: any) => r.name));
-      let usedMinutes = 0;
-      for (const ev of cvJson.value || []) {
-        if (!roomNames.has(ev.location?.displayName)) continue;
-        const s = new Date(ev.start.dateTime + "Z").getTime();
-        const e = new Date(ev.end.dateTime + "Z").getTime();
-        usedMinutes += Math.round((e - s) / 60000);
-      }
-      if (usedMinutes + durationMin > DAILY_CAP_MINUTES) {
+      // ── الحجز الواحد نفسه ميتخطاش الساعتين (مش إجمالي اليوم — ده معناه إنه يقدر
+      //    يحجز أكتر من قاعة في نفس اليوم، كل حجز لوحده بحد أقصى ساعتين) ──
+      if (durationMin > DAILY_CAP_MINUTES) {
         return json({
-          error: "daily_cap_exceeded",
-          message: `أقصى حجز في اليوم ${DAILY_CAP_MINUTES / 60} ساعة — استخدمت ${Math.round(usedMinutes / 60 * 10) / 10} ساعة النهاردة`,
+          error: "booking_too_long",
+          message: `أقصى مدة للحجز الواحد ${DAILY_CAP_MINUTES / 60} ساعة`,
         }, 400);
       }
 
