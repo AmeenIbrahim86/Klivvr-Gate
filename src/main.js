@@ -68,6 +68,10 @@ const L = { ar: {
  suggestPH:"اكتب اقتراحك هنا...",suggestSubmit:"ابعت",suggestThanks:"وصل اقتراحك، شكرًا!",suggestAnother:"ابعت واحد تاني",
  suggestEmptyError:"اكتب حاجة الأول",suggestNoneYet:"لسه مفيش اقتراحات",suggestDeleteConfirm:"متأكد إنك عايز تمسح الاقتراح ده؟",
  dashboardBuffet:"لوحة البوفيه",dashboardRooms:"لوحة القاعات",homePage:"الصفحة الرئيسية",orderBuffet:"طلب من البوفيه",
+ knowledgeBase:"قاعدة المعرفة",kbSearchPH:"دوّر في المقالات...",kbNoResults:"لا يوجد نتائج",
+ whoOwnsWhat:"مين المسؤول عن إيه",ownersSearchPH:"دوّر باسم الخدمة أو المسؤول...",contactOwner:"تواصل مع المسؤول",
+ searchEverything:"دوّر في كل حاجة",searchPH:"دوّر في الأخبار، السياسات، قاعدة المعرفة، الناس...",
+ searchHint:"اكتب حرفين على الأقل عشان تبدأ النتائج تظهر",searchNoResults:"مفيش نتائج مطابقة",
  dashToday:"إحصائيات النهاردة",dashOrdersToday:"عدد الطلبات",dashRevenueToday:"الإيراد",dashLast7Days:"آخر ٧ أيام",
  dashTodayMeetings:"اجتماعات النهاردة في كل القاعات",dashNoMeetingsToday:"مفيش اجتماعات النهاردة",aOrders:"الطلبات",
  branchIdInvalid:"كود الفرع لازم يكون حروف/أرقام إنجليزي بس، من غير مسافات",
@@ -77,6 +81,8 @@ const L = { ar: {
  orgSearchPH:"دوّر بالاسم…",orgSearchBtn:"بحث",orgNotFound:"ملقيتش حد بالاسم ده",
  add:"إضافة",save:"حفظ",cancel:"إلغاء",
  tag:"التصنيف",titleAR:"العنوان بالعربي",titleEN:"العنوان بالإنجليزي",bodyAR:"النص بالعربي",bodyEN:"النص بالإنجليزي",
+ category:"الفئة",serviceAR:"اسم الخدمة بالعربي",serviceEN:"اسم الخدمة بالإنجليزي",ownerAR:"المسؤول بالعربي",ownerEN:"المسؤول بالإنجليزي",
+ contactEmail:"إيميل التواصل",contactLink:"رابط التواصل",
  author:"الكاتب",date:"التاريخ",icon:"الأيقونة",url:"اللينك",dept:"القسم",version:"الإصدار",
  image:"لينك الصورة",imageHint:"الصق لينك صورة من الإنترنت (اختياري)",
  descAR:"وصف قصير بالعربي",descEN:"وصف قصير بالإنجليزي",
@@ -158,6 +164,10 @@ const L = { ar: {
  suggestPH:"Write your suggestion here...",suggestSubmit:"Send",suggestThanks:"Your suggestion was sent, thank you!",suggestAnother:"Send another",
  suggestEmptyError:"Write something first",suggestNoneYet:"No suggestions yet",suggestDeleteConfirm:"Delete this suggestion?",
  dashboardBuffet:"Buffet Dashboard",dashboardRooms:"Rooms Dashboard",homePage:"Home Page",orderBuffet:"Order from Buffet",
+ knowledgeBase:"Knowledge Base",kbSearchPH:"Search articles...",kbNoResults:"No results",
+ whoOwnsWhat:"Who Owns What",ownersSearchPH:"Search by service or owner...",contactOwner:"Contact owner",
+ searchEverything:"Search Everything",searchPH:"Search news, policies, knowledge base, people...",
+ searchHint:"Type at least 2 characters to see results",searchNoResults:"No matching results",
  dashToday:"Today's stats",dashOrdersToday:"Orders",dashRevenueToday:"Revenue",dashLast7Days:"Last 7 days",
  dashTodayMeetings:"Today's meetings across all rooms",dashNoMeetingsToday:"No meetings today",aOrders:"Orders",
  branchIdInvalid:"Branch code must be lowercase letters/numbers only, no spaces",
@@ -167,6 +177,8 @@ const L = { ar: {
  orgSearchPH:"Search by name…",orgSearchBtn:"Search",orgNotFound:"No one found with that name",
  add:"Add",save:"Save",cancel:"Cancel",
  tag:"Tag",titleAR:"Title (Arabic)",titleEN:"Title (English)",bodyAR:"Body (Arabic)",bodyEN:"Body (English)",
+ category:"Category",serviceAR:"Service name (Arabic)",serviceEN:"Service name (English)",ownerAR:"Owner (Arabic)",ownerEN:"Owner (English)",
+ contactEmail:"Contact email",contactLink:"Contact link",
  author:"Author",date:"Date",icon:"Icon",url:"Link",dept:"Department",version:"Version",
  image:"Image link",imageHint:"Paste an image link from the internet (optional)",
  descAR:"Short description (Arabic)",descEN:"Short description (English)",
@@ -191,7 +203,7 @@ const L = { ar: {
  noBranch:"You're not assigned to a branch yet — ask an admin to set one.",
 }};
 
-const SECTIONS = ["portal","order_buffet","news","links","policies","events","menu","orders","access","gallery","rooms","suggestions","dashboard_buffet","dashboard_rooms"];
+const SECTIONS = ["portal","order_buffet","news","links","policies","events","menu","orders","access","gallery","rooms","suggestions","dashboard_buffet","dashboard_rooms","kb","owners"];
 const CATS = [
  {k:"all",ar:"الكل",en:"All"},
  {k:"free",ar:"مجاني",en:"Free"},
@@ -275,6 +287,7 @@ function transliterateToArabic(fullName){
 }
 const TABS = [["overview","overview","▦",null],["news","aNews","✦","news"],["links","aLinks","◫","links"],
  ["policies","aPolicies","▤","policies"],["events","aEvents","▣","events"],["menu","aMenu","☕","menu"],
+ ["kb","knowledgeBase","📚","kb"],["owners","whoOwnsWhat","🗂️","owners"],
  ["rooms","meetingRooms","🏢","rooms"],["suggestions","suggestions","💡","suggestions"],
  ["dashboardBuffet","dashboardBuffet","📊","dashboard_buffet"],["dashboardRooms","dashboardRooms","📈","dashboard_rooms"],
  ["access","aAccess","⚿","access"],["branding","branding","🎨","access"]];
@@ -313,11 +326,13 @@ const FIELDS = {
  links:[["ar","titleAR"],["en","titleEN"],["descAR","descAR"],["descEN","descEN"],["icon","icon"],["url","url"]],
  policies:[["ar","titleAR"],["en","titleEN"],["dept","dept"],["ver","version"],["date","date"],["url","url"]],
  events:[["ar","titleAR"],["en","titleEN"],["placeAR","place"],["placeEN","place"],["day","day"],["monAR","month"],["monEN","month"],["startsAt","eventDateTime"],["image","image"]],
- menu:[["ar","titleAR"],["en","titleEN"],["price","price"],["stock","stockQty"],["col","color"],["icon","icon"],["options","customOptions"]]};
+ menu:[["ar","titleAR"],["en","titleEN"],["price","price"],["stock","stockQty"],["col","color"],["icon","icon"],["options","customOptions"]],
+ kb:[["titleAR","titleAR"],["titleEN","titleEN"],["category","category"],["bodyAR","bodyAR",1],["bodyEN","bodyEN",1]],
+ owners:[["ar","serviceAR"],["en","serviceEN"],["ownerAR","ownerAR"],["ownerEN","ownerEN"],["contactEmail","contactEmail"],["contactLink","contactLink"]]};
 
 /* ═══════════════ state ═══════════════ */
 let lang="en", authed=false, view="portal", tab="overview";
-let myProfile=null, SITES=[], C={news:[],links:[],policies:[],events:[]}, M=[], O=[], A={roles:[],users:[]}, ORG=[], GALLERY=[];
+let myProfile=null, SITES=[], C={news:[],links:[],policies:[],events:[],kb:[],owners:[]}, M=[], O=[], A={roles:[],users:[]}, ORG=[], GALLERY=[];
 let ABOUT={ar:"",en:""}, aboutEditing=false;
 let BRANDING=null, brandingEdit=null;
 
@@ -381,7 +396,7 @@ const inBranch=(x,b)=>!x.site||x.site==="all"||x.site===b;
 const mi=id=>M.find(m=>m.id===id)||{ar:"—",en:"—",price:0};
 const catLabel=k=>{const c=CATS.find(x=>x.k===k);return c?nm(c):k};
 const dots=n=>`<span class="dots">${[0,1,2].map(i=>`<i class="${i<n?"on":""}"></i>`).join("")}</span>`;
-const secLbl=s=>t(s==="portal"?"homePage":s==="order_buffet"?"orderBuffet":s==="news"?"aNews":s==="links"?"aLinks":s==="policies"?"aPolicies":s==="events"?"aEvents":s==="menu"?"aMenu":s==="orders"?"aOrders":s==="gallery"?"gallery":s==="rooms"?"meetingRooms":s==="suggestions"?"suggestions":s==="dashboard_buffet"?"dashboardBuffet":s==="dashboard_rooms"?"dashboardRooms":"aAccess");
+const secLbl=s=>t(s==="portal"?"homePage":s==="order_buffet"?"orderBuffet":s==="kb"?"knowledgeBase":s==="owners"?"whoOwnsWhat":s==="news"?"aNews":s==="links"?"aLinks":s==="policies"?"aPolicies":s==="events"?"aEvents":s==="menu"?"aMenu":s==="orders"?"aOrders":s==="gallery"?"gallery":s==="rooms"?"meetingRooms":s==="suggestions"?"suggestions":s==="dashboard_buffet"?"dashboardBuffet":s==="dashboard_rooms"?"dashboardRooms":"aAccess");
 
 function toast(m){const e=$("#toast");if(!e)return;e.textContent=m;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2200)}
 function fail(e){console.error(e);toast(t("errGeneric"))}
@@ -398,12 +413,13 @@ async function loadEverything(){
     api.listBranches(), api.loadRoles(), api.list("news"), api.list("links"),
     api.list("policies"), api.list("events"), api.list("menu"),
     api.listProfiles(), api.listOrders(), api.listOrgPeople(), api.listGallery(),
-    api.getSetting("about"), api.listRooms(), api.listSuggestions(), api.getBranding()
+    api.getSetting("about"), api.listRooms(), api.listSuggestions(), api.getBranding(),
+    api.list("kb"), api.list("owners")
   ]);
   results.forEach((r,i)=>{ if(r.status==="rejected") console.error("load section", i, "failed:", r.reason); });
   const val=(i,fallback)=>results[i].status==="fulfilled"?results[i].value:fallback;
   SITES=val(0,[]); A={roles:val(1,[]),users:val(7,[])};
-  C={news:val(2,[]),links:val(3,[]),policies:val(4,[]),events:val(5,[])};
+  C={news:val(2,[]),links:val(3,[]),policies:val(4,[]),events:val(5,[]),kb:val(15,[]),owners:val(16,[])};
   M=val(6,[]); O=val(8,[]); ORG=val(9,[]); GALLERY=val(10,[]); ABOUT=val(11,{ar:"",en:""}); MEETING_ROOMS=val(12,[]); SUGGESTIONS=val(13,[]);
   BRANDING=val(14,null); applyBranding(BRANDING);
 }
@@ -468,6 +484,9 @@ function render(){
     view==="myorders" ? vMyOrders() :
     view==="myrooms" ? vMyRooms() :
     view==="suggest" ? vSuggestBox() :
+    view==="kb" ? vKB() :
+    view==="owners" ? vOwners() :
+    view==="search" ? vSearch() :
     view==="rooms" ? vRooms() : vAdmin()
   );
 
@@ -517,6 +536,7 @@ function shell(inner){
   return `<div class="topbar">
     <button class="brand" onclick="go('portal')"><img src="${logoUrl()}" alt="" class="logomark"><b>${t("sitename")}</b></button>
     <nav class="topnav">${tabs.map(([k,v])=>`<button class="${view===k?"on":""}" onclick="go('${k}')">${v}</button>`).join("")}
+      ${can("portal")?`<button class="searchicon" onclick="go('search')" title="${t("searchEverything")}">🔍</button>`:""}
       <span class="langsw"><button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
       <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span>
       <div class="usermenu-wrap">
@@ -610,6 +630,8 @@ function vPortal(){
     <button class="qtile feat" onclick="go('gallery')"><span class="qicon">🖼️</span>${t("gallery")}</button>
     <button class="qtile feat" onclick="go('rooms')"><span class="qicon">🏢</span>${t("bookRoom")}</button>
     <button class="qtile feat" onclick="go('suggest')"><span class="qicon">💡</span>${t("suggestBox")}</button>
+    <button class="qtile feat" onclick="go('kb')"><span class="qicon">📚</span>${t("knowledgeBase")}</button>
+    <button class="qtile feat" onclick="go('owners')"><span class="qicon">🗂️</span>${t("whoOwnsWhat")}</button>
     ${links.map(l=>{const d=lang==="ar"?l.descAR:l.descEN;
       return `<a class="qtile" href="${esc(l.url||"#")}"><span class="qicon">${iconHtml(l.icon)}</span>
         <span class="qtile-txt"><b>${esc(nm(l))}</b>${d?`<span>${esc(d)}</span>`:""}</span></a>`}).join("")}</div>
@@ -976,6 +998,96 @@ async function delSuggestion(id){
     toast(t("deleted")); render();
   }catch(e){ fail(e); }
 }
+/* ═══════════════ قاعدة المعرفة (Knowledge Base) ═══════════════ */
+let kbQuery="", kbOpenId=null;
+function setKbQuery(v){ kbQuery=v; render(); }
+function toggleKbArticle(id){ kbOpenId=kbOpenId===id?null:id; render(); }
+function vKB(){
+  const q=kbQuery.trim().toLowerCase();
+  const filtered=C.kb.filter(a=>{
+    if(!q) return true;
+    const title=(lang==="ar"?a.titleAR:a.titleEN)||"";
+    const body=(lang==="ar"?a.bodyAR:a.bodyEN)||"";
+    return title.toLowerCase().includes(q)||body.toLowerCase().includes(q)||(a.category||"").toLowerCase().includes(q);
+  });
+  return `<div class="eyebrow">${t("knowledgeBase")}</div>
+  <div class="card" style="padding:14px 16px;margin-bottom:14px">
+    <input class="inp" placeholder="${t("kbSearchPH")}" value="${esc(kbQuery)}" oninput="setKbQuery(this.value)"></div>
+  ${!filtered.length?`<div class="card empty"><b>—</b>${t("kbNoResults")}</div>`
+   :filtered.map(a=>`<div class="card" style="margin-bottom:10px;padding:16px">
+      <button class="kb-head" onclick="toggleKbArticle('${a.id}')">
+        <span><b>${esc(lang==="ar"?a.titleAR:a.titleEN)}</b>${a.category?` <span class="pill" style="font-size:10px">${esc(a.category)}</span>`:""}</span>
+        <span>${kbOpenId===a.id?"▾":"▸"}</span></button>
+      ${kbOpenId===a.id?`<div class="kb-body">${esc(lang==="ar"?a.bodyAR:a.bodyEN).replace(/\n/g,"<br>")}</div>`:""}
+    </div>`).join("")}`;
+}
+
+/* ═══════════════ Who Owns What ═══════════════ */
+let ownersQuery="";
+function setOwnersQuery(v){ ownersQuery=v; render(); }
+function vOwners(){
+  const q=ownersQuery.trim().toLowerCase();
+  const filtered=C.owners.filter(o=>{
+    if(!q) return true;
+    const owner=(lang==="ar"?o.ownerAR:o.ownerEN)||"";
+    return nm(o).toLowerCase().includes(q)||owner.toLowerCase().includes(q);
+  });
+  return `<div class="eyebrow">${t("whoOwnsWhat")}</div>
+  <div class="card" style="padding:14px 16px;margin-bottom:14px">
+    <input class="inp" placeholder="${t("ownersSearchPH")}" value="${esc(ownersQuery)}" oninput="setOwnersQuery(this.value)"></div>
+  ${!filtered.length?`<div class="card empty"><b>—</b>${t("kbNoResults")}</div>`
+   :`<div class="card" style="padding:4px">${filtered.map(o=>`<div class="item">
+      <div class="body"><b>${esc(nm(o))}</b><p>${esc((lang==="ar"?o.ownerAR:o.ownerEN)||"")}</p></div>
+      ${o.contactEmail?`<a class="btn ghost sm" href="mailto:${esc(o.contactEmail)}">${t("contactOwner")}</a>`
+        :o.contactLink?`<a class="btn ghost sm" href="${esc(o.contactLink)}" target="_blank" rel="noopener">${t("contactOwner")}</a>`:""}
+    </div>`).join("")}</div>`}`;
+}
+
+/* ═══════════════ البحث الشامل ═══════════════ */
+let globalSearchQuery="";
+function setGlobalSearchQuery(v){ globalSearchQuery=v; render(); }
+function globalSearchResults(){
+  const q=globalSearchQuery.trim().toLowerCase();
+  if(q.length<2) return null;
+  const has=(...vals)=>vals.some(v=>(v||"").toLowerCase().includes(q));
+  return {
+    news: can("portal")?C.news.filter(x=>has(x.titleAR,x.titleEN,x.bodyAR,x.bodyEN)).slice(0,5):[],
+    links: can("portal")?C.links.filter(x=>has(x.ar,x.en,x.descAR,x.descEN)).slice(0,5):[],
+    policies: can("portal")?C.policies.filter(x=>has(x.ar,x.en,x.dept)).slice(0,5):[],
+    events: can("portal")?C.events.filter(x=>has(x.ar,x.en,x.placeAR,x.placeEN)).slice(0,5):[],
+    kb: can("kb")||can("portal")?C.kb.filter(x=>has(x.titleAR,x.titleEN,x.bodyAR,x.bodyEN,x.category)).slice(0,5):[],
+    owners: can("owners")||can("portal")?C.owners.filter(x=>has(x.ar,x.en,x.ownerAR,x.ownerEN)).slice(0,5):[],
+    people: can("portal")?ORG.filter(p=>has(p.name,p.title,p.email)).slice(0,5):[],
+  };
+}
+function goToSearchResult(kind,id){
+  if(kind==="news"||kind==="events"){ go("portal"); return; }
+  if(kind==="kb"){ go("kb"); kbOpenId=id; kbQuery=""; render(); return; }
+  if(kind==="owners"){ go("owners"); return; }
+  if(kind==="people"){ go("org"); return; }
+}
+function vSearch(){
+  const r=globalSearchResults();
+  const groups=r?[
+    ["news",t("news"),r.news,x=>lang==="ar"?x.titleAR:x.titleEN],
+    ["kb",t("knowledgeBase"),r.kb,x=>lang==="ar"?x.titleAR:x.titleEN],
+    ["owners",t("whoOwnsWhat"),r.owners,x=>nm(x)],
+    ["policies",t("docs"),r.policies,x=>nm(x)],
+    ["links",t("links"),r.links,x=>nm(x)],
+    ["events",t("events"),r.events,x=>nm(x)],
+    ["people",t("orgChart"),r.people,x=>x.name],
+  ].filter(([,,arr])=>arr.length):[];
+  return `<div class="eyebrow">${t("searchEverything")}</div>
+  <div class="card" style="padding:14px 16px;margin-bottom:14px">
+    <input id="globalSearchInput" class="inp" placeholder="${t("searchPH")}" value="${esc(globalSearchQuery)}" oninput="setGlobalSearchQuery(this.value)"></div>
+  ${!r?`<div class="card empty"><b>—</b>${t("searchHint")}</div>`
+   :!groups.length?`<div class="card empty"><b>—</b>${t("searchNoResults")}</div>`
+   :groups.map(([kind,label,arr,titleFn])=>`<div class="sec"><div class="sechd"><div><h3>${label}</h3></div></div>
+      ${arr.map(x=>`<button class="item" style="width:100%;text-align:start" onclick="goToSearchResult('${kind}','${x.id||""}')">
+        <div class="body"><b>${esc(titleFn(x))}</b></div></button>`).join("")}
+    </div>`).join("")}`;
+}
+
 function aSuggestions(){
   return `<div class="sec"><div class="sechd"><div><h3>${t("suggestBox")}</h3><p>${num(SUGGESTIONS.length)}</p></div></div>
     ${SUGGESTIONS.length?SUGGESTIONS.map(s=>`<div class="item" style="align-items:flex-start">
@@ -1373,6 +1485,8 @@ function lbl(k,x){
   if(k==="policies")return[nm(x),x.dept+" · v"+x.ver+" · "+x.date];
   if(k==="events")return[nm(x),(lang==="ar"?x.placeAR:x.placeEN)+" · "+x.day];
   if(k==="menu")return[nm(x),catLabel(x.cat)+" · "+money(x.price)+(x.stock!=null?" · "+num(x.stock)+" "+t("stockLeft"):"")+(x.avail?"":" · ✕")];
+  if(k==="kb")return[lang==="ar"?x.titleAR:x.titleEN,x.category||""];
+  if(k==="owners")return[nm(x),(lang==="ar"?x.ownerAR:x.ownerEN)||""];
   return[nm(x),""];
 }
 function aList(k){
@@ -1770,6 +1884,7 @@ Object.assign(window, {
   startRoleNew, startRoleEditRole, cancelRoleEdit, setRoleField, saveRoleFull, deleteRoleFull,
   startLocalUser, cancelLocalUser, setLocalUserField, submitLocalUser, resetLocalPw, deleteLocalAcct, editLocalName, editLocalEmail,
   setBrandingField, cancelBrandingEdit, uploadBrandingLogo, saveBranding,
+  setKbQuery, toggleKbArticle, setOwnersQuery, setGlobalSearchQuery, goToSearchResult,
   toggleUserSelect, toggleSelectAll, setBulkBranch, setBulkRole, applyBulk,
   setSuggestBody, suggestWriteAnother, submitSuggestionForm, delSuggestion,
 });

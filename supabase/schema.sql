@@ -33,13 +33,14 @@ create table role_permissions (
   role_id text references roles(id) on delete cascade,
   section text not null check (section in
     ('portal','order_buffet','news','links','policies','events','menu','orders','access','gallery',
-     'rooms','suggestions','dashboard_buffet','dashboard_rooms')),
+     'rooms','suggestions','dashboard_buffet','dashboard_rooms','kb','owners')),
   primary key (role_id, section)
 );
 insert into role_permissions values
   ('admin','portal'),('admin','order_buffet'),('admin','news'),('admin','links'),('admin','policies'),('admin','events'),
   ('admin','menu'),('admin','orders'),('admin','access'),('admin','gallery'),
   ('admin','rooms'),('admin','suggestions'),('admin','dashboard_buffet'),('admin','dashboard_rooms'),
+  ('admin','kb'),('admin','owners'),
   ('hr','portal'),('hr','order_buffet'),('hr','news'),('hr','policies'),('hr','events'),
   ('viewer','portal'),('viewer','order_buffet'),
   ('kitchen','orders'),('kitchen','menu');
@@ -434,6 +435,34 @@ create policy insert_suggestions on suggestions for insert to authenticated with
 create policy read_suggestions on suggestions for select to authenticated using (has_perm('suggestions') or has_perm('access'));
 create policy delete_suggestions on suggestions for delete to authenticated using (has_perm('suggestions') or has_perm('access'));
 grant select, insert, delete on suggestions to authenticated;
+
+-- Knowledge Base وWho Owns What — نفس نمط الأخبار/السياسات
+create table kb_articles (
+  id uuid primary key default gen_random_uuid(),
+  title_ar text not null, title_en text not null,
+  body_ar text, body_en text,
+  category text,
+  sort int not null default 0,
+  created_at timestamptz default now()
+);
+alter table kb_articles enable row level security;
+create policy read_kb on kb_articles for select to authenticated using (true);
+create policy write_kb on kb_articles for all to authenticated
+  using (has_perm('kb') or has_perm('access')) with check (has_perm('kb') or has_perm('access'));
+grant select, insert, update, delete on kb_articles to authenticated;
+
+create table service_owners (
+  id uuid primary key default gen_random_uuid(),
+  service_ar text not null, service_en text not null,
+  owner_ar text, owner_en text,
+  contact_email text, contact_link text,
+  sort int not null default 0
+);
+alter table service_owners enable row level security;
+create policy read_owners on service_owners for select to authenticated using (true);
+create policy write_owners on service_owners for all to authenticated
+  using (has_perm('owners') or has_perm('access')) with check (has_perm('owners') or has_perm('access'));
+grant select, insert, update, delete on service_owners to authenticated;
 
 -- مكان تخزين الملفات (الصور) — bucket عام للقراءة، مقيّد للرفع
 insert into storage.buckets (id, name, public)
