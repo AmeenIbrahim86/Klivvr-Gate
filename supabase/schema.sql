@@ -441,7 +441,7 @@ create table kb_articles (
   id uuid primary key default gen_random_uuid(),
   title_ar text not null, title_en text not null,
   body_ar text, body_en text,
-  category text,
+  category text, url text,
   sort int not null default 0,
   created_at timestamptz default now()
 );

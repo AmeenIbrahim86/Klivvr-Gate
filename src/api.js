@@ -226,8 +226,8 @@ const MAP = {
       icon: r.icon, stock: r.stock_qty, options: r.custom_options || [], site: r.branch_id || 'all' }),
   },
   kb: {
-    toDb: r => ({ title_ar: r.titleAR, title_en: r.titleEN, body_ar: r.bodyAR || '', body_en: r.bodyEN || '', category: r.category || '' }),
-    fromDb: r => ({ id: r.id, titleAR: r.title_ar, titleEN: r.title_en, bodyAR: r.body_ar, bodyEN: r.body_en, category: r.category }),
+    toDb: r => ({ title_ar: r.titleAR, title_en: r.titleEN, body_ar: r.bodyAR || '', body_en: r.bodyEN || '', category: r.category || '', url: r.url || null }),
+    fromDb: r => ({ id: r.id, titleAR: r.title_ar, titleEN: r.title_en, bodyAR: r.body_ar, bodyEN: r.body_en, category: r.category, url: r.url }),
   },
   owners: {
     toDb: r => ({ service_ar: r.ar, service_en: r.en, owner_ar: r.ownerAR || '', owner_en: r.ownerEN || '',

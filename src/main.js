@@ -82,7 +82,7 @@ const L = { ar: {
  add:"إضافة",save:"حفظ",cancel:"إلغاء",
  tag:"التصنيف",titleAR:"العنوان بالعربي",titleEN:"العنوان بالإنجليزي",bodyAR:"النص بالعربي",bodyEN:"النص بالإنجليزي",
  category:"الفئة",serviceAR:"اسم الخدمة بالعربي",serviceEN:"اسم الخدمة بالإنجليزي",ownerAR:"المسؤول بالعربي",ownerEN:"المسؤول بالإنجليزي",
- contactEmail:"إيميل التواصل",contactLink:"رابط التواصل",
+ contactEmail:"إيميل التواصل",contactLink:"رابط التواصل",url:"الرابط",kbOpenLink:"افتح الرابط",
  author:"الكاتب",date:"التاريخ",icon:"الأيقونة",url:"اللينك",dept:"القسم",version:"الإصدار",
  image:"لينك الصورة",imageHint:"الصق لينك صورة من الإنترنت (اختياري)",
  descAR:"وصف قصير بالعربي",descEN:"وصف قصير بالإنجليزي",
@@ -178,7 +178,7 @@ const L = { ar: {
  add:"Add",save:"Save",cancel:"Cancel",
  tag:"Tag",titleAR:"Title (Arabic)",titleEN:"Title (English)",bodyAR:"Body (Arabic)",bodyEN:"Body (English)",
  category:"Category",serviceAR:"Service name (Arabic)",serviceEN:"Service name (English)",ownerAR:"Owner (Arabic)",ownerEN:"Owner (English)",
- contactEmail:"Contact email",contactLink:"Contact link",
+ contactEmail:"Contact email",contactLink:"Contact link",url:"URL",kbOpenLink:"Open link",
  author:"Author",date:"Date",icon:"Icon",url:"Link",dept:"Department",version:"Version",
  image:"Image link",imageHint:"Paste an image link from the internet (optional)",
  descAR:"Short description (Arabic)",descEN:"Short description (English)",
@@ -327,7 +327,7 @@ const FIELDS = {
  policies:[["ar","titleAR"],["en","titleEN"],["dept","dept"],["ver","version"],["date","date"],["url","url"]],
  events:[["ar","titleAR"],["en","titleEN"],["placeAR","place"],["placeEN","place"],["day","day"],["monAR","month"],["monEN","month"],["startsAt","eventDateTime"],["image","image"]],
  menu:[["ar","titleAR"],["en","titleEN"],["price","price"],["stock","stockQty"],["col","color"],["icon","icon"],["options","customOptions"]],
- kb:[["titleAR","titleAR"],["titleEN","titleEN"],["category","category"],["bodyAR","bodyAR",1],["bodyEN","bodyEN",1]],
+ kb:[["titleAR","titleAR"],["titleEN","titleEN"],["category","category"],["url","url"],["bodyAR","bodyAR",1],["bodyEN","bodyEN",1]],
  owners:[["ar","serviceAR"],["en","serviceEN"],["ownerAR","ownerAR"],["ownerEN","ownerEN"],["contactEmail","contactEmail"],["contactLink","contactLink"]]};
 
 /* ═══════════════ state ═══════════════ */
@@ -562,6 +562,7 @@ function go(v){
   if(v==="portal"&&!can("portal")) v=bestLandingView();
   if(v==="order"&&!can("order_buffet")) v=bestLandingView();
   view=v;edit=null;paying=false;userMenuOpen=false;
+  if(v==="portal") globalSearchQuery="";
   if(v==="myorders")loadMyOrders();if(v==="rooms")openRooms();if(v==="myrooms")loadMyRoomBookings();
   render();scrollTo({top:0,behavior:"instant"});
 }
@@ -611,7 +612,11 @@ async function saveAbout(){
 function vPortal(){
   const news=C.news,lead=news[0],rest=news.slice(1,4);
   const links=C.links,pol=C.policies,ev=C.events;
-  return `${aboutEditing?aboutForm():aboutCard()}
+  return `<div class="home-search-wrap">
+    <span class="home-search-icon">🔍</span>
+    <input id="globalSearchInput" class="home-search-bar" placeholder="${t("searchPH")}" value="${esc(globalSearchQuery)}" oninput="startHomeSearch(this.value)">
+  </div>
+  ${aboutEditing?aboutForm():aboutCard()}
   <div class="eyebrow">${t("news")}</div>
   ${lead?`<div class="hero ${lead.image?"has-photo":""}" ${lead.image?`style="background-image:url('${esc(lead.image)}')"`:""}>
     <div class="hero-main"><span class="pill">${esc(lang==="ar"?lead.tagAR:lead.tagEN)}</span>
@@ -1018,7 +1023,10 @@ function vKB(){
       <button class="kb-head" onclick="toggleKbArticle('${a.id}')">
         <span><b>${esc(lang==="ar"?a.titleAR:a.titleEN)}</b>${a.category?` <span class="pill" style="font-size:10px">${esc(a.category)}</span>`:""}</span>
         <span>${kbOpenId===a.id?"▾":"▸"}</span></button>
-      ${kbOpenId===a.id?`<div class="kb-body">${esc(lang==="ar"?a.bodyAR:a.bodyEN).replace(/\n/g,"<br>")}</div>`:""}
+      ${kbOpenId===a.id?`<div class="kb-body">
+        ${(lang==="ar"?a.bodyAR:a.bodyEN)?esc(lang==="ar"?a.bodyAR:a.bodyEN).replace(/\n/g,"<br>"):""}
+        ${a.url?`<a class="btn ghost sm" style="margin-top:10px" href="${esc(a.url)}" target="_blank" rel="noopener">${t("kbOpenLink")} ↗</a>`:""}
+      </div>`:""}
     </div>`).join("")}`;
 }
 
@@ -1046,6 +1054,10 @@ function vOwners(){
 /* ═══════════════ البحث الشامل ═══════════════ */
 let globalSearchQuery="";
 function setGlobalSearchQuery(v){ globalSearchQuery=v; render(); }
+function startHomeSearch(v){
+  globalSearchQuery=v; view="search"; edit=null; paying=false; userMenuOpen=false;
+  render();
+}
 function globalSearchResults(){
   const q=globalSearchQuery.trim().toLowerCase();
   if(q.length<2) return null;
@@ -1884,7 +1896,7 @@ Object.assign(window, {
   startRoleNew, startRoleEditRole, cancelRoleEdit, setRoleField, saveRoleFull, deleteRoleFull,
   startLocalUser, cancelLocalUser, setLocalUserField, submitLocalUser, resetLocalPw, deleteLocalAcct, editLocalName, editLocalEmail,
   setBrandingField, cancelBrandingEdit, uploadBrandingLogo, saveBranding,
-  setKbQuery, toggleKbArticle, setOwnersQuery, setGlobalSearchQuery, goToSearchResult,
+  setKbQuery, toggleKbArticle, setOwnersQuery, setGlobalSearchQuery, goToSearchResult, startHomeSearch,
   toggleUserSelect, toggleSelectAll, setBulkBranch, setBulkRole, applyBulk,
   setSuggestBody, suggestWriteAnother, submitSuggestionForm, delSuggestion,
 });
