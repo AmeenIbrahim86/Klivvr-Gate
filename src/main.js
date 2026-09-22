@@ -294,6 +294,7 @@ const TABS = [["overview","overview","▦",null],["news","aNews","✦","news"],[
 const ICON_PRESETS_LINKS = ["✉️","📅","📁","⚙️","🏢","📊","💰","🎯","📋","🔔","📞","🗂️","🧑‍💻","📦","🧾","🛠️"];
 const ICON_PRESETS_MENU = ["☕","🍵","🧋","🥤","🧃","🥛","🍫","🍪","🍩","🍰","🧁","🍭","🍿","🥐","🥪","🍟","🧀","🍎","🍌","🍇"];
 const isUrl=s=>/^https?:\/\//.test(s||"");
+const SEARCH_SVG=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><circle cx="10.5" cy="10.5" r="7"></circle><line x1="21" y1="21" x2="15.8" y2="15.8"></line></svg>`;
 const iconHtml=icon=>isUrl(icon)?`<img src="${esc(icon)}" class="qicon-img">`:esc(icon||"");
 function toLocalInput(iso){
   const d=new Date(iso);
@@ -536,7 +537,7 @@ function shell(inner){
   return `<div class="topbar">
     <button class="brand" onclick="go('portal')"><img src="${logoUrl()}" alt="" class="logomark"><b>${t("sitename")}</b></button>
     <nav class="topnav">${tabs.map(([k,v])=>`<button class="${view===k?"on":""}" onclick="go('${k}')">${v}</button>`).join("")}
-      ${can("portal")?`<button class="searchicon" onclick="go('search')" title="${t("searchEverything")}">🔍</button>`:""}
+      ${can("portal")&&view!=="portal"?`<button class="searchicon" onclick="go('search')" title="${t("searchEverything")}">${SEARCH_SVG}</button>`:""}
       <span class="langsw"><button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
       <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span>
       <div class="usermenu-wrap">
@@ -613,7 +614,7 @@ function vPortal(){
   const news=C.news,lead=news[0],rest=news.slice(1,4);
   const links=C.links,pol=C.policies,ev=C.events;
   return `<div class="home-search-wrap">
-    <span class="home-search-icon">🔍</span>
+    <span class="home-search-icon">${SEARCH_SVG}</span>
     <input id="globalSearchInput" class="home-search-bar" placeholder="${t("searchPH")}" value="${esc(globalSearchQuery)}" oninput="startHomeSearch(this.value)">
   </div>
   ${aboutEditing?aboutForm():aboutCard()}
