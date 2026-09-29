@@ -25,6 +25,7 @@ const L = { ar: {
  payment:"طريقة الدفع", status:"الحالة", date:"التاريخ", payCash:"كاش", loading:"بيحمّل…",
  closedOrders:"الطلبات المقفولة", closedOrdersHint:"آخر ٥٠ طلب اتسلّم أو اترفض", noClosedOrders:"لسه مفيش طلبات مقفولة",
  closedDelivered:"اتسلّم", closedRejected:"مرفوض", rejectedBecause:"سبب الرفض", today:"النهاردة",
+ newOrderAlert:"طلب جديد!", soundOn:"الصوت شغّال", soundOff:"الصوت مقفول",
 },en:{
  title:"Buffet screen", noLogin:"No sign-in needed",
  kNew:"NEW", kProg:"PREPARING",
@@ -41,6 +42,7 @@ const L = { ar: {
  payment:"Payment", status:"Status", date:"Date", payCash:"Cash", loading:"Loading…",
  closedOrders:"Closed Orders", closedOrdersHint:"Last 50 delivered or rejected orders", noClosedOrders:"No closed orders yet",
  closedDelivered:"Delivered", closedRejected:"Rejected", rejectedBecause:"Rejected because", today:"Today",
+ newOrderAlert:"New order!", soundOn:"Sound on", soundOff:"Sound off",
 }};
 
 const branch = branchFromUrl();
@@ -49,10 +51,35 @@ let lang="en", rows=[], unlocked=false, password="", loginErr="", checking=false
 let rejectingOrder=null, rejectCustom="";
 let reportsOpen=false, reportFrom="", reportTo="", reportRows=null, reportLoading=false;
 let closedOpen=false, closedRows=null, closedLoading=false, closedOpenDay=null;
+let knownOrderNos=null, soundOn=true, newOrderFlash=false;
+try{ const saved=localStorage.getItem("kitchen_sound"); if(saved!==null) soundOn=saved==="1"; }catch(e){}
 const t=k=>L[lang][k]??k;
 const num=n=>Number(n).toLocaleString(lang==="ar"?"ar-EG":"en-US");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const $=s=>document.querySelector(s);
+
+function playNewOrderSound(){
+  if(!soundOn) return;
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const beep=(freq,start,dur)=>{
+      const osc=ctx.createOscillator(),gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.type="sine";osc.frequency.value=freq;
+      gain.gain.setValueAtTime(0.001,ctx.currentTime+start);
+      gain.gain.exponentialRampToValueAtTime(0.3,ctx.currentTime+start+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);
+      osc.start(ctx.currentTime+start);osc.stop(ctx.currentTime+start+dur+0.05);
+    };
+    beep(880,0,0.16);beep(1175,0.16,0.26);
+  }catch(e){ console.error("sound failed",e); }
+}
+function toggleSound(){
+  soundOn=!soundOn;
+  try{ localStorage.setItem("kitchen_sound",soundOn?"1":"0"); }catch(e){}
+  render();
+}
+window.toggleSound=toggleSound;
 const dots=n=>`<span class="dots">${[0,1,2].map(i=>`<i class="${i<n?"on":""}"></i>`).join("")}</span>`;
 const SUG=[{ar:"سادة",en:"None"},{ar:"خفيف",en:"Light"},{ar:"مظبوط",en:"Medium"},{ar:"زيادة",en:"Extra"}];
 const nm=o=>o?(o[lang]??o.ar??o.en??""):"";
@@ -85,7 +112,19 @@ window.submitPassword = submitPassword;
 
 async function refresh(){
   if(!unlocked) return;
-  try{ rows = await kitchenBoard(branch, password); }
+  try{
+    rows = await kitchenBoard(branch, password);
+    const currentNos=new Set(rows.filter(o=>o.status==="new").map(o=>o.order_no));
+    if(knownOrderNos!==null){
+      const isNew=[...currentNos].some(no=>!knownOrderNos.has(no));
+      if(isNew){
+        playNewOrderSound();
+        newOrderFlash=true; render();
+        setTimeout(()=>{ newOrderFlash=false; render(); }, 3500);
+      }
+    }
+    knownOrderNos=currentNos;
+  }
   catch(e){
     console.error(e);
     // الباسورد اتغيّر أو بقى غلط — ارجع لشاشة الدخول تاني
@@ -293,11 +332,14 @@ function render(){
   const newCount = rows.filter(r=>r.status==="new").length;
   const progCount = rows.filter(r=>r.status==="preparing").length;
 
-  $("#app").innerHTML = `<div class="kwrap"><div class="khead">
+  $("#app").innerHTML = `<div class="kwrap">
+   ${newOrderFlash?`<div class="new-order-banner">🔔 ${t("newOrderAlert")}</div>`:""}
+   <div class="khead">
      <div><h2>${t("title")}</h2>
        <div class="sub">AUTO-REFRESH · 30s <span class="nologin">${t("noLogin")}</span>
        <button class="reports-link" onclick="openReports()">📊 ${t("reports")}</button>
        <button class="reports-link" onclick="openClosed()">📋 ${t("closedOrders")}</button>
+       <button class="reports-link" onclick="toggleSound()" title="${soundOn?t("soundOn"):t("soundOff")}">${soundOn?"🔊":"🔇"}</button>
        <span class="langsw" style="margin-inline-start:8px">
          <button class="${lang==="ar"?"on":""}" onclick="setLang('ar')">ع</button>
          <button class="${lang==="en"?"on":""}" onclick="setLang('en')">EN</button></span></div></div>
