@@ -31,6 +31,7 @@ const L = { ar: {
  captionPH:"وصف الصورة (اختياري)",galleryAdded:"اتضافت الصورة",galleryDeleted:"اتمسحت الصورة",
  galleryConfirmDel:"متأكد إنك عايز تمسح الصورة دي؟",imageUploading:"بيترفع الصورة…",imageUploaded:"اتحطت",
  imageRemove:"شيل الصورة",uploadIcon:"رفع أيقونة مخصصة",
+ uploadFile:"رفع ملف",fileUploading:"بيترفع الملف…",fileUploaded:"اتحط الملف",urlOrUpload:"الصق لينك، أو ارفع ملف",
  addBranch:"إضافة فرع",branchId:"كود الفرع",branchIdHint:"حروف إنجليزي صغيرة، مثال: alex",
  branchLive:"الحالة",branchLiveYes:"شغّال",branchLiveNo:"قريباً",
  branchQr:"كود InstaPay",nameArHint:"الاسم بالعربي (اختياري)",isFree:"مجاني",free:"مجاني",
@@ -127,6 +128,7 @@ const L = { ar: {
  captionPH:"Photo caption (optional)",galleryAdded:"Photo added",galleryDeleted:"Photo deleted",
  galleryConfirmDel:"Delete this photo?",imageUploading:"Uploading photo…",imageUploaded:"Added",
  imageRemove:"Remove photo",uploadIcon:"Upload custom icon",
+ uploadFile:"Upload file",fileUploading:"Uploading file…",fileUploaded:"File added",urlOrUpload:"Paste a link, or upload a file",
  addBranch:"Add branch",branchId:"Branch code",branchIdHint:"Lowercase letters, e.g. alex",
  branchLive:"Status",branchLiveYes:"Live",branchLiveNo:"Coming soon",
  branchQr:"InstaPay QR code",nameArHint:"Arabic name (optional)",isFree:"Free item",free:"Free",
@@ -1520,9 +1522,17 @@ function aList(k){
 function form(k){
   const d=edit;
   return `<div class="form"><div class="fgrid">
-    ${FIELDS[k].map(([key,lab,multi])=>`<div class="fld ${multi||key==="image"||key==="icon"||key==="options"?"full":""}">
+    ${FIELDS[k].map(([key,lab,multi])=>`<div class="fld ${multi||key==="image"||key==="icon"||key==="options"||(key==="url"&&(k==="policies"||k==="kb"))?"full":""}">
       <label>${t(lab)} <span class="mono" style="opacity:.45">${key}</span></label>
       ${multi?`<textarea class="inp" oninput="setEditField('${key}',this.value)">${esc(d[key]||"")}</textarea>`
+      :key==="url"&&(k==="policies"||k==="kb")?`<div class="url-edit">
+          <input class="inp" placeholder="https://..." value="${esc(d.url??"")}" oninput="setEditField('url',this.value)">
+          <div class="url-edit-row">
+            <label class="btn ghost sm gal-picklabel">${t("uploadFile")}
+              <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg" style="display:none" onchange="uploadEditUrlFile(this)"></label>
+            <span class="url-edit-hint">${t("urlOrUpload")}</span>
+          </div>
+        </div>`
       :key==="image"?`<div class="img-edit">
           ${d.image?`<img src="${esc(d.image)}" class="img-edit-preview">
             <button class="iact del" type="button" onclick="removeEditImage()">🗑</button>`
@@ -1610,6 +1620,16 @@ async function uploadEditIcon(input){
     const url = await api.uploadImage(file);
     edit.icon = url;
     toast(t("imageUploaded")); render();
+  }catch(e){ fail(e); }
+}
+async function uploadEditUrlFile(input){
+  const file = input.files && input.files[0];
+  if(!file || !edit) return;
+  toast(t("fileUploading"));
+  try{
+    const url = await api.uploadImage(file);
+    edit.url = url;
+    toast(t("fileUploaded")); render();
   }catch(e){ fail(e); }
 }
 async function saveItem(k){
@@ -1887,7 +1907,7 @@ Object.assign(window, {
   tog, setSug, setMilk, setMint, setOpt, stp, setNote, addCart, rmCart, startPay, payBack, submitOrder, setPayMethod,
   setTab, startEdit, cancelEdit, setEditField, setEditSite, setEditCat, setEditSugar, setEditMilk, setEditMint, addEditOption, removeEditOption,
   saveItem, delItem, togAvail, togPerm, setRole, setBranchAdm, syncOrg, saveKioskPw,
-  toggleOrgNode, orgSearch, uploadGalleryPhoto, delGalleryPhoto, uploadEditImage, removeEditImage,
+  toggleOrgNode, orgSearch, uploadGalleryPhoto, delGalleryPhoto, uploadEditImage, removeEditImage, uploadEditUrlFile,
   setEditIcon, uploadEditIcon, startBranchNew, startBranchEdit, cancelBranchEdit,
   setBranchField, setBranchLive, saveBranch, deleteBranch, uploadBranchQr, saveNameAr, setEditFree, autoTranslateAll,
   startAboutEdit, cancelAboutEdit, saveAbout,
